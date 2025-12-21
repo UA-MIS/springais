@@ -6,10 +6,11 @@ inputDocuments:
   - "_bmad-output/analysis/research/technical-ai-talent-platform-technical-stack-research-2025-12-18.md"
   - "_bmad-output/analysis/research/domain-ai-talent-mobility-platform-research-2025-12-18.md"
   - "_bmad-output/analysis/research/domain-ey-performance-systems-promotion-evaluation-research-2025-12-18.md"
+  - "_bmad-output/analysis/research/domain-ey-career-progression-success-patterns-research-2025-12-20.md"
   - "_bmad-output/analysis/brainstorming-session-2025-12-18.md"
 documentCounts:
   briefs: 1
-  research: 4
+  research: 5
   brainstorming: 1
   projectDocs: 0
 workflowType: "prd"
@@ -23,6 +24,7 @@ date: "2025-12-18"
 
 **Author:** Clays
 **Date:** 2025-12-18
+**Last Updated:** 2025-12-20 (Refined: utilization calculation clarification, skip promotion logic, calibration support, EY-Parthenon handling, realization rate details, badge count, PX360 integration)
 
 ---
 
@@ -54,7 +56,7 @@ SpringAIS solves this through three breakthrough innovations:
 
 ### What Makes This Special
 
-**The "holy shit" moment:** An employee exploring a Manager role sees the Success Pattern overlay: _"Employees who advanced to Manager typically showed 87% utilization (you: 78%), 2+ mentees (you: 0), feedback themes emphasizing leadership..."_ Suddenly, vague career advice becomes a concrete, motivating action plan.
+**The "holy shit" moment:** An employee exploring a Manager role sees the Success Pattern overlay: _"Employees who advanced to Manager typically showed 87% effective utilization (you: 78%), 2+ mentees (you: 0), feedback themes emphasizing leadership..."_ Suddenly, vague career advice becomes a concrete, motivating action plan.
 
 **The contrarian bet:** Skills alone don't drive advancement. Behaviors, visibility, and patterns matter equally—and no competitor captures this. SpringAIS does.
 
@@ -207,11 +209,11 @@ Maya is a Senior Consultant in Technology Consulting with 3.5 years at EY. She's
 
 One Sunday evening, instead of her usual anxiety spiral about career progress, Maya opens SpringAIS and uploads her resume, her Credly badges, and a few project descriptions. Within seconds, she sees her skills extracted with evidence quotes: _"Inferred 'cloud architecture' from: 'Led migration of client's on-premise infrastructure to AWS, reducing costs by 40%'"_—and she realizes the system actually understands what she's done.
 
-She clicks on a Manager role in her practice and sees something she's never seen before: the Success Pattern overlay. _"Employees who advanced to Manager typically showed: 87% utilization (you: 78%), 2+ active mentees (you: 0), feedback themes emphasizing 'leadership' and 'client management' (you: strong on 'technical depth', opportunity on 'leadership')."_
+She clicks on a Manager role in her practice and sees something she's never seen before: the Success Pattern overlay. _"Employees who advanced to Manager typically showed: 87% effective utilization (you: 78%), 2+ active mentees (you: 0), feedback themes emphasizing 'leadership' and 'client management' (you: strong on 'technical depth', opportunity on 'leadership')."_
 
 The breakthrough hits her: she's been optimizing for the wrong things. She's been heads-down on delivery while missing the visibility moves that actually matter. The Career Journey Map shows her exactly what to do: request 2 mentees from the Staff pool (2 weeks to set up), lead an internal community initiative (ongoing, 2-3 hrs/week), and complete a stakeholder management course (6 weeks).
 
-Three months later, Maya enters her annual review with evidence. Her utilization is up to 84%. She has two mentees who've given her glowing upward feedback. Her counselor sees "leadership" appearing in her feedback themes for the first time. She's no longer guessing—she knows she's on track.
+Three months later, Maya enters her annual review with evidence. Her effective utilization is up to 84%. She has two mentees who've given her glowing upward feedback. Her counselor sees "leadership" appearing in her feedback themes for the first time. She's no longer guessing—she knows she's on track.
 
 **Capabilities revealed:** Document upload, dual LLM skill extraction with evidence, role matching, Success Pattern overlay, Career Competitiveness Dashboard, Career Journey Map, upskilling path generation, progress tracking.
 
@@ -239,7 +241,7 @@ Alex is a Senior Manager in Cloud Transformation leading a rapidly growing pract
 
 Monday morning, Alex posts a new role in SpringAIS: Senior Consultant, Cloud Architecture, AWS/Azure, client-facing. Within 2 hours—not 2 weeks—he sees: "12 potential matches identified across 4 service lines." He doesn't see names yet, just aggregate data: skill distribution, experience levels, availability signals.
 
-By Wednesday, 5 employees have opted in. Alex reviews tokenized profiles: "EMP-482910 (78% match). Strengths: AWS Solutions Architect certified, 3 years client delivery, strong client management feedback. Gaps: Azure exposure (minor). Success Pattern: 85% utilization, 2 mentees, 'leadership' feedback theme." He can see quality signals without seeing private performance reviews.
+By Wednesday, 5 employees have opted in. Alex reviews tokenized profiles: "EMP-482910 (78% match). Strengths: AWS Solutions Architect certified, 3 years client delivery, strong client management feedback. Gaps: Azure exposure (minor). Success Pattern: 85% effective utilization, 2 mentees, 'leadership' feedback theme." He can see quality signals without seeing private performance reviews.
 
 He invites 3 candidates for conversations. All 3 are internal EY employees he'd never have found through traditional channels—one from Audit (surprise skill match), one from a different geography, one from GDS who'd been invisible to him. He staffs the role in 18 days instead of his usual 45.
 
@@ -294,23 +296,51 @@ _Why it matters:_ Employees and hiring managers can trust the inferences because
 
 Existing platforms match skills to job requirements. But skills alone don't drive advancement—behaviors, visibility, and patterns matter equally. SpringAIS captures what actually predicts success across six metric categories:
 
-| Category    | What It Captures                         | Example Pattern                               |
-| ----------- | ---------------------------------------- | --------------------------------------------- |
-| Financial   | Utilization, billable hours, realization | "Advanced employees averaged 87% utilization" |
-| Compliance  | Timesheet, CPE hours, policy adherence   | "95%+ timesheet compliance typical"           |
-| Quality     | Engagement ratings, technical excellence | "4.2+ engagement ratings common"              |
-| Development | Learning hours, mentoring participation  | "2+ active mentees typical"                   |
-| People      | Upward feedback, team scores             | "Leadership theme in 80% of feedback"         |
-| Feedback    | NLP theme analysis                       | "Client management" as recurring theme        |
+| Category    | What It Captures                         | Example Pattern                                         |
+| ----------- | ---------------------------------------- | ------------------------------------------------------- |
+| Financial   | Utilization, billable hours, realization | "Advanced employees averaged 87% effective utilization" |
+| Compliance  | Timesheet, CPE hours, policy adherence   | "95%+ timesheet compliance typical"                     |
+| Quality     | Engagement ratings, technical excellence | "4.2+ engagement ratings common"                        |
+| Development | Learning hours, mentoring participation  | "2+ active mentees typical"                             |
+| People      | Upward feedback, team scores             | "Leadership theme in 80% of feedback"                   |
+| Feedback    | NLP theme analysis                       | "Client management" as recurring theme                  |
+
+**Success Pattern Benchmarks by Target Level:**
+
+| Target Level     | Utilization | Mentees   | Primary Feedback Theme  | CPE Hours | Badges      | Timesheet |
+| ---------------- | ----------- | --------- | ----------------------- | --------- | ----------- | --------- |
+| → Senior         | 90%+        | 0         | "Technical depth"       | 40+       | 1+ Bronze   | 95%+      |
+| → Manager        | 85%+        | 1-2       | "Leadership emerging"   | 40+       | 1+ Silver   | 95%+      |
+| → Senior Manager | 80%+        | 2+        | "Client management, BD" | 40+       | 1+ Gold     | 95%+      |
+| → Partner        | 70%+        | Portfolio | "Strategic, rainmaker"  | 40+       | 1+ Platinum | 95%+      |
+
+**Key Insight:** Utilization targets _decrease_ as seniority increases—reflecting the shift from billable delivery to business development, people leadership, and strategic activities. The model must account for this inverse relationship.
+
+**Utilization Calculation Method:**
+
+- All utilization targets refer to **effective utilization**, which accounts for time off
+- **Effective utilization formula:** Hours charged to clients / (40 hours - non-work hours like PTO, holidays, sick time)
+- **Full utilization** (hours charged / 40 hours) is not used for performance evaluation
+- Example: An employee charging 38 hours/week with 2 hours PTO has 95% effective utilization (38/40), not 100% full utilization
+
+**Realization Rate:**
+
+- **Definition:** Total amount invoiced / Total labor charged for a job
+- **Target Range:** Large accounting firms typically have realization in low 80% range (80-85%)
+- **Relevance:** Manager+ levels are measured on engagement profitability (realization), not just utilization
+- **Use in Success Patterns:** Track realization rate for Manager and above roles as indicator of engagement economics management
 
 _Why it matters:_ Maya stops guessing what "visibility" means. She sees exactly what employees who advanced actually did.
 
 **EY Performance Cycle Alignment:**
 
-- Fiscal year: July-June (annual performance cycle)
-- Calibration sessions: Ratings normalized across peer groups
-- Agile promotions: Quarterly promotion windows (not just annual)
-- LEAD framework: Underlying competency model for performance metrics
+- Fiscal year: July 1 - June 30 (annual performance cycle)
+- Promotion windows: Twice per year (August regular cycle, January agile promotions)
+- Calibration sessions: Late May/June - decisions made ~3 months before promotion date
+- Agile promotions: For rank changes only (Staff→Senior, Senior→Manager, Manager→SM)
+- LEAD framework: Underlying competency model launched in 2018, encourages frequent feedback
+- Minimum time-in-role: ~12 months before promotion eligibility (practical requirement)
+- Track record window: New hires need 90+ days of work history before calibration decisions
 
 **3. Pure Vector Semantic Matching**
 
@@ -413,6 +443,201 @@ _Why it matters:_ Chris explores Tech Risk roles without his Audit manager ever 
 - Full audit trail for regulatory inspection
 - Bias audit documentation maintained (NYC LL144 ready)
 
+## Career Progression Model
+
+SpringAIS must accurately model EY's career progression to provide meaningful recommendations. This section defines the data model for career trajectories.
+
+### Career Hierarchy
+
+All EY business units follow the same fundamental structure:
+
+**Staff → Senior → Manager → Senior Manager → Partner/Executive Director**
+
+| Destination                 | Description                                                                |
+| --------------------------- | -------------------------------------------------------------------------- |
+| **Partner**                 | Equity owner, typically requires CPA credential, ~$500K-$1M+ compensation  |
+| **Executive Director (ED)** | Non-equity employee role, similar authority, ~$400-500K, terminal for ~90% |
+
+### Progression Timelines by Business Unit
+
+| Business Unit                    | Staff→Senior              | Senior→Manager | Manager→SM | SM→Partner/ED  |
+| -------------------------------- | ------------------------- | -------------- | ---------- | -------------- |
+| **Consulting**                   | ~2 years                  | 2-3 years      | 2-4 years  | 4-8 years      |
+| **Tax**                          | 2-3 years                 | 2-3 years      | 3-4 years  | 6-8 years      |
+| **Assurance/Audit**              | 3 years (until qualified) | 2-3 years      | 3 years    | 2-5+ years     |
+| **Strategy & Transactions**      | 2 years                   | 2-3 years      | 2-3 years  | 3-7 years      |
+| **CBS (Core Business Services)** | ~2 years                  | ~3 years       | ~3 years   | Director track |
+
+**EY-Parthenon Exception:** Uses different titles - Associate (2 years) → Senior Associate (1 year) → Consultant (2 years) → Director (2-3 years) → Senior Director (3-7 years) → Partner
+
+**System Handling:** SpringAIS must detect EY-Parthenon employees (via business unit/service line field) and apply the appropriate career hierarchy. The system maintains two progression models:
+
+- Standard EY progression: Staff → Senior → Manager → Senior Manager → Partner/ED
+- EY-Parthenon progression: Associate → Senior Associate → Consultant → Director → Senior Director → Partner
+
+### Role Expectations by Level
+
+| Level              | Primary Focus                                 | Key Metrics                                      | Advancement Signal                          |
+| ------------------ | --------------------------------------------- | ------------------------------------------------ | ------------------------------------------- |
+| **Staff**          | Learning, task execution                      | Effective utilization 95%+, skill development    | Curiosity, ownership, quick learning        |
+| **Senior**         | Project management, coaching juniors          | Effective utilization 90%+, technical depth      | Managing others, site leadership            |
+| **Manager**        | Multiple projects, client communication       | Effective utilization 85%+, engagement economics | People management, delivery quality         |
+| **Senior Manager** | Client relationships, sales, team development | Effective utilization 80%+, revenue generation   | BD capability, client trust                 |
+| **Partner**        | Practice leadership, rainmaking               | Effective utilization 70%+, book of business     | Strategic relationships, thought leadership |
+
+**Note:** All utilization percentages refer to effective utilization (accounts for PTO, holidays, sick time). See "Utilization Calculation Method" in Success Pattern Analysis section for details.
+
+### High Performer Exceptions (Skip Promotions)
+
+The model should account for accelerated advancement:
+
+- At EY, high performers may skip rank levels (e.g., Staff 1 → Staff 2 → Sr 1 → Sr 2 → Manager, skipping Sr 3)
+- More common in human capital/management consulting than technical/cyber roles
+- Skip promotions can occur at the standard 12-month minimum time-in-role requirement (not 18 months)
+- The "skip" refers to skipping rank progression levels, not the time requirement itself
+- Requires: Performance rating ≥4.5, effective utilization ≥95%, 2+ Gold badges, active sponsor
+
+## Promotion Eligibility Rules
+
+The recommendation engine must enforce these rules when suggesting promotion readiness:
+
+### Eligibility Criteria
+
+```
+promotion_eligibility = {
+    "minimum_time_in_role_months": 12,
+    "promotion_windows": ["January", "August"],
+    "track_record_window_days": 90,
+    "agile_promotion_eligible_transitions": [
+        "Staff → Senior",
+        "Senior → Manager",
+        "Manager → Senior Manager"
+    ]
+}
+```
+
+### Promotion Window Logic
+
+| Window      | Timing  | Type              | Notes                                           |
+| ----------- | ------- | ----------------- | ----------------------------------------------- |
+| **Regular** | August  | All promotions    | Main annual cycle, aligned with fiscal year end |
+| **Agile**   | January | Rank changes only | 7.5% raise at agile, remainder at August        |
+
+### Calibration Timeline
+
+- **Late May/June**: Calibration sessions held, promotion decisions made
+- **August**: Regular promotions effective
+- **January**: Agile promotions effective (moved from May)
+- **Implication**: Employees hired after March may miss the next promotion cycle
+
+### Skip Promotion Criteria
+
+```
+skip_promotion_eligible = (
+    performance_rating >= 4.5 AND
+    effective_utilization >= 95% AND
+    badges_gold_or_higher >= 2 AND
+    has_sponsor == True AND
+    time_in_role_months >= 12  # Standard minimum, skip refers to rank levels not time
+)
+```
+
+## Success Factors Beyond Metrics
+
+Research indicates that Big Four promotions depend significantly on factors beyond pure performance metrics. The model should capture these "soft factors":
+
+### The Sponsor Factor
+
+**Critical Finding:** "Big Four promotions depend more on politics and your boss having your back than your performance."
+
+| Factor       | What It Means                                 | How to Model                                            |
+| ------------ | --------------------------------------------- | ------------------------------------------------------- |
+| **Sponsor**  | Someone who advocates for you in calibration  | Count of senior relationships, upward feedback requests |
+| **Mentor**   | Someone who guides your development           | Formal mentor assignment, meeting frequency             |
+| **Champion** | Partner who will "fight for you" in committee | Cross-project senior relationships                      |
+
+**Model Recommendation:** Track `sponsor_score` based on:
+
+- Number of upward feedback requests sent
+- Relationships with senior managers/partners across projects
+- Participation in sponsor/mentee programs
+
+### Visibility Moves
+
+| Visibility Action                  | Impact     | Time Investment      |
+| ---------------------------------- | ---------- | -------------------- |
+| Lead internal community initiative | High       | 2-3 hrs/week ongoing |
+| Publish thought leadership content | High       | 4-8 hrs per piece    |
+| Present at internal events         | Medium     | 2-4 hrs per event    |
+| Mentor junior staff                | Medium     | 1-2 hrs/week         |
+| Participate in recruiting          | Low-Medium | Variable             |
+
+**Model Recommendation:** Track `visibility_score` based on internal initiative participation, content creation, and recognition patterns.
+
+### Personal Brand
+
+**Key Insight:** "Every business case from a prospective partner mentions their strong brand and how they are the 'Go-To Expert' for some technical specialism."
+
+- Specializing earlier rather than later accelerates advancement
+- Being known as a 'Go-To Expert' for specific domain knowledge
+- Badge specialization patterns indicate developing expertise
+
+**Model Recommendation:** Track `specialization_score` based on badge concentration in specific domains and recognition as subject matter expert.
+
+### The Politics Reality
+
+The model should surface this reality transparently:
+
+> "Your fate is decided by a collective deliberation in a closed room. The committee doesn't just read your review. They debate you, question your potential, and compare you. This is where merit ends, and politics enters."
+
+**Implications for SpringAIS:**
+
+- Show "sponsor gap" prominently if user lacks senior advocates
+- Recommend specific actions to build internal network
+- Never guarantee promotion outcomes—only show patterns
+
+## Service Line Translation
+
+When employees explore career pivots across service lines, the model must translate skills appropriately.
+
+### Audit → Tech Risk/Advisory Translation
+
+| Audit Skill                  | Translates To               | Match Confidence |
+| ---------------------------- | --------------------------- | ---------------- |
+| Risk assessment              | Cybersecurity risk, IT risk | High             |
+| Control testing              | IT controls, data analytics | High             |
+| Compliance frameworks        | Regulatory technology, GRC  | High             |
+| SOX experience               | IT Audit, internal audit    | High             |
+| Financial statement analysis | Data analytics, FP&A        | Medium           |
+| Client communication         | Consulting delivery         | Medium           |
+
+### Tax → Advisory Translation
+
+| Tax Skill                 | Translates To            | Match Confidence |
+| ------------------------- | ------------------------ | ---------------- |
+| Research & analysis       | Strategy research        | Medium           |
+| Client advisory           | Consulting delivery      | High             |
+| Regulatory interpretation | Compliance consulting    | High             |
+| International tax         | Global mobility advisory | High             |
+| Transaction structuring   | M&A advisory             | Medium           |
+
+### Consulting → Other Service Lines
+
+| Consulting Skill         | Translates To           | Match Confidence |
+| ------------------------ | ----------------------- | ---------------- |
+| Project management       | Any service line        | High             |
+| Client relationship      | Any service line        | High             |
+| Business analysis        | Strategy, Tax advisory  | High             |
+| Technical implementation | Technology consulting   | High             |
+| Change management        | Any transformation role | Medium           |
+
+### Internal Mobility Program (Mobility4U)
+
+- ~900 employees have started new mobility assignments via Mobility4U
+- 4,100+ employees on mobility assignments or one-way transfers
+- ~600 unique home/host country combinations
+- Fear of discovery is real—anonymous exploration is critical
+
 ## SaaS B2B Technical Requirements
 
 ### API Architecture
@@ -501,14 +726,28 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 - Performance review data structured for annual cycle (July-June fiscal year)
 - Calibration session outputs (ratings, development recommendations) modeled
 - Mobility4U program structure reflected (internal mobility portal patterns)
-- Agile promotions framework compatibility (quarterly promotion windows)
+- Agile promotions framework compatibility (twice-yearly: August regular, January agile)
+
+**PX360 Integration Architecture (Post-MVP):**
+
+- **X-data (Experience Data):** Employee satisfaction surveys, feedback themes, engagement scores from Qualtrics
+- **O-data (Operational Data):** Performance metrics, utilization rates, learning hours, compliance data from SuccessFactors
+- **Integration Pattern:** SpringAIS would consume both X-data and O-data to provide holistic career insights
+- **Use Cases:** Real-time employee experience friction indicators, sentiment analysis for feedback themes, combined operational + experience benchmarking
 
 **Credly Mock:**
 
 - OAuth 2.0-style badge metadata structure
-- 4-tier badge levels (Bronze/Silver/Gold/Platinum)
+- 5-tier badge levels:
+  - **Learning**: Foundational learning modules completed
+  - **Bronze**: Beginner experience, core work competency
+  - **Silver**: Intermediate experience, growing expertise
+  - **Gold**: Subject matter expert, supervisor-level competency
+  - **Platinum**: Global expert recognition, physical plaque awarded
+- **87 different badges available** across domains: Data Analytics, AI, blockchain, automation, transformational leadership, inclusive intelligence, data visualization, cybersecurity, sustainability, and more
 - Skill tags and issue dates per Credly API spec
 - Badge verification endpoints
+- No sequence required - employees can earn any badge regardless of category
 
 **O\*NET Mock:**
 
@@ -601,7 +840,7 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 │ • Estimated time to close: 6-8 weeks                        │
 │                                                             │
 │ SUCCESS PATTERN COMPARISON:                                 │
-│ • Your utilization: 78% → Target: 87% (gap: 9%)            │
+│ • Your effective utilization: 78% → Target: 87% (gap: 9%) │
 │ • Your mentees: 0 → Typical: 2+ (action needed)            │
 │ • Leadership feedback: Emerging → Target: Strong            │
 └─────────────────────────────────────────────────────────────┘
@@ -677,12 +916,19 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 
 ### 5. Success Pattern Analysis
 
-- FR30: System displays success patterns across six metric categories
-- FR31: Employees can compare their metrics to advancement benchmarks
-- FR32: System shows Career Competitiveness Dashboard with visual indicators
-- FR33: Employees can view Nine Box position indicators (Performance × Potential)
-- FR34: System provides specific behavioral recommendations based on patterns
-- FR35: System generates nudges when metrics deviate from success patterns
+- FR30: System displays success patterns across six metric categories (Financial, Compliance, Quality, Development, People, Feedback)
+- FR31: Employees can compare their metrics to advancement benchmarks specific to their target level
+- FR32: System shows Career Competitiveness Dashboard with visual indicators for each metric category
+- FR33: Employees can view Nine Box position indicators (Performance × Potential matrix)
+- FR34: System provides specific behavioral recommendations based on patterns (sponsor gap, visibility moves, badge recommendations)
+- FR35: System generates nudges when metrics deviate from success patterns (e.g., "Your effective utilization is 72% - patterns show 87% average for Manager advancement")
+- FR35A: System calculates and displays `sponsor_score` based on senior relationships and upward feedback requests
+- FR35B: System calculates and displays `visibility_score` based on internal initiatives and content creation
+- FR35C: System accounts for inverse utilization relationship (targets decrease as seniority increases)
+- FR35D: System validates promotion eligibility against minimum time-in-role and promotion window timing
+- FR35E: System applies service line translation when matching employees to cross-service-line opportunities
+- FR35F: System calculates effective utilization (accounts for PTO, holidays, sick time) for all utilization targets
+- FR35G: System detects EY-Parthenon employees and applies appropriate career hierarchy model
 
 ### 6. Two-Sided Anonymous Matching
 
@@ -715,21 +961,25 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 - FR56: System enforces "patterns not promises" language in all outputs
 - FR57: Admins can generate compliance reports
 - FR58: System tracks all data access for privacy compliance
+- FR59: Managers can generate calibration-ready employee summaries with evidence and metrics
+- FR60: Managers can export calibration session materials (evidence summaries, peer comparables, KPI trends)
+- FR61: System provides peer comparables (anonymized benchmarking) for calibration sessions
+- FR62: System tracks calibration outcomes (rating adjustments, rationale) for audit trail
 
 ### 9. Explainability & Transparency
 
-- FR59: Users can view "Show reasoning" panels for any inference or match
-- FR60: System displays step-by-step processing during skill inference
-- FR61: Users can access confidence meters with explanation tooltips
-- FR62: Users can click "Why this recommendation?" on any suggestion
-- FR63: System provides audit trail access from any decision point
+- FR63: Users can view "Show reasoning" panels for any inference or match
+- FR64: System displays step-by-step processing during skill inference
+- FR65: Users can access confidence meters with explanation tooltips
+- FR66: Users can click "Why this recommendation?" on any suggestion
+- FR67: System provides audit trail access from any decision point
 
 ### 10. Real-Time Communication
 
-- FR64: System sends real-time notifications for key events
-- FR65: Employees receive notifications when matched to new roles
-- FR66: Hiring managers receive notifications when candidates opt in
-- FR67: Users receive feedback on processing status during inference
+- FR68: System sends real-time notifications for key events
+- FR69: Employees receive notifications when matched to new roles
+- FR70: Hiring managers receive notifications when candidates opt in
+- FR71: Users receive feedback on processing status during inference
 
 ## Non-Functional Requirements
 
