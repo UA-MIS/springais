@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:www.getzep.com)",
+      "WebFetch(domain:weaviate.io)"
     ]
   }
 }
