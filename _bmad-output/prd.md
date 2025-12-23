@@ -24,7 +24,7 @@ date: "2025-12-18"
 
 **Author:** Clays
 **Date:** 2025-12-18
-**Last Updated:** 2025-12-23 (Major tech stack overhaul: Azure AD B2C for auth/SSO, Azure Blob Storage for uploads, Azure Application Insights + Sentry for observability, Azure Key Vault for secrets, PostgreSQL + pgvector for vector search (no Chroma in MVP), Redis for caching, GitHub Actions for CI/CD; refined: text-embedding-3-large for vectorization (3072-D), GPT-5.2 for extraction/generation, proficiency context through aggregate skill profiles, pre-cached common skills, aggregate matching algorithm, threshold-based search, synonym handling, two parallel processes, natural progression always shown, trajectory-based path comparison with wall detection, lateral move display when aligned, multi-skill extraction per quote, per-skill embedding architecture with caching, multiple opt-ins allowed, terminal level handling, trajectory depth limit, time estimate source, translation confidence weighting)
+**Last Updated:** 2025-12-23 (Major tech stack overhaul: Azure AD B2C for auth/SSO, Azure Blob Storage for uploads, LangSmith for GPT-5.2 observability + Azure Application Insights for embedding metrics + Sentry for error tracking, Azure Key Vault for secrets, PostgreSQL + pgvector for vector search (no Chroma in MVP), Redis for caching, GitHub Actions for CI/CD; development accelerators: FastAPI boilerplate template, React admin template, LangChain examples, React Flow examples; refined: text-embedding-3-large for vectorization (3072-D), GPT-5.2 for extraction/generation, proficiency context through aggregate skill profiles, pre-cached common skills, aggregate matching algorithm, threshold-based search, synonym handling, two parallel processes, natural progression always shown, trajectory-based path comparison with wall detection, lateral move display when aligned, multi-skill extraction per quote, per-skill embedding architecture with caching, multiple opt-ins allowed, terminal level handling, trajectory depth limit, time estimate source, translation confidence weighting)
 
 ---
 
@@ -156,14 +156,19 @@ SpringAIS solves this through three breakthrough innovations:
 
 - Docker + docker-compose deployment
 - FastAPI backend + PostgreSQL schema (pgvector enabled)
+  - Use `tiangolo/full-stack-fastapi-template` for project structure (saves 1-2 days)
 - Redis caching layer (sessions + LLM caching)
 - Azure AD B2C authentication (SSO-ready) integrated from day 1 (dev == prod auth flow)
 - Azure Blob Storage for document uploads integrated from day 1 (dev == prod storage behavior)
-- Observability baseline: Azure Application Insights + Sentry
+- Observability baseline: LangSmith (GPT-5.2 calls) + Azure Application Insights (embedding calls + general metrics) + Sentry (error tracking)
 - Secrets: Azure Key Vault (prod) + local `.env` (dev), with a clear migration path
 - CI/CD: GitHub Actions deploy pipeline for private repo (build/test/deploy)
 - React frontend + shadcn/ui
+  - Use `shadcn/ui-admin` or `refine.dev` for admin dashboard boilerplate (saves 2-3 days)
 - User authentication (login, roles) via Azure AD B2C
+- Development accelerators:
+  - LangChain examples for prompt engineering patterns (saves 0.5-1 day)
+  - React Flow examples for career path visualization setup (saves 1 day)
 
 **Epic 2: AI Skill Inference Pipeline**
 
@@ -171,6 +176,9 @@ SpringAIS solves this through three breakthrough innovations:
 - Dual LLM validation (extract + validate with quotes)
 - Confidence scoring
 - Vector embeddings generation
+- Token counting (tiktoken) for accurate cost tracking
+- Retry logic (tenacity) for API resilience
+- LangSmith integration for GPT-5.2 observability (prompt/response tracing, debugging)
 
 **Epic 3: Matching Engine**
 
@@ -537,7 +545,12 @@ Flag any step in a trajectory with <50% match as a "wall." This helps employees 
 
 **Cost Monitoring:**
 
-- Per-request cost tracking in audit logs
+- Per-request cost tracking in audit logs (via tiktoken token counting)
+- Accurate token counting before/after API calls (tiktoken)
+- **Split observability strategy:**
+  - **LangSmith:** GPT-5.2 calls (skill extraction, validation) - full prompt/response tracing, token usage, cost per call
+  - **Application Insights:** Embedding calls (text-embedding-3-large) - aggregate metrics (counts, costs, latency)
+- Token counts sent to Application Insights as custom metrics
 - Alert thresholds: >$0.50/inference triggers review
 - Weekly cost reports for API usage patterns
 - Caching effectiveness metrics (target: >60% cache hit rate)
@@ -1175,8 +1188,11 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 - NFR14: System operates without crashes during demo scenarios
 - NFR15: Same input produces consistent output (deterministic within tolerance)
 - NFR16: Graceful degradation when external APIs (OpenAI) are slow or unavailable
+  - Retry logic (tenacity) handles transient failures with exponential backoff
+  - Rate limit handling prevents API throttling
 - NFR17: Error messages are user-friendly and actionable
 - NFR18: System recovers from container restart without data loss
+- NFR19: Accurate cost tracking via token counting (tiktoken) with <5% estimation error
 
 ### Integration & Interoperability
 
