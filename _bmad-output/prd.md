@@ -24,7 +24,7 @@ date: "2025-12-18"
 
 **Author:** Clays
 **Date:** 2025-12-18
-**Last Updated:** 2025-12-23 (Refined: text-embedding-3-large for vectorization (3072-D), GPT-5.2 for extraction/generation, proficiency context through aggregate skill profiles, pre-cached common skills, aggregate matching algorithm, threshold-based search, synonym handling, two parallel processes, natural progression always shown, trajectory-based path comparison with wall detection, lateral move display when aligned, multi-skill extraction per quote, per-skill embedding architecture with caching, multiple opt-ins allowed, terminal level handling, trajectory depth limit, time estimate source, translation confidence weighting)
+**Last Updated:** 2025-12-23 (Major tech stack overhaul: Azure AD B2C for auth/SSO, Azure Blob Storage for uploads, Azure Application Insights + Sentry for observability, Azure Key Vault for secrets, PostgreSQL + pgvector for vector search (no Chroma in MVP), Redis for caching, GitHub Actions for CI/CD; refined: text-embedding-3-large for vectorization (3072-D), GPT-5.2 for extraction/generation, proficiency context through aggregate skill profiles, pre-cached common skills, aggregate matching algorithm, threshold-based search, synonym handling, two parallel processes, natural progression always shown, trajectory-based path comparison with wall detection, lateral move display when aligned, multi-skill extraction per quote, per-skill embedding architecture with caching, multiple opt-ins allowed, terminal level handling, trajectory depth limit, time estimate source, translation confidence weighting)
 
 ---
 
@@ -122,7 +122,7 @@ SpringAIS solves this through three breakthrough innovations:
 **Core Technical Requirements:**
 
 - Dual LLM validation working (extract + validate with quotes)
-- Pure vector semantic matching operational (Chroma + text-embedding-3-large)
+- Pure vector semantic matching operational (PostgreSQL + pgvector + text-embedding-3-large)
 - Success pattern analysis across 6 metric categories
 - Career Journey Map visualization renders correctly (React Flow)
 - Anonymous matching with tokenization functional
@@ -130,7 +130,7 @@ SpringAIS solves this through three breakthrough innovations:
 
 **Performance Benchmarks:**
 
-- Chroma vector queries: <350ms p95 (demo scale), <50ms p95 with Qdrant (production)
+- pgvector similarity queries: <350ms p95 (demo scale), <50ms p95 with Qdrant (optional production upgrade)
 - Cached skill inference: <3s (semantic cache hit)
 - Uncached skill inference: <15s (full dual LLM pipeline)
 - Role matching: <2s for top-10 results
@@ -152,12 +152,18 @@ SpringAIS solves this through three breakthrough innovations:
 
 ### MVP - All Epics (8 Weeks)
 
-**Epic 1: Authentication & Infrastructure**
+**Epic 1: Azure Infrastructure, Identity, and Dev/Prod Parity**
 
 - Docker + docker-compose deployment
-- FastAPI backend + PostgreSQL schema
+- FastAPI backend + PostgreSQL schema (pgvector enabled)
+- Redis caching layer (sessions + LLM caching)
+- Azure AD B2C authentication (SSO-ready) integrated from day 1 (dev == prod auth flow)
+- Azure Blob Storage for document uploads integrated from day 1 (dev == prod storage behavior)
+- Observability baseline: Azure Application Insights + Sentry
+- Secrets: Azure Key Vault (prod) + local `.env` (dev), with a clear migration path
+- CI/CD: GitHub Actions deploy pipeline for private repo (build/test/deploy)
 - React frontend + shadcn/ui
-- User authentication (login, roles)
+- User authentication (login, roles) via Azure AD B2C
 
 **Epic 2: AI Skill Inference Pipeline**
 
@@ -168,7 +174,7 @@ SpringAIS solves this through three breakthrough innovations:
 
 **Epic 3: Matching Engine**
 
-- Chroma vector database integration
+- PostgreSQL + pgvector similarity search (no separate vector DB in MVP)
 - Semantic similarity matching
 - Match scoring with confidence intervals
 - Multi-mode discovery (Best Fit, Stretch, Exploratory, Trending)
@@ -422,21 +428,21 @@ The system uses threshold-based search rather than arbitrary top-K limits:
 
 **Discovery Mode Thresholds:**
 
-| Mode | Threshold | Purpose |
-|------|-----------|---------|
-| Best Fit | ≥75% | Roles employee is highly qualified for |
-| Stretch | 50-74% | Roles requiring growth but achievable |
-| Exploratory | 30-49% | Career pivots, hidden opportunities |
-| Trending | N/A | Emerging high-demand roles (separate logic) |
+| Mode        | Threshold | Purpose                                     |
+| ----------- | --------- | ------------------------------------------- |
+| Best Fit    | ≥75%      | Roles employee is highly qualified for      |
+| Stretch     | 50-74%    | Roles requiring growth but achievable       |
+| Exploratory | 30-49%    | Career pivots, hidden opportunities         |
+| Trending    | N/A       | Emerging high-demand roles (separate logic) |
 
 **Two Parallel Processes:**
 
 SpringAIS runs two separate analyses that combine for the full picture:
 
-| Process | Question Answered | Data Source |
-|---------|-------------------|-------------|
-| **Vector Matching** | "What roles could you DO based on skills?" | Extracted skills vs role requirements |
-| **Success Pattern Analysis** | "Will EY actually PROMOTE you to that level?" | EY metrics vs advancement benchmarks |
+| Process                      | Question Answered                             | Data Source                           |
+| ---------------------------- | --------------------------------------------- | ------------------------------------- |
+| **Vector Matching**          | "What roles could you DO based on skills?"    | Extracted skills vs role requirements |
+| **Success Pattern Analysis** | "Will EY actually PROMOTE you to that level?" | EY metrics vs advancement benchmarks  |
 
 Both are required. An employee could have perfect skill match for a Manager role but never get promoted due to low utilization and no mentees. Conversely, perfect EY metrics don't help if you lack the technical skills for a specific role.
 
@@ -446,11 +452,11 @@ The system always shows the employee's natural EY progression (next level in the
 
 **Natural Progression States:**
 
-| State | Match to Next Level | UI Behavior |
-|-------|---------------------|-------------|
-| **Aligned** | ≥75% | Single "Your Path" view, celebratory, show remaining gaps |
-| **Stretch** | 50-74% | "Your path is a stretch" with gap closure timeline |
-| **Misaligned** | <50% | Honest assessment + prominently surface better alternatives |
+| State          | Match to Next Level | UI Behavior                                                 |
+| -------------- | ------------------- | ----------------------------------------------------------- |
+| **Aligned**    | ≥75%                | Single "Your Path" view, celebratory, show remaining gaps   |
+| **Stretch**    | 50-74%              | "Your path is a stretch" with gap closure timeline          |
+| **Misaligned** | <50%                | Honest assessment + prominently surface better alternatives |
 
 **Always Show Natural Progression:** The employee's next EY level bypasses match thresholds because:
 
@@ -786,15 +792,15 @@ When employees explore career pivots across service lines, the model must transl
 
 **Core API Endpoints:**
 
-| Endpoint Group      | Purpose           | Key Operations                              |
-| ------------------- | ----------------- | ------------------------------------------- |
-| `/api/v1/auth`      | Authentication    | Login, logout, token refresh                |
-| `/api/v1/employees` | Employee profiles | CRUD, skill upload, profile view            |
-| `/api/v1/skills`    | Skill inference   | Upload docs, get extracted skills, validate |
-| `/api/v1/matches`   | Role matching     | Get matches, match details, opt-in/out      |
-| `/api/v1/roles`     | Role management   | CRUD for hiring managers                    |
-| `/api/v1/journeys`  | Career paths      | Get journey map, upskilling paths           |
-| `/api/v1/admin`     | Governance        | Audit logs, fairness metrics, reports       |
+| Endpoint Group      | Purpose           | Key Operations                                                                                         |
+| ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------ |
+| `/api/v1/auth`      | Authentication    | Azure AD B2C OIDC integration (login redirect/callback), JWT validation utilities, role/claims mapping |
+| `/api/v1/employees` | Employee profiles | CRUD, skill upload, profile view                                                                       |
+| `/api/v1/skills`    | Skill inference   | Upload docs, get extracted skills, validate                                                            |
+| `/api/v1/matches`   | Role matching     | Get matches, match details, opt-in/out                                                                 |
+| `/api/v1/roles`     | Role management   | CRUD for hiring managers                                                                               |
+| `/api/v1/journeys`  | Career paths      | Get journey map, upskilling paths                                                                      |
+| `/api/v1/admin`     | Governance        | Audit logs, fairness metrics, reports                                                                  |
 
 ### Real-Time & Processing Architecture
 
@@ -828,7 +834,7 @@ When employees explore career pivots across service lines, the model must transl
 
 - Redis for response and semantic caching
 - LangChain caching layer for LLM responses
-- Chroma stores embeddings persistently (no regeneration needed)
+- PostgreSQL + pgvector stores embeddings persistently (no regeneration needed)
 
 **Integrity Safeguards:**
 
@@ -903,11 +909,16 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 ┌─────────────────────────────────────────────────────────────┐
 │                    docker-compose                            │
 ├─────────────┬─────────────┬──────────┬─────────┬────────────┤
-│   Frontend  │   Backend   │ PostgreSQL│  Chroma │   Redis    │
-│   (React)   │  (FastAPI)  │  + pgvector│ (Vector)│  (Cache)   │
-│   :3000     │    :8000    │   :5432   │  :8001  │   :6379    │
+│   Frontend  │   Backend   │ PostgreSQL│   Redis │  External  │
+│   (React)   │  (FastAPI)  │  + pgvector│  (Cache)│  (Azure)   │
+│   :3000     │    :8000    │   :5432   │  :6379  │ Blob + B2C  │
 └─────────────┴─────────────┴──────────┴─────────┴────────────┘
 ```
+
+**External (Azure) Dependencies Used During Dev (Intentional):**
+
+- Azure Blob Storage (resume/document uploads) — avoids emulator edge cases (CORS/SAS/SDK differences)
+- Azure AD B2C (auth/SSO) — avoids mock auth drift (real OIDC tokens/redirects)
 
 **Hardware Considerations:**
 
@@ -921,9 +932,8 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 - Backend: 2GB RAM minimum
 - Frontend: 512MB RAM
 - PostgreSQL: 1GB RAM
-- Chroma: 512MB RAM
 - Redis: 256MB RAM
-- Total: ~4.5GB RAM for full stack
+- Total: ~3.8GB RAM for full stack (plus external Azure services)
 
 ### Explainability UI - Visible Thought Process
 
@@ -1005,14 +1015,14 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 
 ### 1. User Authentication & Profile Management
 
-- FR1: Users can create accounts with role assignment (Employee, Hiring Manager, Admin)
-- FR2: Users can authenticate using email/password credentials
+- FR1: Users sign up/sign in via Azure AD B2C; first login provisions an application profile and assigns an application role (Employee, Hiring Manager, Admin)
+- FR2: Users authenticate via Azure AD B2C (OIDC), enabling enterprise SSO and managed identity flows (no app-stored passwords)
 - FR3: Users can view and edit their own profile information
 - FR4: Employees can upload documents (resume, certifications, project descriptions)
 - FR5: Employees can view their Credly badges imported from the system
 - FR6: Employees can see their complete skill profile with confidence levels
-- FR7: Admins can manage user accounts and role assignments
-- FR8: System maintains session state with secure token refresh
+- FR7: Admins can manage application user access/roles (role mapping stored in app DB and/or derived from Azure AD B2C claims/groups)
+- FR8: System maintains session state using Azure AD B2C issued JWTs; backend validates tokens and derives roles/claims for RBAC
 
 ### 2. Skill Extraction & Inference
 
@@ -1053,7 +1063,7 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 - FR25C: Trajectory comparison enables informed career decisions (easy now vs smooth later trade-offs)
 - FR26: Employees can see progress visualization ("50% → 70% if you complete X, Y, Z")
 - FR27: System generates personalized upskilling paths with time estimates
-- FR27A: Time estimates are generated by LLM based on: EY Badges Learning module durations, O*NET skill acquisition data, and industry-standard certification timelines
+- FR27A: Time estimates are generated by LLM based on: EY Badges Learning module durations, O\*NET skill acquisition data, and industry-standard certification timelines
 - FR28: System recommends specific actions (certifications, courses, experiences)
 - FR29: Employees can track progress against their development plan
 
@@ -1153,9 +1163,9 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 ### Security & Privacy
 
 - NFR7: All employee PII is tokenized before use in matching algorithms
-- NFR8: User passwords are hashed using bcrypt before storage
+- NFR8: No user passwords are stored by the application (authentication handled by Azure AD B2C); backend validates Azure-issued JWTs
 - NFR9: All API communications use HTTPS/TLS encryption
-- NFR10: JWT tokens expire after 15 minutes with refresh mechanism
+- NFR10: Access is controlled by Azure AD B2C JWTs; token lifetimes/refresh are configured in Azure AD B2C (the app validates tokens and enforces RBAC)
 - NFR11: Audit logs capture all sensitive operations with immutable timestamps
 - NFR12: Identity is never revealed to hiring managers until mutual opt-in
 - NFR13: Database at rest encryption enabled for production deployment
@@ -1189,5 +1199,5 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 - NFR29: Entire system deployable via single `docker-compose up` command
 - NFR30: Hot-reload enabled for development (no restart for code changes)
 - NFR31: Structured logging (JSON format) for all application events
-- NFR32: Environment variables for all configuration (no hardcoded secrets)
+- NFR32: Configuration via environment variables for local/dev and Azure Key Vault for production secrets (no hardcoded secrets)
 - NFR33: Total memory footprint under 6GB for full stack
