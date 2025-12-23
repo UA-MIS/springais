@@ -111,6 +111,20 @@ SpringAIS leverages Azure Student Tier services and open-source frameworks to mi
 - **LangChain** - LLM orchestration, prompt management, semantic caching
 - **LlamaIndex** - RAG pipeline structure, document parsing, chunking
 - **OpenAI SDK** - Direct API calls for GPT-5.2 Instant and text-embedding-3-large
+- **LangSmith** - LLM observability for GPT-5.2 calls (skill extraction, validation)
+  - Traces GPT-5.2 prompt/response pairs for debugging
+  - Token usage tracking per call
+  - Cost attribution per feature
+  - Prompt versioning and A/B testing
+  - Free tier: 5K traces/month (covers MVP GPT-5.2 calls)
+  - **Why separate from embeddings:** Purpose-built for LLM debugging, not needed for simple embedding API calls
+- **tiktoken** - Accurate token counting for cost estimation and monitoring
+  - Counts tokens before/after API calls for precise cost tracking
+  - Sends token counts to Application Insights as custom metrics
+  - More accurate than character-count approximations (20-30% improvement)
+- **tenacity** - Retry logic with exponential backoff for OpenAI API
+  - Handles rate limits and transient failures gracefully
+  - Configurable retry strategies for production resilience
 
 **File Storage:**
 
@@ -120,6 +134,14 @@ SpringAIS leverages Azure Student Tier services and open-source frameworks to mi
   - Tests real SDK behavior and CORS configurations
   - Catches Azure-specific edge cases early
   - **Why not Azurite:** SDK differences, CORS edge cases, large file handling differs
+
+**Document Processing:**
+
+- **LlamaIndex** - Primary document parsing (PDF, Word, text) via RAG pipeline
+- **pdfplumber** (optional backup) - Enhanced PDF text extraction if LlamaIndex parsing insufficient
+  - Handles complex layouts, tables, headers better than basic PDF libraries
+  - Fallback for edge cases LlamaIndex may miss
+- **python-docx** (optional backup) - Word document parsing if LlamaIndex needs assistance
 
 **Authentication:**
 
@@ -137,15 +159,34 @@ SpringAIS leverages Azure Student Tier services and open-source frameworks to mi
 
 **Monitoring & Logging:**
 
-- **Azure Application Insights** - Automatic monitoring, performance tracking (free on Student Tier)
+- **LangSmith** - LLM observability for GPT-5.2 calls (skill extraction, validation)
+  - Traces GPT-5.2 prompt/response pairs
+  - Token usage and cost per call
+  - Prompt debugging and versioning
+  - Free tier: 5K traces/month (sufficient for MVP)
+  - **Scope:** Only GPT-5.2 calls (not embedding calls)
+- **Azure Application Insights** - Monitoring for embeddings and general metrics (free on Student Tier)
   - Auto-instrumentation with App Service
-  - Custom metrics for LLM costs, cache hit rates, response times
+  - Custom metrics for embedding calls (text-embedding-3-large):
+    - Embedding call counts
+    - Embedding costs (aggregate)
+    - Embedding latency
+  - Custom metrics for general system metrics:
+    - Cache hit rates
+    - Response times
+    - Error rates
   - Per PRD requirement: "Cost monitoring" and "Performance benchmarks"
+  - Receives token counts from tiktoken for accurate cost tracking
+  - **Scope:** Embedding calls + general system metrics (not GPT-5.2 detailed traces)
 - **structlog** - Structured JSON logging (Azure App Insights compatible)
 - **Sentry** (recommended) - Error tracking and alerting (free tier: 5K events/month)
   - Better than custom error tracking
   - Automatic error grouping, stack traces
   - Alerts for critical errors
+- **tiktoken** - Token counting for accurate LLM cost estimation
+  - Counts tokens before/after OpenAI API calls
+  - Sends token counts to Application Insights as custom metrics
+  - Enables precise cost monitoring (vs. character-count approximations)
 
 **Secrets Management:**
 
@@ -330,6 +371,45 @@ class ONetClient:
 - Document loading (resume uploads)
 - Chunking strategy (for large documents)
 - Vector store integration (pgvector)
+
+### LangSmith Integration
+
+**Purpose:** LLM observability for GPT-5.2 calls (skill extraction, validation)
+
+**Use Cases:**
+
+- Trace GPT-5.2 prompt/response pairs
+- Debug skill extraction logic
+- Track token usage and costs per call
+- Prompt versioning and A/B testing
+
+**Integration Points:**
+
+- Skill extraction pipeline (GPT-5.2 calls)
+- Dual LLM validation pipeline (GPT-5.2 calls)
+- **Not used for:** Embedding calls (text-embedding-3-large) - tracked in Application Insights instead
+
+**Implementation:**
+
+```python
+from langsmith import traceable
+
+@traceable(name="skill_extraction")
+def extract_skills(resume_text: str):
+    # GPT-5.2 call traced in LangSmith
+    response = openai.chat.completions.create(
+        model="gpt-5.2-instant",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response
+```
+
+**Why Separate from Embeddings:**
+
+- GPT-5.2 calls need full observability (prompts, responses, debugging)
+- Embedding calls are simple API calls (metrics sufficient)
+- Keeps LangSmith trace count low (free tier: 5K traces/month)
+- Right tool for the right job
 
 ### LangChain Integration
 
@@ -542,8 +622,24 @@ docker-compose up
 | **Graph Visualization**     | React Flow       | 3-4 days   | Interactive node graphs for career paths       |
 | **Background Jobs**         | Azure Functions  | 2-3 days   | Async processing without job queues            |
 | **Database Management**     | Azure PostgreSQL | Ongoing    | Backups, scaling, maintenance handled          |
+| **Token Counting**          | tiktoken         | 0.5 days   | Accurate cost estimation vs. approximations    |
+| **Retry Logic**             | tenacity         | 0.5 days   | Handles API rate limits and transient failures |
+| **LLM Observability**       | LangSmith        | 0.5 days   | GPT-5.2 prompt/response tracing (free tier)    |
 
 **Total Time Saved: ~6-8 weeks**
+
+### Development Templates & Accelerators
+
+| Component                | Solution                               | Time Saved | Notes                                         |
+| ------------------------ | -------------------------------------- | ---------- | --------------------------------------------- |
+| **FastAPI Boilerplate**  | `tiangolo/full-stack-fastapi-template` | 1-2 days   | FastAPI + React starter, project structure    |
+| **React Admin Template** | `shadcn/ui-admin` or `refine.dev`      | 2-3 days   | Admin dashboard boilerplate, saves UI setup   |
+| **LangChain Examples**   | LangChain docs + OpenAI cookbook       | 0.5-1 day  | Prompt engineering patterns, skill extraction |
+| **React Flow Examples**  | `reactflow/examples` (official)        | 1 day      | Career path visualization setup patterns      |
+
+**Total Time Saved: ~4-7 days** (development setup acceleration)
+
+**Note:** These templates accelerate setup and provide patterns, but core business logic (aggregate matching algorithm, dual LLM validation, success pattern analysis, two-sided matching) must be custom-built as they are unique differentiators.
 
 ---
 
@@ -581,16 +677,20 @@ docker-compose up
 
 ### Integration Code
 
-| Component             | Description                               | Complexity | Est. Time |
-| --------------------- | ----------------------------------------- | ---------- | --------- |
-| **O\*NET Client**     | API wrapper for skills/occupations        | Low        | 0.5 days  |
-| **LLM Service**       | Abstraction for skill extraction calls    | Low        | 0.5 days  |
-| **Embedding Service** | Generate + cache embeddings               | Low        | 0.5 days  |
-| **Azure Blob Client** | Upload/download resume files              | Low        | 0.5 days  |
-| **Auth Middleware**   | Azure AD B2C token validation             | Low        | 0.5 days  |
-| **Monitoring Setup**  | Application Insights + Sentry integration | Low        | 0.5 days  |
-| **Key Vault Client**  | Secrets management integration            | Low        | 0.5 days  |
-| **CI/CD Pipeline**    | GitHub Actions deployment setup           | Low        | 0.5 days  |
+| Component             | Description                                          | Complexity | Est. Time |
+| --------------------- | ---------------------------------------------------- | ---------- | --------- |
+| **O\*NET Client**     | API wrapper for skills/occupations                   | Low        | 0.5 days  |
+| **LLM Service**       | Abstraction for skill extraction calls               | Low        | 0.5 days  |
+| **Embedding Service** | Generate + cache embeddings                          | Low        | 0.5 days  |
+| **Azure Blob Client** | Upload/download resume files                         | Low        | 0.5 days  |
+| **Auth Middleware**   | Azure AD B2C token validation                        | Low        | 0.5 days  |
+| **Monitoring Setup**  | Application Insights + Sentry + tiktoken integration | Low        | 0.5 days  |
+| **LangSmith Setup**   | LLM observability for GPT-5.2 calls                  | Low        | 0.5 days  |
+| **Key Vault Client**  | Secrets management integration                       | Low        | 0.5 days  |
+| **CI/CD Pipeline**    | GitHub Actions deployment setup                      | Low        | 0.5 days  |
+| **Retry Logic**       | tenacity integration for OpenAI API                  | Low        | 0.5 days  |
+
+**Note:** Development templates (FastAPI boilerplate, React admin template, LangChain examples, React Flow examples) save ~4-7 days on setup and common patterns, but core business logic (matching algorithm, dual LLM validation, success patterns) must be custom-built.
 
 ---
 
@@ -823,14 +923,39 @@ docker-compose up
 
 ### Performance Monitoring
 
-- **Azure Application Insights** (built-in with App Service)
-- Automatic instrumentation (no code changes needed)
-- Custom metrics for:
-  - LLM API call counts (per PRD: cost monitoring)
-  - Cache hit rates (per PRD: >60% semantic cache target)
-  - Response times (per PRD: <15s uncached, <3s cached)
-  - Error rates
-- **Why use it:** Free on Student Tier, automatic setup (saves 2-3 days)
+**Split Observability Strategy:**
+
+- **LangSmith** - GPT-5.2 call observability
+
+  - Full prompt/response tracing for skill extraction and validation
+  - Token usage per call
+  - Cost attribution per feature
+  - Prompt versioning and debugging
+  - Free tier: 5K traces/month (covers MVP GPT-5.2 usage)
+  - **Why separate:** Purpose-built for LLM debugging, not needed for simple embedding metrics
+
+- **Azure Application Insights** - Embedding calls and general metrics
+  - Automatic instrumentation (no code changes needed)
+  - Custom metrics for:
+    - Embedding call counts (text-embedding-3-large)
+    - Embedding costs (aggregate)
+    - Embedding latency
+    - Cache hit rates (per PRD: >60% semantic cache target)
+    - Response times (per PRD: <15s uncached, <3s cached)
+    - Error rates
+  - **tiktoken** integration:
+    - Counts tokens before/after OpenAI API calls
+    - Sends token counts to Application Insights
+    - Enables accurate cost tracking (vs. character-count approximations)
+  - **Why use it:** Free on Student Tier, automatic setup (saves 2-3 days)
+  - **Why separate:** Simple metrics tracking, no need for full LLM debugging features
+
+**Rationale for Split:**
+
+- GPT-5.2 calls need full observability (prompts, responses, debugging) → LangSmith
+- Embedding calls are simple API calls → Application Insights metrics sufficient
+- Keeps LangSmith trace count low (only GPT-5.2, not bulk embeddings)
+- Right tool for the right job
 
 ### Secrets Management
 
@@ -885,6 +1010,13 @@ docker-compose up
 - [O\*NET API](https://www.onetcenter.org/web-services.html) - Skills taxonomy API
 - [React Flow](https://reactflow.dev/) - Node graph visualization
 - [shadcn/ui](https://ui.shadcn.com/) - React component library
+- [tiktoken](https://github.com/openai/tiktoken) - Token counting for cost estimation
+- [tenacity](https://github.com/jd/tenacity) - Retry logic with exponential backoff
+- [pdfplumber](https://github.com/jsvine/pdfplumber) - PDF text extraction (optional backup)
+- [LangSmith](https://www.langchain.com/langsmith) - LLM observability for GPT-5.2 calls
+- [FastAPI Full Stack Template](https://github.com/tiangolo/full-stack-fastapi-template) - FastAPI + React boilerplate
+- [React Flow Examples](https://reactflow.dev/examples) - Career path visualization patterns
+- [LangChain Examples](https://python.langchain.com/docs/get_started/introduction) - LLM integration patterns
 
 ---
 
