@@ -2,10 +2,11 @@
 
 ## Senior Partner Review - Valent
 
-**Date:** 2025-12-20  
-**Prepared for:** Senior Partner, Valent  
-**Purpose:** Project review and strategic feedback  
+**Date:** 2025-12-23
+**Prepared for:** Senior Partner, Valent
+**Purpose:** Project review and strategic feedback
 **Project:** SpringAIS - Career Discovery and Development Platform
+**Last Updated:** 2025-12-23 (Refined matching algorithm, trajectory comparison, natural progression handling, multiple opt-ins, terminal level, trajectory depth, time estimates, translation confidence)
 
 ---
 
@@ -13,7 +14,7 @@
 
 **What is SpringAIS?** SpringAIS is a software tool that helps employees find new job opportunities within their company and shows them exactly what they need to do to get promoted. Think of it like a career GPS: instead of just telling you where you are, it shows you where you could go and gives you turn-by-turn directions to get there.
 
-**The Competition:** We're building this for the **EY Artificial Intelligence Competition** at SCLC 2026. Our submission is due February 16, 2026.
+**The Competition:** We're building this for the **EY Artificial Intelligence Competition** at SCLC 2026 (Student Conference on Leadership and Change, hosted by the Association for Information Systems). Our submission is due February 16, 2026.
 
 **How It's Different from Traditional Systems:** Most job-matching systems work like a simple search engine—they look for exact word matches. For example, if a job requires "cloud architecture" experience, but your resume says "AWS" or "Azure," the system won't recognize that these are the same thing. SpringAIS understands that these terms mean the same thing, just like a human would.
 
@@ -176,16 +177,16 @@ Judges will score us on:
 
 ### The Problem: Internal Job Mobility
 
-- **Mobility4U Program:** EY has a program to help employees move between roles. About 900 employees started new assignments, and 4,100+ are currently on temporary assignments in different roles.
+- **Mobility4U Program:** EY's global program (launched September 2021) that helps employees move between roles. Since launch, ~900 employees have started new mobility assignments, and 4,100+ employees are currently on mobility assignments or one-way transfers (cumulative numbers).
 - **Fear of Discovery:** Many employees are afraid to explore internal opportunities because they worry their current manager will find out and it might hurt their current role.
 - **Skills Transfer Across Departments:** Skills from one department can apply to others. For example, someone in Audit could move to Tech Risk, or someone in Tax could move to Advisory.
 
 ### EY's Existing Technology Systems
 
 - **SuccessFactors:** EY's main HR system that stores employee information, performance reviews, and training records
-- **EY PX360:** A system that combines employee experience data (how employees feel) with operational data (how they perform)
+- **EY PX360:** A system that combines employee experience data (X-data: how employees feel) with operational data (O-data: how they perform) to provide real-time insights
 - **Credly:** A system that issues and verifies digital badges (like certificates) for skills employees have learned
-- **LEAD Framework:** EY's performance management system that was launched in 2018
+- **LEAD Framework:** EY's performance management system (LEAD = Leadership, Engagement, Achievement, Development) launched in 2018 that supports performance development and encourages frequent feedback
 
 ---
 
@@ -204,66 +205,98 @@ Judges will score us on:
 **Phase 1: Discovery (Finding Opportunities)**
 
 - Employees upload resume, Credly badges, project descriptions
-- **Dual LLM validation for skill extraction:** LLM #1 extracts skills WITH evidence quotes from source documents. LLM #2 independently validates that each quote actually supports the inferred skill. Output includes confidence scores (high/medium/low) and human-readable evidence. Example: "Inferred Python expertise because resume states: 'Built data analysis tools using Python.'" This dual validation pattern eliminates hallucinations.
-- **Vector semantic matching:** GPT-5.2 embeddings (1536-dimensional vectors) map skills into semantic space. Semantically related skills cluster together, enabling automatic synonym handling. The system understands that "cloud architecture," "AWS," and "Azure" are related concepts without manual synonym lists.
+- **Dual LLM validation for skill extraction:** LLM #1 extracts skills WITH evidence quotes from source documents. LLM #2 independently validates that each quote actually supports the inferred skill. **Multi-skill extraction:** A single quote can generate multiple skills (e.g., "Built Python data pipeline processing 2M records" → "Python" + "Data Pipeline Architecture" + "Big Data Processing"). Output includes confidence scores (high/medium/low) and human-readable evidence.
+- **Per-skill vector embedding:** Each extracted skill is independently embedded into a 3072-dimensional vector using text-embedding-3-large. This is per-skill, not per-resume—enabling massive caching efficiency (embed "AWS" once, reuse across all employees).
+- **Aggregate matching:** The system compares an employee's **full skill profile** against a role's **full requirements**—not individual skill-to-requirement matching. This produces an aggregate match score per role.
 - **Discovery modes:**
-  - **Best Fit:** 70%+ match threshold (high confidence alignments)
-  - **Stretch:** 50-70% match threshold (requires skill development)
-  - **Exploratory:** Unexpected pivots (semantic similarity despite different domains)
-  - **Trending:** High-demand areas (based on role posting frequency and growth metrics)
+  - **Best Fit:** ≥75% aggregate match (highly qualified)
+  - **Stretch:** 50-74% aggregate match (achievable with development)
+  - **Exploratory:** 30-49% aggregate match (career pivots, hidden opportunities)
+  - **Trending:** High-demand emerging roles (based on posting frequency and growth)
+- **Threshold-based search:** System searches ALL roles above threshold (≥30% for Exploratory)—no artificial top-K limits that might miss relevant matches.
+- **Service line translation:** When matching employees across service lines (e.g., Audit to Tech Risk), translation confidence affects match weighting: High confidence = 100% similarity weight, Medium confidence = 80%, Low confidence = 60%. This prevents overconfident cross-service-line matching.
 - **Anonymous exploration:** Employees explore without manager visibility. PII tokenization ensures privacy during job browsing.
 
 **Phase 2: Career Journey Map (Visualizing Your Path)**
 
 - **Interactive skill tree (React Flow):** Visual diagram showing skill dependencies and learning paths
-- **Success Pattern Overlay:** Compares employee's current metrics against success patterns from employees who advanced to target roles across all 6 categories (Financial Performance, Compliance, Quality, Development, People & Leadership, Feedback Themes via NLP). Example: "Employees who advanced to Manager typically showed: 87% effective utilization (you: 78%), 2+ mentees (you: 0), 3+ Silver-tier badges (you: 1 Bronze), feedback themes emphasizing leadership..."
-- **Career Competitiveness Dashboard:** Visual indicators showing performance across all 6 metric categories with color-coded status (green = above threshold, yellow = approaching, red = below threshold)
-- **Nine Box Position:** Performance × Potential matrix visualization
+- **Two parallel analyses combined:**
+  - **Vector Matching (Skills):** "What roles could you DO based on your skills?"
+  - **Success Pattern Analysis (EY Metrics):** "Will EY actually PROMOTE you?" (utilization, mentees, feedback themes, etc.)
+- **Natural progression always shown:** System ALWAYS displays the employee's next EY level (e.g., Staff→Senior, Manager→Senior Manager) regardless of match score. Three states:
+  - **Aligned (≥75%):** "You're on track" — unified path view with remaining gaps
+  - **Stretch (50-74%):** "Achievable with development" — shows gap closure timeline
+  - **Misaligned (<50%):** "Significant gaps" — honest assessment + better-fitting alternatives prominently displayed
+- **Trajectory comparison:** When alternatives exist, system shows FULL career paths up to 3 levels forward (or until Partner/ED level):
+  - Path A (Natural Progression): Manager → Senior Manager (78%) → Partner (70%) — smooth trajectory
+  - Path B (Lateral Move): Manager → Manager, Analytics (85%) → Senior Manager, Analytics (40% ⚠️) — easy entry, but wall at SM
+  - Flags "walls" when any future step has <50% match, helping employees see long-term viability
+- **Terminal level handling:** For employees who have reached Partner/ED (terminal level), natural progression section shows lateral opportunities and practice leadership roles instead
+- **Show lateral moves when aligned:** Even if natural progression is ≥75% match, if a lateral move ALSO has ≥75% match, both are shown for comparison
+- **Success Pattern Overlay:** Compares employee's metrics against advancement benchmarks across 6 categories
+- **Career Competitiveness Dashboard:** Visual indicators with color-coded status (green/yellow/red)
 
 **Phase 3: Actionable Development Plan (What to Do Next)**
 
-- **Personalized upskilling paths:** Time-estimated learning plans (e.g., "AWS cert: 3-4 months, 120 study hours")
+- **Personalized upskilling paths:** Time-estimated learning plans (e.g., "AWS cert: 3-4 months, 120 study hours"). Time estimates are generated by LLM based on EY Badges Learning module durations, O\*NET (US Department of Labor occupational database) skill acquisition data, and industry-standard certification timelines.
 - **Progress visualization:** Match score improvement projections (e.g., "50% match → 70% if you complete X, Y, Z")
 - **Holistic recommendations:** Skills + behaviors + visibility moves (mentoring, internal community leadership)
 
 **Two-Sided Anonymous Matching:**
 
 - **Hiring manager posts role:** System shows candidate COUNT (not names or identities)
-- **Employees opt-in to be considered:** Manager sees anonymous tokenized profiles (e.g., "EMP-482910") with skills and qualifications, but no PII
+- **Employees opt-in to be considered:** Employees can opt into multiple roles simultaneously (no limit). Hiring manager sees anonymous tokenized profiles (e.g., "EMP-482910") with skills and qualifications, but no PII. Employees remain anonymous—hiring managers cannot see employee identities unless the employee chooses to expose themselves.
+- **Multiple invitations managed independently:** When multiple hiring managers invite the same employee, employee sees all invitations and can accept/decline each independently
 - **Identity revealed only after mutual interest:** Employee's real identity is revealed only after manager invites a conversation and employee accepts
 
 ### Why We Built It This Way
 
-**1. Vector Semantic Matching vs. Keyword Matching**
+**1. Per-Skill Vector Embedding & Aggregate Matching**
 
-- **The problem:** Traditional systems use keyword matching, which breaks on synonyms and related concepts. If a job requires "cloud architecture" experience but a resume says "AWS" or "Azure," the system won't recognize semantic equivalence.
-- **Our solution:** We use GPT-5.2 embeddings (1536-dimensional vectors) to map skills into semantic space. Semantically related skills cluster together in vector space, enabling automatic synonym handling and skill hierarchy recognition without manual normalization.
-- **Why it matters:** Employees don't miss opportunities due to vocabulary mismatches. The system understands that "cloud architecture," "AWS," and "Azure" are related concepts, just as a human would.
+- **The problem:** Traditional systems use keyword matching, which breaks on synonyms. If a job requires "cloud architecture" but a resume says "AWS," the system won't recognize they're related.
+- **Our solution:** Each extracted skill is embedded into a 3072-dimensional vector using text-embedding-3-large. Critically, this is **per-skill, not per-resume**—enabling massive caching (embed "AWS" once, reuse across all employees). The system then performs **aggregate matching**: comparing an employee's full skill profile against a role's full requirements to produce an overall match score.
+- **Synonym handling:** The LLM normalizes during extraction (e.g., "js" → "JavaScript"). If duplicates slip through, they cluster together in vector space anyway—no complex deduplication needed.
+- **Threshold-based search:** We search ALL roles above the threshold (≥30% for Exploratory mode), never arbitrarily truncating results. If matches #50 and #51 are both 70%, both are shown.
+- **Why it matters:** Employees don't miss opportunities due to vocabulary mismatches, and the system finds hidden opportunities across all service lines efficiently.
 
-**2. Dual LLM Validation for Explainability**
+**2. Dual LLM Validation with Multi-Skill Extraction**
 
 - **The problem:** LLMs can hallucinate—generating plausible but unsupported skill inferences. Single-pass extraction lacks validation, creating trust and accuracy issues.
-- **Our solution:** We implement a dual LLM validation pattern: LLM #1 extracts skills with evidence quotes from source documents; LLM #2 independently validates that each quote actually supports the inferred skill. Output includes confidence scores (high/medium/low) and human-readable evidence quotes.
-- **Why it matters:** Every skill inference is explainable and validated. Users see evidence like: "Inferred Python expertise because resume states: 'Built data analysis tools using Python.'" This eliminates hallucinations and builds trust through transparency.
+- **Our solution:** Dual LLM validation: LLM #1 extracts skills with evidence quotes; LLM #2 independently validates each quote supports the inferred skill. Output includes confidence scores (high/medium/low) and human-readable evidence.
+- **Multi-skill extraction:** A single quote can generate multiple skills. Example: "Built Python data pipeline processing 2M records" → "Python" + "Data Pipeline Architecture" + "Big Data Processing". Each skill is independently validated. This ensures employees receive full credit for all demonstrated competencies.
+- **Why it matters:** Every skill inference is explainable and validated. Users see evidence and understand exactly why each skill was inferred. This eliminates hallucinations and builds trust.
 
-**3. Success Pattern Analysis (The Breakthrough Feature)**
+**3. Two Parallel Processes: Skills + EY Metrics**
 
 - **The problem:** Most systems only perform skill-to-requirement matching. They don't analyze what actually drove career advancement—the behavioral patterns, metrics, and soft factors that matter in promotion decisions.
-- **Our solution:** We analyze historical promotion data across 6 metric categories (Financial Performance, Compliance, Quality, Development, People & Leadership, Feedback Themes via NLP). We compare an employee's current state against success patterns from employees who advanced to target roles.
+- **Our solution:** SpringAIS runs **two separate analyses** that combine for the full picture:
+  - **Vector Matching:** "What roles could you DO based on skills?" (extracted skills vs role requirements)
+  - **Success Pattern Analysis:** "Will EY actually PROMOTE you?" (EY metrics vs advancement benchmarks across 6 categories)
+- Both are required. An employee could have perfect skill match for a Manager role but never get promoted due to low utilization and no mentees. Conversely, perfect EY metrics don't help if you lack the technical skills for a specific role.
 - **Why it matters:** Transforms vague feedback into actionable insights. Instead of "you need more visibility," employees get: "Employees who advanced to Manager averaged 2+ mentees (you: 0). Consider taking on a mentee to match promotion patterns."
 
-**4. Privacy-First Architecture with PII Tokenization**
+**4. Natural Progression & Trajectory Comparison**
+
+- **The problem:** Employees need to understand their next EY level regardless of whether they're a good match for it. Also, choosing between staying on track vs. making a lateral move requires seeing the FULL career path, not just the next step.
+- **Our solution:**
+  - **Always show natural progression:** The employee's next EY level (e.g., Manager→Senior Manager) is ALWAYS displayed, regardless of match score. Three states: Aligned (≥75%), Stretch (50-74%), Misaligned (<50%).
+  - **Trajectory comparison:** Show full career paths with match percentages at each step. Example: Natural progression might be 78% match now but smooth to Partner; lateral move might be 85% match now but hit a "wall" at Senior Manager (40% match).
+  - **Wall detection:** Flag any future step with <50% match as a "wall" to help employees see long-term viability.
+  - **Show alternatives when aligned:** Even if natural progression is ≥75%, if a lateral move ALSO has ≥75%, show both for comparison.
+- **Why it matters:** Employees make informed CAREER decisions, not just next-job decisions. They can see "easy now but wall later" vs "harder now but smooth long-term."
+
+**5. Privacy-First Architecture with PII Tokenization**
 
 - **The problem:** Employees fear discovery when exploring internal opportunities. Traditional systems expose PII (names, emails, employee IDs) during matching, creating a barrier to internal mobility.
 - **Our solution:**
   - Anonymous exploration: Employees browse roles without manager visibility
-  - PII tokenization: We replace identifying information with anonymous tokens (e.g., "EMP-482910") throughout the matching pipeline
+  - PII tokenization: We replace identifying information (names, emails, employee IDs) with anonymous tokens (e.g., "EMP-482910") throughout the matching pipeline. The tokenization system maintains a secure mapping that only allows identity revelation after mutual opt-in.
   - Two-sided anonymous matching: Hiring managers see tokenized candidate counts and anonymous profiles with skills/qualifications, but no PII
   - Identity revelation only after mutual opt-in: Real identity is revealed only after manager invites conversation AND employee accepts
   - Audit trails with tokenized identifiers: All matching activities are logged for compliance/security, but using tokens to maintain privacy
 - **Why it matters:** Removes the "fear of discovery" barrier that prevents internal mobility. Employees can explore safely, and identity is protected until mutual interest is established.
 
-**5. Governance & Bias Mitigation Framework**
+**6. Governance & Bias Mitigation Framework**
 
 - **The problem:** AI systems can introduce bias (disparate impact) or make unsupportable predictions, creating legal and ethical risks.
 - **Our solution:**
@@ -285,7 +318,7 @@ Judges will score us on:
 - **FastAPI (Python):** High-performance async REST API
 - **GPT-5.2 Instant:** Skill inference, validation, embeddings (400K context window)
 - **LangChain:** LLM orchestration, aggressive caching (semantic + prompt caching = 68.8% API call reduction)
-- **PostgreSQL + pgvector:** Unified structured + vector data storage
+- **PostgreSQL + pgvector:** Unified structured + vector data storage (pgvector is a PostgreSQL extension that enables vector similarity search)
 - **Chroma (demo) / Qdrant (production):** Vector database for semantic search
 - **Redis:** Multi-layer caching (LLM responses, embeddings, match results)
 
@@ -310,18 +343,19 @@ Judges will score us on:
 - Output: Confidence scores (high/medium/low) for every skill, with human-readable evidence
 - **Why:** Eliminates hallucinations, builds trust through explainability
 
-**2. Pure Vector Semantic Matching**
+**2. Per-Skill Vector Embedding with Aggregate Matching**
 
-- GPT-5.2 embeddings (1536-dimensional semantic space)
-- Skills that are semantically related cluster together in vector space
-- Chroma vector database for local, reliable matching
-- **Why:** Handles synonyms, skill hierarchies, related competencies automatically
+- text-embedding-3-large: Each skill gets a 3072-dimensional vector (per-skill, not per-resume)
+- Skill vectors cached and reused across employees (embed "AWS" once, reuse 500 times)
+- Aggregate matching: Full skill profile vs full role requirements → overall match score
+- Threshold-based search (≥30% for Exploratory), no arbitrary top-K limits
+- **Why:** Efficient caching, handles synonyms automatically, comprehensive search finds hidden opportunities
 
 **3. Multi-Layer Aggressive Caching**
 
 - **Semantic Cache:** Similar query embeddings → cached responses (68.8% API call reduction)
 - **Prompt Cache:** Repeated prompt prefixes >1024 tokens (90% cost reduction)
-- **Response Cache:** Exact skill inference results (7 days TTL)
+- **Response Cache:** Exact skill inference results (7 days Time To Live)
 - **Embedding Cache:** Generated embeddings per skill/document (indefinite)
 - **Why:** Manages LLM API costs, improves response times
 
@@ -354,7 +388,7 @@ Judges will score us on:
 
 ### Performance Benchmarks
 
-- **Chroma vector queries:** <350ms p95 (demo scale)
+- **Chroma vector queries:** <350ms at 95th percentile (demo scale)
 - **Cached skill inference:** <3s (semantic cache hit)
 - **Uncached skill inference:** <15s (full dual LLM pipeline)
 - **Role matching:** <2s for top-10 results
@@ -366,17 +400,19 @@ Judges will score us on:
 
 ### What Makes SpringAIS Special
 
-1. **Success Pattern Analysis:** No competitor captures what actually drives advancement. We analyze historical promotion data across 6 metric categories (Financial Performance, Compliance, Quality, Development, People & Leadership, Feedback Themes via NLP), behavioral patterns, and soft factors. We compare employees against success patterns from those who advanced to target roles.
+1. **Two Parallel Analyses Combined:** No competitor captures both dimensions. Vector Matching shows what roles you COULD do based on skills; Success Pattern Analysis shows whether EY will actually PROMOTE you (utilization, mentees, feedback themes). Both are required—perfect skill match means nothing without the right EY metrics.
 
-2. **Dual LLM Validation with Evidence Quotes:** Explainable AI through dual LLM validation pattern. Every skill inference includes supporting evidence quotes and confidence scores (high/medium/low). Employees see WHY each recommendation was made with human-readable explanations.
+2. **Trajectory Comparison with Wall Detection:** We don't just show the next job—we show the FULL career path. Natural progression (Manager→SM→Partner) vs lateral moves, with match percentages at each step. Flags "walls" when future steps have <50% match, so employees see "easy now but wall later" vs "harder now but smooth long-term."
 
-3. **Pure Vector Semantic Matching:** GPT-5.2 embeddings (1536-dimensional semantic space) enable automatic skill relationship recognition. Handles synonyms, skill hierarchies, and related competencies without manual synonym lists or normalization rules.
+3. **Natural Progression Always Shown:** The system ALWAYS displays the employee's next EY level, regardless of match score. Three states (Aligned/Stretch/Misaligned) with honest assessment. Even shows lateral alternatives when they're equally strong matches.
 
-4. **Privacy-First Architecture with PII Tokenization:** Anonymous exploration with PII tokenization. Employees browse roles without manager visibility. Identity revealed only after mutual opt-in. Audit trails use tokenized identifiers to maintain privacy while ensuring compliance.
+4. **Dual LLM Validation with Multi-Skill Extraction:** Every skill inference includes evidence quotes and confidence scores. A single quote can extract multiple skills ("Python data pipeline" → Python + Data Pipeline Architecture + Big Data). Eliminates hallucinations, builds trust.
 
-5. **Career Journey Map Visualization:** Interactive skill tree (React Flow) with success pattern overlay. Transforms abstract career advice into concrete, motivating progression paths with visual indicators and progress tracking.
+5. **Per-Skill Embedding with Aggregate Matching:** Each skill gets its own 3072-D vector (not per-resume) using text-embedding-3-large. Cached and reused across all employees. Aggregate matching compares full skill profile vs full role requirements. Threshold-based search (≥30%) ensures we never miss hidden opportunities.
 
-6. **EY-Specific Deep Integration:** Aligned with EY's promotion cycles (August regular, January agile), calibration processes (May/June sessions), Credly badge system (87 badges, 5-tier structure), and service line structures. SuccessFactors and EY PX360 integration-ready architecture.
+6. **Privacy-First Architecture:** Anonymous exploration with PII tokenization. Identity revealed only after mutual opt-in. Removes "fear of discovery" barrier.
+
+7. **EY-Specific Deep Integration:** Aligned with EY's promotion cycles, calibration processes, Credly badge system, and service line structures.
 
 ---
 
@@ -418,14 +454,34 @@ Judges will score us on:
 
 ## Appendix: Competition Rubric Alignment
 
-| What Judges Are Looking For                         | How SpringAIS Addresses It                                                                                                                                                                                                                                                                                                                                          |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI Functionality & Accuracy (20 pts)**            | Dual LLM validation ensures accuracy; pure vector semantic matching (GPT-5.2 embeddings, 1536-dimensional space) goes beyond keyword matching; success pattern analysis across 6 metric categories provides meaningful recommendations                                                                                                                              |
-| **Explainability & Governance (20 pts)**            | Dual LLM validation with evidence quotes for every skill inference; reason codes for all matches; bias detection framework with disparate impact testing; privacy safeguards (PII tokenization, audit logs with tokenized identifiers); "patterns not promises" language throughout                                                                                 |
-| **Technical Design (20 pts)**                       | Well-structured monolithic architecture (microservices-ready); comprehensive documentation; addresses IT security (HTTPS, encryption, RBAC) and AI risks (bias mitigation, hallucination prevention via dual LLM validation); hybrid data architecture (PostgreSQL + pgvector, optional Chroma/Qdrant); multi-layer caching (semantic, prompt, response, embedding) |
-| **Problem Understanding & Business Value (15 pts)** | Deep EY structure analysis; addresses real enterprise need (internal mobility, retention, cost reduction); clear value proposition (10-20% internal fill rate lift, 30-50% time-to-fill reduction)                                                                                                                                                                  |
-| **User Experience & Presentation (15 pts)**         | Professional UI (shadcn/ui); clear user journeys; engaging Career Journey Map visualization (React Flow); strong storytelling                                                                                                                                                                                                                                       |
-| **Innovation & Creativity (10 pts)**                | Success pattern analysis (unique approach analyzing what actually drives advancement); dual LLM validation (explainable AI innovation); pure vector semantic matching (beyond keyword matching); privacy-first anonymous matching with PII tokenization                                                                                                             |
+| What Judges Are Looking For                         | How SpringAIS Addresses It                                                                                                                                                                                                                                                            |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AI Functionality & Accuracy (20 pts)**            | Dual LLM validation with multi-skill extraction ensures accuracy; per-skill vector embedding (3072-D using text-embedding-3-large) with aggregate matching goes beyond keyword matching; two parallel analyses (Vector Matching + Success Pattern) provide complete career guidance                                |
+| **Explainability & Governance (20 pts)**            | Dual LLM validation with evidence quotes for every skill; trajectory comparison shows full career paths with wall detection; reason codes for all matches; bias detection framework; privacy safeguards (PII tokenization); "patterns not promises" language                          |
+| **Technical Design (20 pts)**                       | Well-structured architecture; per-skill embedding with caching (embed once, reuse across employees); threshold-based search (no arbitrary top-K limits); hybrid data architecture (PostgreSQL + pgvector, Chroma/Qdrant); multi-layer caching (semantic, prompt, response, embedding) |
+| **Problem Understanding & Business Value (15 pts)** | Deep EY structure analysis; two parallel analyses address both skill fit AND promotion readiness; trajectory comparison helps employees make career decisions, not just job decisions; clear value proposition (10-20% internal fill rate lift, 30-50% time-to-fill reduction)        |
+| **User Experience & Presentation (15 pts)**         | Professional UI (shadcn/ui); natural progression always shown with three states (Aligned/Stretch/Misaligned); trajectory comparison with wall detection; engaging Career Journey Map visualization (React Flow)                                                                       |
+| **Innovation & Creativity (10 pts)**                | Two parallel analyses (skills + EY metrics); trajectory comparison with wall detection (unique); natural progression always shown regardless of match; multi-skill extraction per quote; per-skill embedding with aggregate matching; privacy-first anonymous matching                |
+
+---
+
+## What We're NOT Building
+
+To set clear expectations, SpringAIS is **not**:
+
+- **A replacement for SuccessFactors or EY's HR systems:** We integrate with existing systems, not replace them
+- **A performance review tool:** We analyze historical patterns but don't conduct performance evaluations
+- **A compensation calculator:** We don't predict or recommend salary changes
+- **A job application system:** We discover opportunities and facilitate matching, but don't handle the full application process
+- **A learning management system (LMS):** We recommend learning paths and time estimates, but don't host training content
+- **A replacement for managers:** We provide insights and recommendations, but career decisions remain with employees and their managers
+- **A production-ready enterprise system:** This is a competition prototype demonstrating core concepts, not a fully production-hardened system
+
+**Scope Boundaries:**
+
+- MVP focuses on matching and recommendations—not full HR workflow automation
+- Uses mock data for demonstration—real EY system integration would require EY partnership
+- Designed for competition demonstration—production deployment would require significant additional development
 
 ---
 

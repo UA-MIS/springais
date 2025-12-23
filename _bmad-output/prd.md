@@ -24,7 +24,7 @@ date: "2025-12-18"
 
 **Author:** Clays
 **Date:** 2025-12-18
-**Last Updated:** 2025-12-20 (Refined: utilization calculation clarification, skip promotion logic, calibration support, EY-Parthenon handling, realization rate details, badge count, PX360 integration)
+**Last Updated:** 2025-12-23 (Refined: text-embedding-3-large for vectorization (3072-D), GPT-5.2 for extraction/generation, proficiency context through aggregate skill profiles, pre-cached common skills, aggregate matching algorithm, threshold-based search, synonym handling, two parallel processes, natural progression always shown, trajectory-based path comparison with wall detection, lateral move display when aligned, multi-skill extraction per quote, per-skill embedding architecture with caching, multiple opt-ins allowed, terminal level handling, trajectory depth limit, time estimate source, translation confidence weighting)
 
 ---
 
@@ -122,7 +122,7 @@ SpringAIS solves this through three breakthrough innovations:
 **Core Technical Requirements:**
 
 - Dual LLM validation working (extract + validate with quotes)
-- Pure vector semantic matching operational (Chroma + GPT-5.2 embeddings)
+- Pure vector semantic matching operational (Chroma + text-embedding-3-large)
 - Success pattern analysis across 6 metric categories
 - Career Journey Map visualization renders correctly (React Flow)
 - Anonymous matching with tokenization functional
@@ -290,6 +290,14 @@ Traditional skill extraction from resumes suffers from hallucination—AI system
 - **LLM #2 (Validation):** Independently verifies the quote actually supports the skill claim
 - **Output:** Confidence scores (high/medium/low) for every skill, with human-readable evidence
 
+**Multi-Skill Extraction:** A single quote can generate multiple skills. The system is not limited to 1-to-1 quote-to-skill mapping. For example:
+
+- Quote: _"Built Python data pipeline processing 2M records daily using Apache Spark"_
+- Extracted Skills: "Python" + "Data Pipeline Architecture" + "Big Data Processing" + "Apache Spark"
+- Each skill is independently validated by LLM #2 against the same quote
+
+This comprehensive extraction ensures employees receive full credit for all demonstrated competencies, and skills are not artificially limited by quote boundaries.
+
 _Why it matters:_ Employees and hiring managers can trust the inferences because they can see the proof. "Inferred Python expertise because resume states: 'Built data pipeline processing 2M records daily using Python and Apache Spark.'"
 
 **2. Success Pattern Analysis (The Breakthrough Insight)**
@@ -350,9 +358,28 @@ Traditional HR systems use keyword matching, which breaks constantly:
 - "C#" doesn't match "csharp" or "C Sharp"
 - No understanding that React expertise implies JavaScript knowledge
 
-SpringAIS uses GPT-5.2 embeddings (1536-dimensional semantic space) where meaning is captured, not just words. Skills that are semantically related cluster together in vector space.
+SpringAIS uses **text-embedding-3-large** for semantic skill vectorization. GPT-5.2 handles skill extraction and text generation; text-embedding-3-large handles vectorization. Skills that are semantically related cluster together in vector space.
 
-_Why it matters:_ Alex finds candidates with "AWS architecture" experience when searching for "cloud infrastructure"—without maintaining endless synonym lists.
+**Per-Skill Embedding Architecture:** Each extracted skill is independently embedded into a 3072-dimensional vector using text-embedding-3-large. This is NOT a per-resume embedding—each skill gets its own vector:
+
+- "Python" → 3072-dimensional vector
+- "Data Pipeline Architecture" → 3072-dimensional vector
+- "AWS Solutions Architect" → 3072-dimensional vector
+
+**Proficiency Context:** Proficiency differences (junior Python vs senior Python) are captured through aggregate skill profile matching, not encoded into individual skill vectors. An employee's proficiency level emerges from the full set of extracted skills (e.g., "8-Years-Experience", "Large-Dataset-Handling", "Data-Architecture") combined with the skill vector itself.
+
+**Caching Advantage:** Skill vectors are cached and reused across employees. If 500 employees have "AWS" extracted from their resumes, the system embeds "AWS" once and reuses that vector 500 times. This enables:
+
+- Massive caching efficiency (compute once, reuse indefinitely)
+- Precise skill-to-skill matching (not resume-to-role-description)
+- Granular reason codes ("You matched on AWS at 92%, but Kubernetes at 30%")
+- Skill translation across service lines (compare Audit "risk assessment" vector to Tech Risk "compliance frameworks" vector)
+
+**Pre-Cached Common Skills:** System maintains a pre-embedded cache of ~250 common EY skills (Python, Java, AWS, Leadership, Mentoring, Risk Assessment, etc.). These are embedded once during setup and reused indefinitely. Novel/uncommon skills are embedded on-demand and added to cache.
+
+_Why it matters:_ Alex finds candidates with "AWS architecture" experience when searching for "cloud infrastructure"—without maintaining endless synonym lists. And the system does this efficiently at scale through intelligent caching of common skills.
+
+**Synonym Handling:** The LLM normalizes during extraction (e.g., "js" → "JavaScript", "c#" → "C#"). If duplicates slip through (both "JavaScript" and "js" extracted separately), that's acceptable—they'll cluster very close together in vector space (~0.95+ similarity) and effectively behave as the same skill during matching. No additional deduplication system is required.
 
 **4. Two-Sided Anonymous Matching**
 
@@ -364,6 +391,109 @@ The fear of being discovered exploring internal opportunities prevents employees
 - Identity revealed only after hiring manager invites conversation
 
 _Why it matters:_ Chris explores Tech Risk roles without his Audit manager ever knowing—until he's ready to make a move.
+
+**5. Aggregate Matching Algorithm**
+
+Matching is NOT individual skill-to-requirement comparison. It's **employee's full skill profile vs role's full requirement profile**, producing an aggregate match score per role.
+
+**The Matching Matrix:**
+
+```
+Employee Skills:        [Python, AWS, Communication, Data Pipeline]
+Role Requirements:      [Python, AWS, Leadership, Cloud Architecture]
+
+                    Python(req)  AWS(req)  Leadership(req)  Cloud Arch(req)
+Python(emp)            95%         15%         10%              20%
+AWS(emp)               15%         92%         8%               45%
+Communication(emp)     5%          5%          35%              5%
+Data Pipeline(emp)     20%         30%         5%               60%
+
+Aggregate Role Match = function of best matches per requirement
+```
+
+**Threshold-Based Search (Not Top-K):**
+
+The system uses threshold-based search rather than arbitrary top-K limits:
+
+- Search ALL role vectors above similarity threshold (≥30% for Exploratory mode)
+- Never artificially truncate results—if the 50th and 51st matches are both 70%, show both
+- Sort by aggregate match percentage, filter by discovery mode tier
+- Accept 2-3 second search latency for comprehensive results (don't prematurely optimize)
+
+**Discovery Mode Thresholds:**
+
+| Mode | Threshold | Purpose |
+|------|-----------|---------|
+| Best Fit | ≥75% | Roles employee is highly qualified for |
+| Stretch | 50-74% | Roles requiring growth but achievable |
+| Exploratory | 30-49% | Career pivots, hidden opportunities |
+| Trending | N/A | Emerging high-demand roles (separate logic) |
+
+**Two Parallel Processes:**
+
+SpringAIS runs two separate analyses that combine for the full picture:
+
+| Process | Question Answered | Data Source |
+|---------|-------------------|-------------|
+| **Vector Matching** | "What roles could you DO based on skills?" | Extracted skills vs role requirements |
+| **Success Pattern Analysis** | "Will EY actually PROMOTE you to that level?" | EY metrics vs advancement benchmarks |
+
+Both are required. An employee could have perfect skill match for a Manager role but never get promoted due to low utilization and no mentees. Conversely, perfect EY metrics don't help if you lack the technical skills for a specific role.
+
+**6. Natural Progression & Trajectory Comparison**
+
+The system always shows the employee's natural EY progression (next level in their career ladder), regardless of match threshold. This is combined with trajectory analysis to show full career paths.
+
+**Natural Progression States:**
+
+| State | Match to Next Level | UI Behavior |
+|-------|---------------------|-------------|
+| **Aligned** | ≥75% | Single "Your Path" view, celebratory, show remaining gaps |
+| **Stretch** | 50-74% | "Your path is a stretch" with gap closure timeline |
+| **Misaligned** | <50% | Honest assessment + prominently surface better alternatives |
+
+**Always Show Natural Progression:** The employee's next EY level bypasses match thresholds because:
+
+- EY will evaluate them for that level whether they match or not
+- Hiding it doesn't make the expectation go away
+- The value is showing gaps honestly so they can decide
+
+**Trajectory-Based Path Comparison:**
+
+When alternatives exist (especially high-match lateral moves), the system shows FULL trajectories, not just immediate next steps:
+
+```
+PATH A: Natural Progression (Stay in Current Track)
+├─ Current: Manager
+├─ Step 1: Senior Manager (78% match)
+│   └─ Gaps: [Business Development, Client Management]
+├─ Step 2: Partner (70% match)
+│   └─ Gaps: [Rainmaking, Strategic Relationships]
+└─ Trajectory: Strong throughout
+
+PATH B: Lateral Move to Analytics
+├─ Current: Manager
+├─ Step 1: Manager, Analytics (85% match) ← Lateral, high fit
+│   └─ Gaps: [Minimal]
+├─ Step 2: Senior Manager, Analytics (40% match) ⚠️ Wall
+│   └─ Gaps: [Significant - Analytics Domain Expertise, Statistical Methods]
+├─ Step 3: Partner, Analytics (??% match)
+└─ Trajectory: Easy entry, but hits wall at SM level
+```
+
+**When to Show Alternatives:**
+
+- Natural progression is misaligned (<50% match)
+- OR a lateral move has equally high match (≥75%) even when natural progression is aligned
+- Always show trajectory for each path so employee can make informed career decision
+
+**Walls and Blockers:**
+
+Flag any step in a trajectory with <50% match as a "wall." This helps employees understand:
+
+- Path B might be easier NOW but harder LATER
+- Path A might be harder NOW but smoother LONG-TERM
+- Some lateral moves open better trajectories; others are dead ends
 
 ### Validation Approach
 
@@ -887,32 +1017,57 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 ### 2. Skill Extraction & Inference
 
 - FR9: System can extract skills from uploaded documents using dual LLM validation
-- FR10: System provides evidence quotes for each inferred skill
+- FR9A: System extracts multiple skills per evidence quote where applicable (e.g., "Built Python data pipeline" → "Python" + "Data Pipeline Architecture")
+- FR9B: Skills are not limited by quote boundaries—comprehensive extraction captures all demonstrated competencies
+- FR10: System provides evidence quotes for each inferred skill (same quote may support multiple skills)
 - FR11: System assigns confidence levels (high/medium/low) to each skill inference
 - FR12: Employees can view the reasoning chain for each skill inference
 - FR13: Employees can accept, reject, or modify inferred skills
-- FR14: System generates vector embeddings for all extracted skills
+- FR14: System generates a 3072-dimensional vector embedding for each extracted skill using text-embedding-3-large (per-skill, not per-resume)
+- FR14A: Skill vectors are cached and reused across employees (embed once, reuse indefinitely)
+- FR14B: Matching uses skill-to-skill vector comparison for granular reason codes
+- FR14C: System maintains pre-cached vectors for ~250 common EY skills (Python, AWS, Leadership, etc.), embedded once and reused indefinitely
 - FR15: System caches inference results to avoid redundant processing
 
 ### 3. Role & Opportunity Discovery
 
 - FR16: Employees can browse available roles across all service lines
-- FR17: System matches employees to roles using semantic similarity
-- FR18: Employees can view matches in multiple modes (Best Fit, Stretch, Exploratory, Trending)
+- FR17: System matches employees to roles using aggregate semantic similarity (full skill profile vs full role requirements)
+- FR17A: System calculates aggregate match by comparing all employee skill vectors against all role requirement vectors
+- FR17B: System uses threshold-based search (≥30% for Exploratory) rather than arbitrary top-K limits
+- FR17C: System accepts 2-3 second search latency to ensure comprehensive results without artificial truncation
+- FR17D: If two matches have similar scores (e.g., 70% and 71%), both are shown—no arbitrary cutoffs
+- FR18: Employees can view matches in multiple modes (Best Fit ≥75%, Stretch 50-74%, Exploratory 30-49%, Trending)
 - FR19: System provides match percentages with confidence intervals
 - FR20: Employees can filter and sort role matches by various criteria
-- FR21: System explains why each role was matched (reason codes)
-- FR22: System identifies skill gaps between employee and role requirements
+- FR21: System explains why each role was matched (reason codes showing per-skill contribution to aggregate score)
+- FR22: System identifies skill gaps between employee and role requirements (calculated AFTER matching, not as filter)
 
 ### 4. Career Journey Mapping
 
 - FR23: Employees can view an interactive skill tree visualization
 - FR24: System displays current skills, required skills, and growth skills distinctly
-- FR25: System shows multiple paths to the same target role
+- FR25: System shows multiple paths to the same target role with full trajectory comparison
+- FR25A: Each path shows match percentages at every step (current → next level → future levels)
+- FR25B: System flags "walls" when any future step in a trajectory has <50% match
+- FR25C: Trajectory comparison enables informed career decisions (easy now vs smooth later trade-offs)
 - FR26: Employees can see progress visualization ("50% → 70% if you complete X, Y, Z")
 - FR27: System generates personalized upskilling paths with time estimates
+- FR27A: Time estimates are generated by LLM based on: EY Badges Learning module durations, O*NET skill acquisition data, and industry-standard certification timelines
 - FR28: System recommends specific actions (certifications, courses, experiences)
 - FR29: Employees can track progress against their development plan
+
+### 4A. Natural Progression Handling
+
+- FR29A: System ALWAYS displays employee's natural EY progression (next level in career ladder) regardless of match threshold
+- FR29B: Natural progression shows one of three states based on match: Aligned (≥75%), Stretch (50-74%), Misaligned (<50%)
+- FR29C: When aligned, system shows unified "Your Path" view with remaining gaps
+- FR29D: When misaligned, system shows honest assessment AND prominently surfaces better-fitting alternatives
+- FR29E: When natural progression is aligned BUT a lateral move also has ≥75% match, system shows BOTH paths for comparison
+- FR29F: System shows full trajectory for each path option (not just immediate next step)
+- FR29G: System calculates match percentages for Step 2, Step 3, etc. in each trajectory to reveal long-term viability
+- FR29H: For employees at terminal level (Partner/ED), natural progression section displays "You've reached the highest level" with lateral opportunities and practice leadership roles instead
+- FR29I: Trajectories display up to 3 levels forward (current → +1 → +2 → +3) or until Partner/ED level, whichever comes first
 
 ### 5. Success Pattern Analysis
 
@@ -929,6 +1084,7 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 - FR35E: System applies service line translation when matching employees to cross-service-line opportunities
 - FR35F: System calculates effective utilization (accounts for PTO, holidays, sick time) for all utilization targets
 - FR35G: System detects EY-Parthenon employees and applies appropriate career hierarchy model
+- FR35H: Service line translation confidence affects match calculation: High confidence = 100% similarity weight, Medium = 80%, Low = 60%
 
 ### 6. Two-Sided Anonymous Matching
 
@@ -936,8 +1092,10 @@ For the 8-week build, use mock data that exactly mirrors real API structures:
 - FR37: System tokenizes employee identities (EMP-XXXXXX format)
 - FR38: Hiring managers can see candidate counts without identities
 - FR39: Employees can opt-in to specific roles to express interest
+- FR39A: Employees can opt into multiple roles simultaneously (no limit)
 - FR40: Hiring managers can view tokenized profiles of opted-in candidates
 - FR41: Hiring managers can invite candidates for conversation (triggers identity reveal)
+- FR41A: When multiple hiring managers invite the same employee, employee sees all invitations and can accept/decline each independently
 - FR42: System maintains anonymity until mutual opt-in completes
 
 ### 7. Hiring Manager Workflow
