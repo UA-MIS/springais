@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpringAIS - Passive Skill Tree</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Spectral', serif;
+            background: #0a0a0f;
+            color: #c4b998;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background constellation effect */
+        .bg-stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(139, 90, 43, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(64, 156, 155, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(10, 10, 15, 1) 0%, #050508 100%);
+            z-index: 0;
+        }
+
+        .bg-stars::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(1px 1px at 10% 20%, rgba(255, 230, 150, 0.3) 0%, transparent 100%),
+                radial-gradient(1px 1px at 30% 60%, rgba(255, 230, 150, 0.2) 0%, transparent 100%),
+                radial-gradient(1px 1px at 50% 10%, rgba(255, 230, 150, 0.25) 0%, transparent 100%),
+                radial-gradient(1px 1px at 70% 40%, rgba(255, 230, 150, 0.15) 0%, transparent 100%),
+                radial-gradient(1px 1px at 90% 80%, rgba(255, 230, 150, 0.2) 0%, transparent 100%),
+                radial-gradient(1px 1px at 15% 85%, rgba(255, 230, 150, 0.18) 0%, transparent 100%),
+                radial-gradient(1px 1px at 85% 15%, rgba(255, 230, 150, 0.22) 0%, transparent 100%);
+            background-size: 200px 200px;
+            animation: twinkle 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* Header / Progress Bar */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: linear-gradient(180deg, rgba(10, 10, 15, 0.98) 0%, rgba(10, 10, 15, 0.9) 80%, transparent 100%);
+            padding: 24px 48px 48px;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .title {
+            font-family: 'Cinzel', serif;
+            font-size: 32px;
+            font-weight: 600;
+            color: #e8dcc4;
+            text-shadow: 0 0 30px rgba(232, 220, 196, 0.3);
+            letter-spacing: 4px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #7a7060;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 48px;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Cinzel', serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #FFE600;
+            text-shadow: 0 0 20px rgba(255, 230, 0, 0.4);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #7a7060;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            margin-top: 20px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .progress-title {
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            color: #c4b998;
+            letter-spacing: 2px;
+        }
+
+        .progress-value {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            color: #FFE600;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(139, 90, 43, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(139, 90, 43, 0.4);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, 
+                #8B5A2B 0%, 
+                #FFE600 50%, 
+                #8B5A2B 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            bottom: -4px;
+            width: 20px;
+            background: radial-gradient(ellipse at right, rgba(255, 230, 0, 0.6) 0%, transparent 70%);
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 0%; }
+            50% { background-position: 100% 0%; }
+        }
+
+        /* Skill Tree Container */
+        .tree-container {
+            position: relative;
+            z-index: 10;
+            padding: 200px 24px 48px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .skill-tree {
+            position: relative;
+            width: 1200px;
+            height: 1200px;
+        }
+
+        /* SVG for connections */
+        .connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .connection {
+            stroke: rgba(139, 90, 43, 0.3);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .connection.active {
+            stroke: rgba(255, 230, 0, 0.6);
+            filter: drop-shadow(0 0 4px rgba(255, 230, 0, 0.4));
+        }
+
+        .connection.available {
+            stroke: rgba(139, 90, 43, 0.5);
+            stroke-dasharray: 4 4;
+        }
+
+        /* Nodes */
+        .node {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            z-index: 50;
+        }
+
+        /* Small passive nodes */
+        .node-small {
+            width: 24px;
+            height: 24px;
+        }
+
+        .node-small .node-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(30, 28, 25, 0.9);
+            border: 2px solid rgba(139, 90, 43, 0.4);
+            transition: all 0.3s;
+        }
+
+        .node-small:hover .node-inner {
+            border-color: #c4b998;
+            box-shadow: 0 0 15px rgba(196, 185, 152, 0.3);
+        }
+
+        .node-small.allocated .node-inner {
+            background: radial-gradient(circle at 30% 30%, #FFE600 0%, #8B5A2B 100%);
+            border-color: #FFE600;
+            box-shadow: 0 0 15px rgba(255, 230, 0, 0.5);
+        }
+
+        /* Notable nodes */
+        .node-notable {
+            width: 48px;
+            height: 48px;
+        }
+
+        .node-notable .node-inner {
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 28, 25, 0.95);
+            border: 3px solid rgba(139, 90, 43, 0.5);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+
+        .node-notable:hover .node-inner {
+            border-color: #c4b998;
+            box-shadow: 0 0 25px rgba(196, 185, 152, 0.4);
+        }
+
+        .node-notable.allocated .node-inner {
+            background: linear-gradient(135deg, #5a4020 0%, #3d2a15 100%);
+            border-color: #FFE600;
+            box-shadow: 0 0 25px rgba(255, 230, 0, 0.5);
+        }
+
+        /* Keystone nodes */
+        .node-keystone {
+            width: 80px;
+            height: 80px;
+        }
+
+        .node-keystone .node-inner {
+            width: 100%;
+            height: 100%;
+            background: rgba(20, 18, 15, 0.98);
+            border: 4px solid rgba(100, 80, 50, 0.6);
+            clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .node-keystone .node-inner::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            background: radial-gradient(circle at center, rgba(139, 90, 43, 0.1) 0%, transparent 70%);
+            clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+        }
+
+        .node-keystone:hover .node-inner {
+            border-color: #e8dcc4;
+            box-shadow: 0 0 40px rgba(232, 220, 196, 0.3);
+        }
+
+        .node-keystone.allocated .node-inner {
+            background: radial-gradient(circle at center, #5a4020 0%, #1a1510 100%);
+            border-color: #FFE600;
+            box-shadow: 
+                0 0 40px rgba(255, 230, 0, 0.4),
+                inset 0 0 30px rgba(255, 230, 0, 0.1);
+        }
+
+        /* Starting node */
+        .node-start {
+            width: 100px;
+            height: 100px;
+        }
+
+        .node-start .node-inner {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #2a2520 0%, #1a1815 100%);
+            border: 4px solid #8B5A2B;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 0 60px rgba(139, 90, 43, 0.3),
+                inset 0 0 40px rgba(139, 90, 43, 0.1);
+        }
+
+        .node-start .node-icon {
+            font-size: 36px;
+            margin-bottom: 4px;
+        }
+
+        .node-start .node-title {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            color: #c4b998;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Cluster labels */
+        .cluster-label {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            color: rgba(196, 185, 152, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(10, 10, 15, 0.8);
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: linear-gradient(135deg, rgba(30, 28, 25, 0.98) 0%, rgba(20, 18, 15, 0.98) 100%);
+            border: 2px solid rgba(139, 90, 43, 0.6);
+            border-radius: 4px;
+            padding: 16px 20px;
+            max-width: 300px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        .tooltip-name {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            color: #FFE600;
+            margin-bottom: 8px;
+            text-shadow: 0 0 10px rgba(255, 230, 0, 0.3);
+        }
+
+        .tooltip-type {
+            font-size: 11px;
+            color: #7a7060;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .tooltip-desc {
+            font-size: 14px;
+            color: #c4b998;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .tooltip-bonus {
+            font-size: 13px;
+            color: #4a9c9b;
+            font-style: italic;
+        }
+
+        .tooltip-req {
+            font-size: 12px;
+            color: #a05050;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(139, 90, 43, 0.3);
+        }
+
+        /* Legend */
+        .legend {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(20, 18, 15, 0.95);
+            border: 1px solid rgba(139, 90, 43, 0.4);
+            border-radius: 8px;
+            padding: 16px 20px;
+            z-index: 100;
+        }
+
+        .legend-title {
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            color: #7a7060;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: #c4b998;
+        }
+
+        .legend-node {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .legend-node.small {
+            background: rgba(30, 28, 25, 0.9);
+            border: 2px solid rgba(139, 90, 43, 0.4);
+        }
+
+        .legend-node.notable {
+            background: rgba(30, 28, 25, 0.95);
+            border: 2px solid rgba(139, 90, 43, 0.5);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        .legend-node.keystone {
+            background: rgba(20, 18, 15, 0.98);
+            border: 2px solid rgba(100, 80, 50, 0.6);
+            width: 20px;
+            height: 20px;
+        }
+
+        .legend-node.allocated {
+            background: radial-gradient(circle at 30% 30%, #FFE600 0%, #8B5A2B 100%);
+            border-color: #FFE600;
+            box-shadow: 0 0 8px rgba(255, 230, 0, 0.5);
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            background: rgba(20, 18, 15, 0.95);
+            border: 1px solid rgba(139, 90, 43, 0.4);
+            border-radius: 8px;
+            color: #c4b998;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            border-color: #FFE600;
+            color: #FFE600;
+            box-shadow: 0 0 20px rgba(255, 230, 0, 0.2);
+        }
+
+        /* Glow effect for allocated paths */
+        .glow-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            filter: blur(20px);
+            opacity: 0.3;
+        }
+
+        /* Ascendancy preview */
+        .ascendancy-preview {
+            position: fixed;
+            top: 200px;
+            right: 24px;
+            background: rgba(20, 18, 15, 0.95);
+            border: 2px solid rgba(139, 90, 43, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            width: 280px;
+            z-index: 100;
+        }
+
+        .ascendancy-title {
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            color: #FFE600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            text-shadow: 0 0 10px rgba(255, 230, 0, 0.3);
+        }
+
+        .ascendancy-path {
+            margin-bottom: 16px;
+        }
+
+        .path-name {
+            font-size: 13px;
+            color: #c4b998;
+            margin-bottom: 8px;
+        }
+
+        .path-progress {
+            height: 6px;
+            background: rgba(139, 90, 43, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .path-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .path-fill.leadership {
+            background: linear-gradient(90deg, #4a9c9b, #6abfbe);
+            width: 60%;
+        }
+
+        .path-fill.technical {
+            background: linear-gradient(90deg, #9c4a8a, #bf6aae);
+            width: 85%;
+        }
+
+        .path-fill.consulting {
+            background: linear-gradient(90deg, #9c8a4a, #bfae6a);
+            width: 45%;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-stars"></div>
+
+    <div class="header">
+        <div class="header-content">
+            <div class="title-row">
+                <div>
+                    <h1 class="title">Passive Skill Tree</h1>
+                    <p class="subtitle">Maya Rodriguez • Senior Consultant → Manager</p>
+                </div>
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-value">24</div>
+                        <div class="stat-label">Allocated</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">8</div>
+                        <div class="stat-label">Available</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">82%</div>
+                        <div class="stat-label">Match</div>
+                    </div>
+                </div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span class="progress-title">Journey to Manager</span>
+                    <span class="progress-value">24 / 42 Skills</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 57%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tree-container">
+        <div class="skill-tree" id="skillTree">
+            <!-- SVG Connections -->
+            <svg class="connections" viewBox="0 0 1200 1200">
+                <!-- Starting connections -->
+                <line class="connection active" x1="600" y1="600" x2="600" y2="500"/>
+                <line class="connection active" x1="600" y1="600" x2="500" y2="550"/>
+                <line class="connection active" x1="600" y1="600" x2="700" y2="550"/>
+                <line class="connection active" x1="600" y1="600" x2="550" y2="680"/>
+                <line class="connection active" x1="600" y1="600" x2="650" y2="680"/>
+
+                <!-- Technical branch (top) -->
+                <line class="connection active" x1="600" y1="500" x2="600" y2="420"/>
+                <line class="connection active" x1="600" y1="420" x2="540" y2="380"/>
+                <line class="connection active" x1="600" y1="420" x2="660" y2="380"/>
+                <line class="connection active" x1="540" y1="380" x2="480" y2="340"/>
+                <line class="connection active" x1="660" y1="380" x2="720" y2="340"/>
+                <line class="connection active" x1="600" y1="420" x2="600" y2="340"/>
+                <line class="connection active" x1="600" y1="340" x2="600" y2="260"/>
+                <line class="connection" x1="600" y1="260" x2="540" y2="200"/>
+                <line class="connection" x1="600" y1="260" x2="660" y2="200"/>
+                <line class="connection" x1="600" y1="260" x2="600" y2="140"/>
+
+                <!-- Leadership branch (left) -->
+                <line class="connection active" x1="500" y1="550" x2="420" y2="520"/>
+                <line class="connection active" x1="420" y1="520" x2="360" y2="480"/>
+                <line class="connection active" x1="360" y1="480" x2="300" y2="440"/>
+                <line class="connection" x1="300" y1="440" x2="240" y2="400"/>
+                <line class="connection" x1="300" y1="440" x2="260" y2="500"/>
+                <line class="connection" x1="360" y1="480" x2="320" y2="560"/>
+                <line class="connection" x1="320" y1="560" x2="260" y2="600"/>
+                <line class="connection" x1="260" y1="600" x2="180" y2="600"/>
+
+                <!-- Consulting branch (right) -->
+                <line class="connection active" x1="700" y1="550" x2="780" y2="520"/>
+                <line class="connection active" x1="780" y1="520" x2="840" y2="480"/>
+                <line class="connection" x1="840" y1="480" x2="900" y2="440"/>
+                <line class="connection" x1="900" y1="440" x2="960" y2="400"/>
+                <line class="connection" x1="840" y1="480" x2="880" y2="560"/>
+                <line class="connection" x1="880" y1="560" x2="940" y2="600"/>
+                <line class="connection" x1="940" y1="600" x2="1020" y2="600"/>
+
+                <!-- Mentorship branch (bottom left) -->
+                <line class="connection active" x1="550" y1="680" x2="500" y2="740"/>
+                <line class="connection active" x1="500" y1="740" x2="440" y2="780"/>
+                <line class="connection" x1="440" y1="780" x2="380" y2="820"/>
+                <line class="connection" x1="380" y1="820" x2="320" y2="860"/>
+                <line class="connection" x1="440" y1="780" x2="480" y2="860"/>
+                <line class="connection" x1="480" y1="860" x2="520" y2="940"/>
+
+                <!-- Business branch (bottom right) -->
+                <line class="connection active" x1="650" y1="680" x2="700" y2="740"/>
+                <line class="connection" x1="700" y1="740" x2="760" y2="780"/>
+                <line class="connection" x1="760" y1="780" x2="820" y2="820"/>
+                <line class="connection" x1="820" y1="820" x2="880" y2="860"/>
+                <line class="connection" x1="760" y1="780" x2="720" y2="860"/>
+                <line class="connection" x1="720" y1="860" x2="680" y2="940"/>
+
+                <!-- Central keystone connections -->
+                <line class="connection" x1="600" y1="140" x2="600" y2="80"/>
+                <line class="connection" x1="180" y1="600" x2="120" y2="600"/>
+                <line class="connection" x1="1020" y1="600" x2="1080" y2="600"/>
+            </svg>
+
+            <!-- Cluster Labels -->
+            <div class="cluster-label" style="left: 600px; top: 180px;">Technical Mastery</div>
+            <div class="cluster-label" style="left: 260px; top: 420px;">Leadership</div>
+            <div class="cluster-label" style="left: 940px; top: 420px;">Consulting</div>
+            <div class="cluster-label" style="left: 400px; top: 900px;">Mentorship</div>
+            <div class="cluster-label" style="left: 800px; top: 900px;">Business Acumen</div>
+
+            <!-- Starting Node -->
+            <div class="node node-start allocated" style="left: 600px; top: 600px;" 
+                 data-name="Senior Consultant" 
+                 data-type="Starting Class" 
+                 data-desc="Your journey begins here. The foundation of all paths forward."
+                 data-bonus="+10% to all skill acquisition">
+                <div class="node-inner">
+                    <span class="node-icon">⚔️</span>
+                    <span class="node-title">Origin</span>
+                </div>
+            </div>
+
+            <!-- TECHNICAL BRANCH (Top) -->
+            <div class="node node-small allocated" style="left: 600px; top: 500px;"
+                 data-name="Cloud Fundamentals" 
+                 data-type="Small Passive" 
+                 data-desc="Basic understanding of cloud infrastructure and services."
+                 data-bonus="+5% Technical Assessment score"></div>
+
+            <div class="node node-notable allocated" style="left: 600px; top: 420px;"
+                 data-name="AWS Practitioner" 
+                 data-type="Notable" 
+                 data-desc="Foundational AWS knowledge. Gateway to advanced cloud certifications."
+                 data-bonus="+15% Cloud skill matching">
+                <div class="node-inner">☁️</div>
+            </div>
+
+            <div class="node node-small allocated" style="left: 540px; top: 380px;"></div>
+            <div class="node node-small allocated" style="left: 660px; top: 380px;"></div>
+            <div class="node node-small allocated" style="left: 480px; top: 340px;"></div>
+            <div class="node node-small allocated" style="left: 720px; top: 340px;"></div>
+
+            <div class="node node-notable allocated" style="left: 600px; top: 340px;"
+                 data-name="Solutions Architect" 
+                 data-type="Notable" 
+                 data-desc="Design and deploy scalable systems on AWS. Highly valued certification."
+                 data-bonus="+25% Role matching for cloud positions">
+                <div class="node-inner">🏗️</div>
+            </div>
+
+            <div class="node node-small allocated" style="left: 600px; top: 260px;"
+                 data-name="Advanced Architectures" 
+                 data-type="Small Passive" 
+                 data-desc="Multi-region, disaster recovery, and enterprise patterns."></div>
+
+            <div class="node node-small" style="left: 540px; top: 200px;"></div>
+            <div class="node node-small" style="left: 660px; top: 200px;"></div>
+
+            <div class="node node-keystone" style="left: 600px; top: 140px;"
+                 data-name="Cloud Architect Mastery" 
+                 data-type="Keystone" 
+                 data-desc="Ultimate cloud expertise. You are the authority on cloud architecture decisions."
+                 data-bonus="Unlocks: Principal Architect track"
+                 data-req="Requires: Solutions Architect + 2 additional cloud certs">
+                <div class="node-inner">👑</div>
+            </div>
+
+            <!-- LEADERSHIP BRANCH (Left) -->
+            <div class="node node-small allocated" style="left: 500px; top: 550px;"></div>
+
+            <div class="node node-notable allocated" style="left: 420px; top: 520px;"
+                 data-name="Team Coordination" 
+                 data-type="Notable" 
+                 data-desc="Ability to coordinate small teams and delegate effectively."
+                 data-bonus="+10% Leadership assessment">
+                <div class="node-inner">👥</div>
+            </div>
+
+            <div class="node node-small allocated" style="left: 360px; top: 480px;"></div>
+
+            <div class="node node-notable allocated" style="left: 300px; top: 440px;"
+                 data-name="Project Leadership" 
+                 data-type="Notable" 
+                 data-desc="Lead project workstreams. Take ownership of deliverables."
+                 data-bonus="+20% Manager role matching">
+                <div class="node-inner">📋</div>
+            </div>
+
+            <div class="node node-small" style="left: 240px; top: 400px;"></div>
+            <div class="node node-small" style="left: 260px; top: 500px;"></div>
+            <div class="node node-small" style="left: 320px; top: 560px;"></div>
+
+            <div class="node node-notable" style="left: 260px; top: 600px;"
+                 data-name="People Development" 
+                 data-type="Notable" 
+                 data-desc="Actively develop team members. Critical for management roles."
+                 data-bonus="+25% Leadership track progression">
+                <div class="node-inner">🌱</div>
+            </div>
+
+            <div class="node node-keystone" style="left: 180px; top: 600px;"
+                 data-name="Executive Presence" 
+                 data-type="Keystone" 
+                 data-desc="Command respect in any room. Your leadership is undeniable."
+                 data-bonus="Unlocks: Senior Manager track"
+                 data-req="Requires: Mentor 5+ employees + Lead major initiative">
+                <div class="node-inner">⚡</div>
+            </div>
+
+            <!-- CONSULTING BRANCH (Right) -->
+            <div class="node node-small allocated" style="left: 700px; top: 550px;"></div>
+
+            <div class="node node-notable allocated" style="left: 780px; top: 520px;"
+                 data-name="Client Rapport" 
+                 data-type="Notable" 
+                 data-desc="Build strong client relationships. Trusted advisor status."
+                 data-bonus="+10% Client satisfaction scores">
+                <div class="node-inner">🤝</div>
+            </div>
+
+            <div class="node node-small allocated" style="left: 840px; top: 480px;"></div>
+
+            <div class="node node-notable" style="left: 900px; top: 440px;"
+                 data-name="Solution Selling" 
+                 data-type="Notable" 
+                 data-desc="Identify and propose solutions to client problems. Drive revenue."
+                 data-bonus="+15% Revenue generation credit">
+                <div class="node-inner">💡</div>
+            </div>
+
+            <div class="node node-small" style="left: 960px; top: 400px;"></div>
+            <div class="node node-small" style="left: 880px; top: 560px;"></div>
+
+            <div class="node node-notable" style="left: 940px; top: 600px;"
+                 data-name="Thought Leadership" 
+                 data-type="Notable" 
+                 data-desc="Publish insights. Speak at events. Build external brand."
+                 data-bonus="+20% Visibility score">
+                <div class="node-inner">🎤</div>
+            </div>
+
+            <div class="node node-keystone" style="left: 1020px; top: 600px;"
+                 data-name="Rainmaker" 
+                 data-type="Keystone" 
+                 data-desc="You bring in the big deals. Partners seek your involvement."
+                 data-bonus="Unlocks: Partner track"
+                 data-req="Requires: $1M+ revenue contribution">
+                <div class="node-inner">💰</div>
+            </div>
+
+            <!-- MENTORSHIP BRANCH (Bottom Left) -->
+            <div class="node node-small allocated" style="left: 550px; top: 680px;"></div>
+
+            <div class="node node-notable allocated" style="left: 500px; top: 740px;"
+                 data-name="Knowledge Sharing" 
+                 data-type="Notable" 
+                 data-desc="Actively share expertise with colleagues. Document learnings."
+                 data-bonus="+10% Team contribution score">
+                <div class="node-inner">📚</div>
+            </div>
+
+            <div class="node node-small" style="left: 440px; top: 780px;"></div>
+
+            <div class="node node-notable" style="left: 380px; top: 820px;"
+                 data-name="Formal Mentoring" 
+                 data-type="Notable" 
+                 data-desc="Officially mentor junior staff. Guide their career development."
+                 data-bonus="+15% Leadership readiness">
+                <div class="node-inner">🎓</div>
+            </div>
+
+            <div class="node node-small" style="left: 320px; top: 860px;"></div>
+            <div class="node node-small" style="left: 480px; top: 860px;"></div>
+
+            <div class="node node-keystone" style="left: 520px; top: 940px;"
+                 data-name="Legacy Builder" 
+                 data-type="Keystone" 
+                 data-desc="Your mentees go on to great success. Your impact multiplies."
+                 data-bonus="Unlocks: Director track"
+                 data-req="Requires: 3+ mentees promoted">
+                <div class="node-inner">🏛️</div>
+            </div>
+
+            <!-- BUSINESS BRANCH (Bottom Right) -->
+            <div class="node node-small allocated" style="left: 650px; top: 680px;"></div>
+
+            <div class="node node-notable" style="left: 700px; top: 740px;"
+                 data-name="Financial Acumen" 
+                 data-type="Notable" 
+                 data-desc="Understand P&L, budgeting, and financial metrics."
+                 data-bonus="+10% Business track matching">
+                <div class="node-inner">📊</div>
+            </div>
+
+            <div class="node node-small" style="left: 760px; top: 780px;"></div>
+
+            <div class="node node-notable" style="left: 820px; top: 820px;"
+                 data-name="Strategic Planning" 
+                 data-type="Notable" 
+                 data-desc="Contribute to long-term strategy. Think beyond the immediate."
+                 data-bonus="+15% Executive readiness">
+                <div class="node-inner">🎯</div>
+            </div>
+
+            <div class="node node-small" style="left: 880px; top: 860px;"></div>
+            <div class="node node-small" style="left: 720px; top: 860px;"></div>
+
+            <div class="node node-keystone" style="left: 680px; top: 940px;"
+                 data-name="Business Architect" 
+                 data-type="Keystone" 
+                 data-desc="You see the whole picture. Strategy and execution are one."
+                 data-bonus="Unlocks: Chief-level track"
+                 data-req="Requires: Lead P&L responsibility">
+                <div class="node-inner">🌐</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-name"></div>
+        <div class="tooltip-type"></div>
+        <div class="tooltip-desc"></div>
+        <div class="tooltip-bonus"></div>
+        <div class="tooltip-req"></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+        <div class="legend-title">Legend</div>
+        <div class="legend-items">
+            <div class="legend-item">
+                <div class="legend-node small allocated"></div>
+                <span>Allocated</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-node small"></div>
+                <span>Available</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-node notable"></div>
+                <span>Notable</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-node keystone"></div>
+                <span>Keystone</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ascendancy Preview -->
+    <div class="ascendancy-preview">
+        <div class="ascendancy-title">Ascendancy Paths</div>
+        <div class="ascendancy-path">
+            <div class="path-name">🗡️ Technical Mastery</div>
+            <div class="path-progress">
+                <div class="path-fill technical"></div>
+            </div>
+        </div>
+        <div class="ascendancy-path">
+            <div class="path-name">👑 Leadership</div>
+            <div class="path-progress">
+                <div class="path-fill leadership"></div>
+            </div>
+        </div>
+        <div class="ascendancy-path">
+            <div class="path-name">💎 Consulting Excellence</div>
+            <div class="path-progress">
+                <div class="path-fill consulting"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="control-btn" title="Zoom In">+</button>
+        <button class="control-btn" title="Zoom Out">−</button>
+        <button class="control-btn" title="Reset View">↺</button>
+    </div>
+
+    <script>
+        const tooltip = document.getElementById('tooltip');
+        const nodes = document.querySelectorAll('.node');
+
+        nodes.forEach(node => {
+            node.addEventListener('mouseenter', (e) => {
+                const name = node.dataset.name;
+                if (!name) return;
+
+                tooltip.querySelector('.tooltip-name').textContent = name;
+                tooltip.querySelector('.tooltip-type').textContent = node.dataset.type || '';
+                tooltip.querySelector('.tooltip-desc').textContent = node.dataset.desc || '';
+                tooltip.querySelector('.tooltip-bonus').textContent = node.dataset.bonus || '';
+                
+                const reqEl = tooltip.querySelector('.tooltip-req');
+                if (node.dataset.req) {
+                    reqEl.textContent = node.dataset.req;
+                    reqEl.style.display = 'block';
+                } else {
+                    reqEl.style.display = 'none';
+                }
+
+                tooltip.classList.add('visible');
+            });
+
+            node.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 20) + 'px';
+                tooltip.style.top = (e.clientY - 20) + 'px';
+            });
+
+            node.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible');
+            });
+
+            // Click to toggle allocation (demo)
+            node.addEventListener('click', () => {
+                if (!node.classList.contains('node-start')) {
+                    node.classList.toggle('allocated');
+                }
+            });
+        });
+
+        // Simple pan/zoom (demo)
+        let scale = 1;
+        const tree = document.getElementById('skillTree');
+
+        document.querySelectorAll('.control-btn').forEach((btn, i) => {
+            btn.addEventListener('click', () => {
+                if (i === 0) scale = Math.min(scale + 0.1, 1.5);
+                if (i === 1) scale = Math.max(scale - 0.1, 0.5);
+                if (i === 2) scale = 1;
+                tree.style.transform = `scale(${scale})`;
+            });
+        });
+    </script>
+</body>
+</html>
