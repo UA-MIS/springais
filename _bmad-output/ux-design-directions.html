@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpringAIS Design Directions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F6F6FA;
+            color: #2E2E38;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #2E2E38;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #747480;
+            margin-bottom: 48px;
+        }
+
+        .directions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .direction-card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .direction-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .direction-card.active {
+            border: 3px solid #FFE600;
+        }
+
+        .direction-number {
+            font-size: 14px;
+            font-weight: 600;
+            color: #FFE600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .direction-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #2E2E38;
+        }
+
+        .direction-description {
+            font-size: 14px;
+            color: #747480;
+            margin-bottom: 16px;
+        }
+
+        .direction-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            font-size: 12px;
+            padding: 4px 12px;
+            background: #F6F6FA;
+            border-radius: 12px;
+            color: #747480;
+        }
+
+        .mockup-container {
+            background: white;
+            border-radius: 8px;
+            padding: 32px;
+            margin-top: 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 600px;
+        }
+
+        .mockup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #F6F6FA;
+        }
+
+        .mockup-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2E2E38;
+        }
+
+        .close-btn {
+            background: #F6F6FA;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #747480;
+        }
+
+        .close-btn:hover {
+            background: #C4C4CD;
+        }
+
+        /* Direction 1: Dashboard-Centric */
+        .direction-1 {
+            background: #FFFFFF;
+        }
+
+        .direction-1 .header {
+            background: #1A1A24;
+            color: white;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: -32px -32px 32px -32px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .direction-1 .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .direction-1 .stat-card {
+            background: #F6F6FA;
+            padding: 24px;
+            border-radius: 8px;
+            border-left: 4px solid #FFE600;
+        }
+
+        .direction-1 .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2E2E38;
+            margin-bottom: 4px;
+        }
+
+        .direction-1 .stat-label {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        .direction-1 .matches-section {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .direction-1 .match-card {
+            background: white;
+            border: 2px solid #F6F6FA;
+            padding: 20px;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .direction-1 .match-card:hover {
+            border-color: #FFE600;
+        }
+
+        .direction-1 .match-percentage {
+            font-size: 32px;
+            font-weight: 700;
+            color: #FFE600;
+            margin-bottom: 8px;
+        }
+
+        .direction-1 .match-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2E2E38;
+            margin-bottom: 4px;
+        }
+
+        .direction-1 .match-meta {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        /* Direction 2: Card-Based Discovery */
+        .direction-2 {
+            background: #F6F6FA;
+        }
+
+        .direction-2 .filter-bar {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .direction-2 .filter-btn {
+            padding: 8px 16px;
+            background: #F6F6FA;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #747480;
+            cursor: pointer;
+        }
+
+        .direction-2 .filter-btn.active {
+            background: #FFE600;
+            color: #2E2E38;
+            font-weight: 600;
+        }
+
+        .direction-2 .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .direction-2 .role-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .direction-2 .role-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .direction-2 .role-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .direction-2 .role-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2E2E38;
+            margin-bottom: 4px;
+        }
+
+        .direction-2 .role-match {
+            font-size: 24px;
+            font-weight: 700;
+            color: #FFE600;
+        }
+
+        .direction-2 .role-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .direction-2 .role-tag {
+            font-size: 12px;
+            padding: 4px 10px;
+            background: #F6F6FA;
+            border-radius: 6px;
+            color: #747480;
+        }
+
+        /* Direction 3: List-Based Efficiency */
+        .direction-3 {
+            background: #FFFFFF;
+        }
+
+        .direction-3 .list-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 120px 100px;
+            gap: 16px;
+            padding: 16px 24px;
+            background: #F6F6FA;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .direction-3 .list-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 120px 100px;
+            gap: 16px;
+            padding: 20px 24px;
+            border-bottom: 1px solid #F6F6FA;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .direction-3 .list-item:hover {
+            background: #F6F6FA;
+        }
+
+        .direction-3 .item-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2E2E38;
+            margin-bottom: 4px;
+        }
+
+        .direction-3 .item-meta {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        .direction-3 .item-match {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFE600;
+            text-align: center;
+        }
+
+        .direction-3 .item-action {
+            text-align: right;
+        }
+
+        .direction-3 .btn-primary {
+            background: #FFE600;
+            color: #2E2E38;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Direction 4: Progress-Focused */
+        .direction-4 {
+            background: #FFFFFF;
+        }
+
+        .direction-4 .progress-hero {
+            background: linear-gradient(135deg, #FFE600 0%, #E6CF00 100%);
+            padding: 48px 32px;
+            border-radius: 12px;
+            margin: -32px -32px 32px -32px;
+            color: #2E2E38;
+        }
+
+        .direction-4 .progress-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .direction-4 .progress-bar-container {
+            background: rgba(46, 46, 56, 0.1);
+            border-radius: 12px;
+            height: 24px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .direction-4 .progress-bar {
+            background: #2E2E38;
+            height: 100%;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            transition: width 0.3s;
+        }
+
+        .direction-4 .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 32px;
+        }
+
+        .direction-4 .step {
+            flex: 1;
+            text-align: center;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            margin: 0 8px;
+        }
+
+        .direction-4 .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #FFE600;
+            color: #2E2E38;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin: 0 auto 8px;
+        }
+
+        .direction-4 .step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2E2E38;
+            margin-bottom: 4px;
+        }
+
+        .direction-4 .step-desc {
+            font-size: 12px;
+            color: #747480;
+        }
+
+        /* Direction 5: Comparison-Focused */
+        .direction-5 {
+            background: #F6F6FA;
+        }
+
+        .direction-5 .comparison-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .direction-5 .comparison-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2E2E38;
+            margin-bottom: 8px;
+        }
+
+        .direction-5 .comparison-subtitle {
+            font-size: 16px;
+            color: #747480;
+        }
+
+        .direction-5 .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .direction-5 .comparison-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .direction-5 .comparison-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .direction-5 .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #F6F6FA;
+        }
+
+        .direction-5 .metric-label {
+            font-size: 14px;
+            color: #2E2E38;
+        }
+
+        .direction-5 .metric-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2E2E38;
+        }
+
+        .direction-5 .metric-value.you {
+            color: #FFE600;
+        }
+
+        .direction-5 .metric-value.target {
+            color: #747480;
+        }
+
+        /* Direction 6: Minimalist Clean */
+        .direction-6 {
+            background: #FFFFFF;
+        }
+
+        .direction-6 .minimal-header {
+            padding: 24px 0;
+            border-bottom: 1px solid #F6F6FA;
+            margin-bottom: 32px;
+        }
+
+        .direction-6 .minimal-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2E2E38;
+            margin-bottom: 8px;
+        }
+
+        .direction-6 .minimal-subtitle {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        .direction-6 .content-section {
+            margin-bottom: 48px;
+        }
+
+        .direction-6 .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2E2E38;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 12px;
+        }
+
+        .direction-6 .minimal-card {
+            border-left: 3px solid #FFE600;
+            padding: 20px;
+            background: #F6F6FA;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 12px;
+        }
+
+        .direction-6 .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2E2E38;
+            margin-bottom: 4px;
+        }
+
+        .direction-6 .card-meta {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        /* Hidden by default */
+        .mockup-container {
+            display: none;
+        }
+
+        .mockup-container.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SpringAIS Design Directions</h1>
+        <p class="subtitle">Explore 6 different visual approaches for the SpringAIS platform. Click any direction to see a detailed mockup.</p>
+
+        <div class="directions-grid">
+            <div class="direction-card" onclick="showMockup(1)">
+                <div class="direction-number">Direction 1</div>
+                <div class="direction-title">Dashboard-Centric</div>
+                <div class="direction-description">Information-dense dashboard with stats, metrics, and role matches in a unified view. Optimized for power users who want everything at a glance.</div>
+                <div class="direction-tags">
+                    <span class="tag">Dense</span>
+                    <span class="tag">Analytical</span>
+                    <span class="tag">Data-First</span>
+                </div>
+            </div>
+
+            <div class="direction-card" onclick="showMockup(2)">
+                <div class="direction-number">Direction 2</div>
+                <div class="direction-title">Card-Based Discovery</div>
+                <div class="direction-description">Visual card-based layout emphasizing exploration and discovery. Each role is a beautiful card inviting interaction.</div>
+                <div class="direction-tags">
+                    <span class="tag">Visual</span>
+                    <span class="tag">Exploratory</span>
+                    <span class="tag">Modern</span>
+                </div>
+            </div>
+
+            <div class="direction-card" onclick="showMockup(3)">
+                <div class="direction-number">Direction 3</div>
+                <div class="direction-title">List-Based Efficiency</div>
+                <div class="direction-description">Clean, scannable list view optimized for quick comparison and decision-making. Minimal visual noise, maximum information clarity.</div>
+                <div class="direction-tags">
+                    <span class="tag">Efficient</span>
+                    <span class="tag">Scannable</span>
+                    <span class="tag">Minimal</span>
+                </div>
+            </div>
+
+            <div class="direction-card" onclick="showMockup(4)">
+                <div class="direction-number">Direction 4</div>
+                <div class="direction-title">Progress-Focused</div>
+                <div class="direction-description">Hero progress visualization with clear step-by-step journey. Emphasizes forward momentum and achievement.</div>
+                <div class="direction-tags">
+                    <span class="tag">Motivational</span>
+                    <span class="tag">Journey</span>
+                    <span class="tag">Achievement</span>
+                </div>
+            </div>
+
+            <div class="direction-card" onclick="showMockup(5)">
+                <div class="direction-number">Direction 5</div>
+                <div class="direction-title">Comparison-Focused</div>
+                <div class="direction-description">Side-by-side comparison layout highlighting Success Pattern insights. Makes "you vs. successful employees" the hero.</div>
+                <div class="direction-tags">
+                    <span class="tag">Comparative</span>
+                    <span class="tag">Insightful</span>
+                    <span class="tag">Benchmark</span>
+                </div>
+            </div>
+
+            <div class="direction-card" onclick="showMockup(6)">
+                <div class="direction-number">Direction 6</div>
+                <div class="direction-title">Minimalist Clean</div>
+                <div class="direction-description">Ultra-clean, content-first approach with generous white space. Lets the information speak without visual distraction.</div>
+                <div class="direction-tags">
+                    <span class="tag">Clean</span>
+                    <span class="tag">Content-First</span>
+                    <span class="tag">Professional</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direction 1 Mockup -->
+        <div id="mockup-1" class="mockup-container direction-1">
+            <div class="mockup-header">
+                <div class="mockup-title">Direction 1: Dashboard-Centric</div>
+                <button class="close-btn" onclick="hideMockup()">Close</button>
+            </div>
+            <div class="header">
+                <div style="font-size: 20px; font-weight: 700;">SpringAIS</div>
+                <div style="font-size: 14px;">Maya R. • Senior Consultant</div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">Role Matches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">78%</div>
+                    <div class="stat-label">Avg Match Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+            </div>
+            <div class="matches-section">
+                <div class="match-card">
+                    <div class="match-percentage">82%</div>
+                    <div class="match-title">Manager, Technology Consulting</div>
+                    <div class="match-meta">Cloud Transformation • 2 gaps identified</div>
+                </div>
+                <div class="match-card">
+                    <div class="match-percentage">75%</div>
+                    <div class="match-title">Senior Manager, Advisory</div>
+                    <div class="match-meta">Data & Analytics • Stretch opportunity</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direction 2 Mockup -->
+        <div id="mockup-2" class="mockup-container direction-2">
+            <div class="mockup-header">
+                <div class="mockup-title">Direction 2: Card-Based Discovery</div>
+                <button class="close-btn" onclick="hideMockup()">Close</button>
+            </div>
+            <div class="filter-bar">
+                <div class="filter-btn active">Best Fit</div>
+                <div class="filter-btn">Stretch</div>
+                <div class="filter-btn">Exploratory</div>
+                <div class="filter-btn">Trending</div>
+            </div>
+            <div class="cards-grid">
+                <div class="role-card">
+                    <div class="role-header">
+                        <div>
+                            <div class="role-title">Manager, Technology Consulting</div>
+                            <div style="font-size: 14px; color: #747480;">Cloud Transformation</div>
+                        </div>
+                        <div class="role-match">82%</div>
+                    </div>
+                    <div class="role-tags">
+                        <span class="role-tag">AWS</span>
+                        <span class="role-tag">Azure</span>
+                        <span class="role-tag">Leadership</span>
+                    </div>
+                </div>
+                <div class="role-card">
+                    <div class="role-header">
+                        <div>
+                            <div class="role-title">Senior Manager, Advisory</div>
+                            <div style="font-size: 14px; color: #747480;">Data & Analytics</div>
+                        </div>
+                        <div class="role-match">75%</div>
+                    </div>
+                    <div class="role-tags">
+                        <span class="role-tag">Python</span>
+                        <span class="role-tag">Data Pipeline</span>
+                        <span class="role-tag">Client Management</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direction 3 Mockup -->
+        <div id="mockup-3" class="mockup-container direction-3">
+            <div class="mockup-header">
+                <div class="mockup-title">Direction 3: List-Based Efficiency</div>
+                <button class="close-btn" onclick="hideMockup()">Close</button>
+            </div>
+            <div class="list-header">
+                <div>Role</div>
+                <div>Service Line</div>
+                <div>Match</div>
+                <div>Action</div>
+            </div>
+            <div class="list-item">
+                <div>
+                    <div class="item-title">Manager, Technology Consulting</div>
+                    <div class="item-meta">Cloud Transformation • 2 gaps</div>
+                </div>
+                <div class="item-meta">Technology Consulting</div>
+                <div class="item-match">82%</div>
+                <div class="item-action">
+                    <button class="btn-primary">View</button>
+                </div>
+            </div>
+            <div class="list-item">
+                <div>
+                    <div class="item-title">Senior Manager, Advisory</div>
+                    <div class="item-meta">Data & Analytics • Stretch</div>
+                </div>
+                <div class="item-meta">Advisory</div>
+                <div class="item-match">75%</div>
+                <div class="item-action">
+                    <button class="btn-primary">View</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direction 4 Mockup -->
+        <div id="mockup-4" class="mockup-container direction-4">
+            <div class="mockup-header">
+                <div class="mockup-title">Direction 4: Progress-Focused</div>
+                <button class="close-btn" onclick="hideMockup()">Close</button>
+            </div>
+            <div class="progress-hero">
+                <div class="progress-title">Your Path to Manager</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: 78%;">78% Match</div>
+                </div>
+                <div style="font-size: 14px; margin-top: 8px;">Complete 3 more steps to reach 90%</div>
+            </div>
+            <div class="progress-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-title">AWS Certification</div>
+                    <div class="step-desc">3-4 months</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Request Mentees</div>
+                    <div class="step-desc">2 weeks</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Community Leadership</div>
+                    <div class="step-desc">Ongoing</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direction 5 Mockup -->
+        <div id="mockup-5" class="mockup-container direction-5">
+            <div class="mockup-header">
+                <div class="mockup-title">Direction 5: Comparison-Focused</div>
+                <button class="close-btn" onclick="hideMockup()">Close</button>
+            </div>
+            <div class="comparison-header">
+                <div class="comparison-title">Success Pattern Comparison</div>
+                <div class="comparison-subtitle">How you compare to employees who advanced to Manager</div>
+            </div>
+            <div class="comparison-grid">
+                <div class="comparison-card">
+                    <div class="comparison-label">You</div>
+                    <div class="metric-row">
+                        <div class="metric-label">Effective Utilization</div>
+                        <div class="metric-value you">78%</div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-label">Active Mentees</div>
+                        <div class="metric-value you">0</div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-label">CPE Hours</div>
+                        <div class="metric-value you">38</div>
+                    </div>
+                </div>
+                <div class="comparison-card">
+                    <div class="comparison-label">Successful Employees</div>
+                    <div class="metric-row">
+                        <div class="metric-label">Effective Utilization</div>
+                        <div class="metric-value target">87%</div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-label">Active Mentees</div>
+                        <div class="metric-value target">2+</div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-label">CPE Hours</div>
+                        <div class="metric-value target">45+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Direction 6 Mockup -->
+        <div id="mockup-6" class="mockup-container direction-6">
+            <div class="mockup-header">
+                <div class="mockup-title">Direction 6: Minimalist Clean</div>
+                <button class="close-btn" onclick="hideMockup()">Close</button>
+            </div>
+            <div class="minimal-header">
+                <div class="minimal-title">Role Matches</div>
+                <div class="minimal-subtitle">12 opportunities aligned with your skills</div>
+            </div>
+            <div class="content-section">
+                <div class="section-title">Best Fit</div>
+                <div class="minimal-card">
+                    <div class="card-title">Manager, Technology Consulting</div>
+                    <div class="card-meta">82% match • Cloud Transformation • 2 gaps</div>
+                </div>
+                <div class="minimal-card">
+                    <div class="card-title">Senior Manager, Advisory</div>
+                    <div class="card-meta">75% match • Data & Analytics • Stretch opportunity</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showMockup(direction) {
+            // Hide all mockups
+            document.querySelectorAll('.mockup-container').forEach(m => {
+                m.classList.remove('active');
+            });
+            
+            // Show selected mockup
+            document.getElementById('mockup-' + direction).classList.add('active');
+            
+            // Scroll to mockup
+            document.getElementById('mockup-' + direction).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function hideMockup() {
+            document.querySelectorAll('.mockup-container').forEach(m => {
+                m.classList.remove('active');
+            });
+        }
+    </script>
+</body>
+</html>

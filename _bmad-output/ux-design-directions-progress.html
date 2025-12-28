@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpringAIS - Progress-Focused Design Variations</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0A0A0F;
+            color: #F6F6FA;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        h1 {
+            font-size: 56px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #FFE600 0%, #FF8C00 50%, #FFE600 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #747480;
+            margin-bottom: 64px;
+        }
+
+        .highlight {
+            color: #FFE600;
+        }
+
+        .variations-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: rgba(255, 230, 0, 0.1);
+            border: 1px solid rgba(255, 230, 0, 0.3);
+            border-radius: 24px;
+            color: #FFE600;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: #FFE600;
+            color: #0A0A0F;
+        }
+
+        .variation-container {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .variation-container.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============================================
+           VARIATION 1: GAMIFIED RPG STYLE
+           ============================================ */
+        .rpg-container {
+            background: linear-gradient(180deg, #1A1A24 0%, #0A0A0F 100%);
+            border-radius: 24px;
+            padding: 48px;
+            border: 1px solid rgba(255, 230, 0, 0.2);
+        }
+
+        .rpg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+        }
+
+        .rpg-avatar {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .avatar-circle {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #FFE600 0%, #FF8C00 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 700;
+            color: #0A0A0F;
+            box-shadow: 0 0 40px rgba(255, 230, 0, 0.3);
+            position: relative;
+        }
+
+        .level-badge {
+            position: absolute;
+            bottom: -8px;
+            right: -8px;
+            background: #0A0A0F;
+            border: 3px solid #FFE600;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .rpg-name {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .rpg-class {
+            font-size: 16px;
+            color: #FFE600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .rpg-xp {
+            text-align: right;
+        }
+
+        .xp-label {
+            font-size: 14px;
+            color: #747480;
+            margin-bottom: 8px;
+        }
+
+        .xp-value {
+            font-size: 48px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .xp-bar {
+            width: 300px;
+            height: 12px;
+            background: rgba(255, 230, 0, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFE600, #FF8C00);
+            border-radius: 6px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .rpg-stats {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .stat-hexagon {
+            background: rgba(255, 230, 0, 0.05);
+            border: 1px solid rgba(255, 230, 0, 0.2);
+            border-radius: 12px;
+            padding: 24px 16px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-hexagon:hover {
+            background: rgba(255, 230, 0, 0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(255, 230, 0, 0.2);
+        }
+
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .stat-name {
+            font-size: 12px;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .rpg-quests {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 32px;
+        }
+
+        .quests-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .quest-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: rgba(255, 230, 0, 0.05);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid #FFE600;
+            transition: all 0.3s;
+        }
+
+        .quest-item:hover {
+            background: rgba(255, 230, 0, 0.1);
+            transform: translateX(8px);
+        }
+
+        .quest-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #FFE600, #FF8C00);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .quest-info {
+            flex: 1;
+        }
+
+        .quest-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .quest-desc {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        .quest-reward {
+            text-align: right;
+        }
+
+        .reward-xp {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFE600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .reward-label {
+            font-size: 12px;
+            color: #747480;
+        }
+
+        /* ============================================
+           VARIATION 2: TIMELINE JOURNEY
+           ============================================ */
+        .timeline-container {
+            background: linear-gradient(135deg, #0F1419 0%, #1A1F2E 100%);
+            border-radius: 24px;
+            padding: 48px;
+            overflow-x: auto;
+        }
+
+        .timeline-header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .timeline-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .timeline-subtitle {
+            font-size: 18px;
+            color: #747480;
+        }
+
+        .timeline-track {
+            position: relative;
+            min-width: 1200px;
+            padding: 100px 0;
+        }
+
+        .timeline-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #FFE600 0%, #FFE600 40%, rgba(255, 230, 0, 0.2) 40%, rgba(255, 230, 0, 0.2) 100%);
+            border-radius: 4px;
+            transform: translateY(-50%);
+        }
+
+        .timeline-nodes {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .timeline-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 200px;
+        }
+
+        .node-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #1A1A24;
+            border: 4px solid rgba(255, 230, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 2;
+        }
+
+        .node-circle.completed {
+            background: linear-gradient(135deg, #FFE600, #FF8C00);
+            border-color: #FFE600;
+            box-shadow: 0 0 30px rgba(255, 230, 0, 0.5);
+        }
+
+        .node-circle.current {
+            border-color: #FFE600;
+            animation: nodePulse 2s infinite;
+        }
+
+        @keyframes nodePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 230, 0, 0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(255, 230, 0, 0); }
+        }
+
+        .node-content {
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        .node-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .node-date {
+            font-size: 14px;
+            color: #747480;
+            margin-bottom: 8px;
+        }
+
+        .node-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255, 230, 0, 0.1);
+            border-radius: 12px;
+            font-size: 12px;
+            color: #FFE600;
+        }
+
+        /* ============================================
+           VARIATION 3: MOUNTAIN CLIMB
+           ============================================ */
+        .mountain-container {
+            background: linear-gradient(180deg, #1a0a2e 0%, #0a0f1f 50%, #0A0A0F 100%);
+            border-radius: 24px;
+            padding: 48px;
+            position: relative;
+            overflow: hidden;
+            min-height: 700px;
+        }
+
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 300px;
+            background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+                        radial-gradient(circle at 80% 40%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+                        radial-gradient(circle at 40% 60%, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+            background-size: 200px 200px;
+        }
+
+        .mountain-svg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 500px;
+        }
+
+        .mountain-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .mountain-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .mountain-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .summit-goal {
+            display: inline-block;
+            padding: 12px 32px;
+            background: rgba(255, 230, 0, 0.1);
+            border: 2px solid #FFE600;
+            border-radius: 32px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .climb-progress {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin-top: 200px;
+        }
+
+        .altitude-meter {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 24px 48px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 230, 0, 0.3);
+        }
+
+        .altitude-value {
+            font-size: 64px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #FFE600;
+        }
+
+        .altitude-label {
+            font-size: 14px;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .altitude-max {
+            font-size: 24px;
+            color: #747480;
+        }
+
+        .base-camps {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .camp {
+            padding: 16px 24px;
+            background: rgba(255, 230, 0, 0.1);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .camp.reached {
+            background: linear-gradient(135deg, rgba(255, 230, 0, 0.2), rgba(255, 140, 0, 0.2));
+            border: 1px solid #FFE600;
+        }
+
+        .camp-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .camp-alt {
+            font-size: 12px;
+            color: #747480;
+        }
+
+        /* ============================================
+           VARIATION 4: MISSION CONTROL / SPACE
+           ============================================ */
+        .space-container {
+            background: radial-gradient(ellipse at center, #0a1628 0%, #050a14 100%);
+            border-radius: 24px;
+            padding: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(255, 230, 0, 0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255, 230, 0, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .space-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .mission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+        }
+
+        .mission-title {
+            font-size: 14px;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+        }
+
+        .mission-name {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .mission-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #00FF88;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #00FF88;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .telemetry-card {
+            background: rgba(255, 230, 0, 0.03);
+            border: 1px solid rgba(255, 230, 0, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .telemetry-label {
+            font-size: 10px;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .telemetry-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: #FFE600;
+        }
+
+        .telemetry-unit {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        .launch-sequence {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            padding: 32px;
+        }
+
+        .sequence-title {
+            font-size: 12px;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 24px;
+        }
+
+        .sequence-steps {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sequence-step {
+            flex: 1;
+            padding: 16px;
+            background: rgba(255, 230, 0, 0.05);
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .sequence-step.complete {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00FF88;
+        }
+
+        .sequence-step.active {
+            background: rgba(255, 230, 0, 0.1);
+            border-color: #FFE600;
+            animation: stepPulse 2s infinite;
+        }
+
+        @keyframes stepPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 230, 0, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(255, 230, 0, 0); }
+        }
+
+        .step-num {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .step-name {
+            font-size: 12px;
+            color: #747480;
+        }
+
+        /* ============================================
+           VARIATION 5: RACING DASHBOARD
+           ============================================ */
+        .racing-container {
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            border-radius: 24px;
+            padding: 48px;
+            position: relative;
+        }
+
+        .racing-stripes {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 20px,
+                rgba(255, 230, 0, 0.05) 20px,
+                rgba(255, 230, 0, 0.05) 40px
+            );
+            border-radius: 0 24px 24px 0;
+        }
+
+        .racing-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .speedometer {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 48px;
+        }
+
+        .speedo-ring {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 135deg,
+                #FFE600 0%,
+                #FF8C00 25%,
+                #FF4444 40%,
+                rgba(255, 230, 0, 0.1) 40%,
+                rgba(255, 230, 0, 0.1) 100%
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .speedo-inner {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .speedo-value {
+            font-size: 72px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #FFE600;
+        }
+
+        .speedo-label {
+            font-size: 16px;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .racing-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+
+        .racing-stat {
+            background: rgba(255, 230, 0, 0.05);
+            border-left: 4px solid #FFE600;
+            padding: 24px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .racing-stat-label {
+            font-size: 12px;
+            color: #747480;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .racing-stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .pit-stops {
+            display: flex;
+            gap: 16px;
+        }
+
+        .pit-stop {
+            flex: 1;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 230, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .pit-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #FFE600, #FF8C00);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .pit-info {
+            flex: 1;
+        }
+
+        .pit-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .pit-time {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        /* ============================================
+           VARIATION 6: GROWTH GARDEN
+           ============================================ */
+        .garden-container {
+            background: linear-gradient(180deg, #1a2e1a 0%, #0a1a0a 100%);
+            border-radius: 24px;
+            padding: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .garden-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .garden-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .garden-subtitle {
+            font-size: 18px;
+            color: #88cc88;
+        }
+
+        .tree-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 48px;
+        }
+
+        .skill-tree {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+
+        .tree-trunk {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 200px;
+            background: linear-gradient(90deg, #5a3d1a, #8b6914, #5a3d1a);
+            border-radius: 4px;
+        }
+
+        .tree-crown {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 60%, #4a8f4a 0%, #2d5a2d 50%, #1a3d1a 100%);
+            box-shadow: 0 0 60px rgba(74, 143, 74, 0.3);
+        }
+
+        .fruit {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #FFE600;
+            box-shadow: 0 0 20px rgba(255, 230, 0, 0.5);
+        }
+
+        .fruit:nth-child(1) { top: 80px; left: 100px; }
+        .fruit:nth-child(2) { top: 60px; left: 180px; }
+        .fruit:nth-child(3) { top: 100px; left: 250px; }
+        .fruit:nth-child(4) { top: 150px; left: 80px; }
+        .fruit:nth-child(5) { top: 180px; left: 220px; }
+
+        .growth-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .growth-card {
+            background: rgba(74, 143, 74, 0.1);
+            border: 1px solid rgba(74, 143, 74, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .growth-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .growth-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #FFE600;
+            margin-bottom: 4px;
+        }
+
+        .growth-label {
+            font-size: 14px;
+            color: #88cc88;
+        }
+
+        /* ============================================
+           VARIATION 7: ACHIEVEMENT UNLOCKS
+           ============================================ */
+        .achievements-container {
+            background: linear-gradient(135deg, #1f1a2e 0%, #0f0a1f 100%);
+            border-radius: 24px;
+            padding: 48px;
+        }
+
+        .achievements-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+        }
+
+        .achievements-title {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .total-score {
+            text-align: right;
+        }
+
+        .score-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #FFE600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .score-label {
+            font-size: 14px;
+            color: #747480;
+        }
+
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .achievement {
+            background: rgba(255, 230, 0, 0.05);
+            border: 2px solid rgba(255, 230, 0, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .achievement.unlocked {
+            background: rgba(255, 230, 0, 0.1);
+            border-color: #FFE600;
+        }
+
+        .achievement.unlocked::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255, 230, 0, 0.1) 50%, transparent 60%);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            from { transform: translateX(-100%) rotate(45deg); }
+            to { transform: translateX(100%) rotate(45deg); }
+        }
+
+        .achievement-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .achievement-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .achievement-desc {
+            font-size: 12px;
+            color: #747480;
+        }
+
+        .locked .achievement-icon {
+            filter: grayscale(1);
+            opacity: 0.3;
+        }
+
+        .next-unlock {
+            background: rgba(255, 230, 0, 0.05);
+            border-radius: 16px;
+            padding: 32px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .unlock-progress {
+            flex: 1;
+        }
+
+        .unlock-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .unlock-desc {
+            font-size: 14px;
+            color: #747480;
+            margin-bottom: 16px;
+        }
+
+        .unlock-bar {
+            height: 12px;
+            background: rgba(255, 230, 0, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .unlock-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFE600, #FF8C00);
+            border-radius: 6px;
+            width: 75%;
+        }
+
+        /* ============================================
+           VARIATION 8: STORY CHAPTERS
+           ============================================ */
+        .story-container {
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            border-radius: 24px;
+            padding: 48px;
+        }
+
+        .story-header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .story-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .story-subtitle {
+            font-size: 18px;
+            color: #747480;
+        }
+
+        .chapters {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .chapter {
+            display: flex;
+            gap: 32px;
+            padding: 32px;
+            background: rgba(255, 230, 0, 0.02);
+            border-radius: 16px;
+            border-left: 4px solid rgba(255, 230, 0, 0.2);
+            transition: all 0.3s;
+        }
+
+        .chapter.current {
+            background: rgba(255, 230, 0, 0.05);
+            border-left-color: #FFE600;
+            box-shadow: 0 0 40px rgba(255, 230, 0, 0.1);
+        }
+
+        .chapter.completed {
+            border-left-color: #00FF88;
+        }
+
+        .chapter-num {
+            font-size: 64px;
+            font-weight: 700;
+            color: rgba(255, 230, 0, 0.2);
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1;
+        }
+
+        .chapter.current .chapter-num {
+            color: #FFE600;
+        }
+
+        .chapter-content {
+            flex: 1;
+        }
+
+        .chapter-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .chapter-desc {
+            font-size: 16px;
+            color: #747480;
+            margin-bottom: 16px;
+        }
+
+        .chapter-progress {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .chapter-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 230, 0, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .chapter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFE600, #FF8C00);
+            border-radius: 4px;
+        }
+
+        .chapter-percent {
+            font-size: 14px;
+            font-weight: 600;
+            color: #FFE600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Progress-Focused Variations</h1>
+        <p class="subtitle">You loved Direction 4. Here are <span class="highlight">8 wild variations</span> pushing the progress metaphor in different directions.</p>
+
+        <div class="variations-nav">
+            <button class="nav-btn active" onclick="showVariation(1)">🎮 RPG Gamified</button>
+            <button class="nav-btn" onclick="showVariation(2)">📍 Timeline Journey</button>
+            <button class="nav-btn" onclick="showVariation(3)">⛰️ Mountain Climb</button>
+            <button class="nav-btn" onclick="showVariation(4)">🚀 Mission Control</button>
+            <button class="nav-btn" onclick="showVariation(5)">🏎️ Racing Dashboard</button>
+            <button class="nav-btn" onclick="showVariation(6)">🌳 Growth Garden</button>
+            <button class="nav-btn" onclick="showVariation(7)">🏆 Achievement Unlocks</button>
+            <button class="nav-btn" onclick="showVariation(8)">📖 Story Chapters</button>
+        </div>
+
+        <!-- Variation 1: RPG Gamified -->
+        <div id="var-1" class="variation-container active">
+            <div class="rpg-container">
+                <div class="rpg-header">
+                    <div class="rpg-avatar">
+                        <div class="avatar-circle">
+                            MR
+                            <div class="level-badge">12</div>
+                        </div>
+                        <div>
+                            <div class="rpg-name">Maya Rodriguez</div>
+                            <div class="rpg-class">Senior Consultant • Cloud Mage</div>
+                        </div>
+                    </div>
+                    <div class="rpg-xp">
+                        <div class="xp-label">Experience Points</div>
+                        <div class="xp-value">12,847 XP</div>
+                        <div class="xp-bar">
+                            <div class="xp-fill" style="width: 78%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rpg-stats">
+                    <div class="stat-hexagon">
+                        <div class="stat-icon">💼</div>
+                        <div class="stat-name">Utilization</div>
+                        <div class="stat-value" style="color: #FFE600;">78%</div>
+                    </div>
+                    <div class="stat-hexagon">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-name">Mentees</div>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-hexagon">
+                        <div class="stat-icon">📚</div>
+                        <div class="stat-name">CPE Hours</div>
+                        <div class="stat-value">38</div>
+                    </div>
+                    <div class="stat-hexagon">
+                        <div class="stat-icon">🏅</div>
+                        <div class="stat-name">Badges</div>
+                        <div class="stat-value">4</div>
+                    </div>
+                    <div class="stat-hexagon">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-name">Rating</div>
+                        <div class="stat-value">4.3</div>
+                    </div>
+                    <div class="stat-hexagon">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-name">Match</div>
+                        <div class="stat-value" style="color: #FFE600;">82%</div>
+                    </div>
+                </div>
+
+                <div class="rpg-quests">
+                    <div class="quests-title">⚔️ Active Quests</div>
+                    <div class="quest-item">
+                        <div class="quest-icon">🎓</div>
+                        <div class="quest-info">
+                            <div class="quest-name">AWS Solutions Architect Certification</div>
+                            <div class="quest-desc">Complete the certification to unlock Cloud Architecture abilities</div>
+                        </div>
+                        <div class="quest-reward">
+                            <div class="reward-xp">+2,500 XP</div>
+                            <div class="reward-label">Reward</div>
+                        </div>
+                    </div>
+                    <div class="quest-item">
+                        <div class="quest-icon">🤝</div>
+                        <div class="quest-info">
+                            <div class="quest-name">Mentor 2 Apprentices</div>
+                            <div class="quest-desc">Guide 2 staff members to unlock Leadership skills</div>
+                        </div>
+                        <div class="quest-reward">
+                            <div class="reward-xp">+1,800 XP</div>
+                            <div class="reward-label">Reward</div>
+                        </div>
+                    </div>
+                    <div class="quest-item">
+                        <div class="quest-icon">👑</div>
+                        <div class="quest-info">
+                            <div class="quest-name">Lead a Guild Initiative</div>
+                            <div class="quest-desc">Start an internal community to gain Visibility points</div>
+                        </div>
+                        <div class="quest-reward">
+                            <div class="reward-xp">+3,200 XP</div>
+                            <div class="reward-label">Reward</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variation 2: Timeline Journey -->
+        <div id="var-2" class="variation-container">
+            <div class="timeline-container">
+                <div class="timeline-header">
+                    <div class="timeline-title">Your Career Journey</div>
+                    <div class="timeline-subtitle">From Senior Consultant to Manager — 18 months to destination</div>
+                </div>
+                <div class="timeline-track">
+                    <div class="timeline-line"></div>
+                    <div class="timeline-nodes">
+                        <div class="timeline-node">
+                            <div class="node-circle completed">✓</div>
+                            <div class="node-content">
+                                <div class="node-title">Started Journey</div>
+                                <div class="node-date">Jan 2024</div>
+                                <div class="node-badge">Complete</div>
+                            </div>
+                        </div>
+                        <div class="timeline-node">
+                            <div class="node-circle completed">✓</div>
+                            <div class="node-content">
+                                <div class="node-title">Skills Assessment</div>
+                                <div class="node-date">Feb 2024</div>
+                                <div class="node-badge">Complete</div>
+                            </div>
+                        </div>
+                        <div class="timeline-node">
+                            <div class="node-circle current">📍</div>
+                            <div class="node-content">
+                                <div class="node-title">AWS Certification</div>
+                                <div class="node-date">In Progress</div>
+                                <div class="node-badge">Current</div>
+                            </div>
+                        </div>
+                        <div class="timeline-node">
+                            <div class="node-circle">👥</div>
+                            <div class="node-content">
+                                <div class="node-title">Build Mentees</div>
+                                <div class="node-date">Q2 2025</div>
+                                <div class="node-badge">Upcoming</div>
+                            </div>
+                        </div>
+                        <div class="timeline-node">
+                            <div class="node-circle">🎯</div>
+                            <div class="node-content">
+                                <div class="node-title">Manager Role</div>
+                                <div class="node-date">Aug 2025</div>
+                                <div class="node-badge">Goal</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variation 3: Mountain Climb -->
+        <div id="var-3" class="variation-container">
+            <div class="mountain-container">
+                <div class="stars"></div>
+                <div class="mountain-content">
+                    <div class="mountain-header">
+                        <div class="mountain-title">🏔️ Climb to Manager</div>
+                        <div class="summit-goal">🚩 Summit: Manager, Technology Consulting</div>
+                    </div>
+                    <div class="climb-progress">
+                        <div class="altitude-meter">
+                            <div>
+                                <div class="altitude-value">7,800</div>
+                                <div class="altitude-label">Current Altitude (ft)</div>
+                            </div>
+                            <div class="altitude-max">/ 10,000 ft to summit</div>
+                        </div>
+                        <div class="base-camps">
+                            <div class="camp reached">
+                                <div class="camp-name">⛺ Base Camp</div>
+                                <div class="camp-alt">Senior Consultant</div>
+                            </div>
+                            <div class="camp reached">
+                                <div class="camp-name">⛺ Camp I</div>
+                                <div class="camp-alt">Skills Assessed</div>
+                            </div>
+                            <div class="camp reached">
+                                <div class="camp-name">⛺ Camp II</div>
+                                <div class="camp-alt">78% Match</div>
+                            </div>
+                            <div class="camp">
+                                <div class="camp-name">⛺ Camp III</div>
+                                <div class="camp-alt">AWS Certified</div>
+                            </div>
+                            <div class="camp">
+                                <div class="camp-name">🚩 Summit</div>
+                                <div class="camp-alt">Manager</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variation 4: Mission Control -->
+        <div id="var-4" class="variation-container">
+            <div class="space-container">
+                <div class="grid-overlay"></div>
+                <div class="space-content">
+                    <div class="mission-header">
+                        <div>
+                            <div class="mission-title">MISSION CONTROL</div>
+                            <div class="mission-name">Operation: Manager Advancement</div>
+                        </div>
+                        <div class="mission-status">
+                            <div class="status-dot"></div>
+                            <div class="status-text">Systems Nominal</div>
+                        </div>
+                    </div>
+
+                    <div class="telemetry-grid">
+                        <div class="telemetry-card">
+                            <div class="telemetry-label">Match Trajectory</div>
+                            <div class="telemetry-value">82<span class="telemetry-unit">%</span></div>
+                        </div>
+                        <div class="telemetry-card">
+                            <div class="telemetry-label">Utilization Fuel</div>
+                            <div class="telemetry-value">78<span class="telemetry-unit">%</span></div>
+                        </div>
+                        <div class="telemetry-card">
+                            <div class="telemetry-label">CPE Thrust</div>
+                            <div class="telemetry-value">38<span class="telemetry-unit">hrs</span></div>
+                        </div>
+                        <div class="telemetry-card">
+                            <div class="telemetry-label">ETA to Target</div>
+                            <div class="telemetry-value">18<span class="telemetry-unit">mo</span></div>
+                        </div>
+                    </div>
+
+                    <div class="launch-sequence">
+                        <div class="sequence-title">Launch Sequence Progress</div>
+                        <div class="sequence-steps">
+                            <div class="sequence-step complete">
+                                <div class="step-num">01</div>
+                                <div class="step-name">Profile Upload</div>
+                            </div>
+                            <div class="sequence-step complete">
+                                <div class="step-num">02</div>
+                                <div class="step-name">Skills Extracted</div>
+                            </div>
+                            <div class="sequence-step active">
+                                <div class="step-num">03</div>
+                                <div class="step-name">AWS Certification</div>
+                            </div>
+                            <div class="sequence-step">
+                                <div class="step-num">04</div>
+                                <div class="step-name">Mentorship</div>
+                            </div>
+                            <div class="sequence-step">
+                                <div class="step-num">05</div>
+                                <div class="step-name">Community Lead</div>
+                            </div>
+                            <div class="sequence-step">
+                                <div class="step-num">06</div>
+                                <div class="step-name">PROMOTION</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variation 5: Racing Dashboard -->
+        <div id="var-5" class="variation-container">
+            <div class="racing-container">
+                <div class="racing-stripes"></div>
+                <div class="racing-content">
+                    <div class="speedometer">
+                        <div class="speedo-ring">
+                            <div class="speedo-inner">
+                                <div class="speedo-value">82</div>
+                                <div class="speedo-label">Match %</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="racing-stats">
+                        <div class="racing-stat">
+                            <div class="racing-stat-label">Lap Time</div>
+                            <div class="racing-stat-value">18 mo</div>
+                        </div>
+                        <div class="racing-stat">
+                            <div class="racing-stat-label">Position</div>
+                            <div class="racing-stat-value" style="color: #FFE600;">P3</div>
+                        </div>
+                        <div class="racing-stat">
+                            <div class="racing-stat-label">Gap to Leader</div>
+                            <div class="racing-stat-value">+9%</div>
+                        </div>
+                    </div>
+
+                    <div class="pit-stops">
+                        <div class="pit-stop">
+                            <div class="pit-icon">🎓</div>
+                            <div class="pit-info">
+                                <div class="pit-name">AWS Pit Stop</div>
+                                <div class="pit-time">Est. 3-4 months</div>
+                            </div>
+                        </div>
+                        <div class="pit-stop">
+                            <div class="pit-icon">👥</div>
+                            <div class="pit-info">
+                                <div class="pit-name">Mentorship Pit Stop</div>
+                                <div class="pit-time">Est. 2 weeks setup</div>
+                            </div>
+                        </div>
+                        <div class="pit-stop">
+                            <div class="pit-icon">👑</div>
+                            <div class="pit-info">
+                                <div class="pit-name">Leadership Pit Stop</div>
+                                <div class="pit-time">Ongoing</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variation 6: Growth Garden -->
+        <div id="var-6" class="variation-container">
+            <div class="garden-container">
+                <div class="garden-header">
+                    <div class="garden-title">🌱 Your Career Garden</div>
+                    <div class="garden-subtitle">Nurturing growth from Senior to Manager</div>
+                </div>
+
+                <div class="tree-container">
+                    <div class="skill-tree">
+                        <div class="tree-crown">
+                            <div class="fruit"></div>
+                            <div class="fruit"></div>
+                            <div class="fruit"></div>
+                            <div class="fruit"></div>
+                            <div class="fruit"></div>
+                        </div>
+                        <div class="tree-trunk"></div>
+                    </div>
+                </div>
+
+                <div class="growth-metrics">
+                    <div class="growth-card">
+                        <div class="growth-icon">🌱</div>
+                        <div class="growth-value">4</div>
+                        <div class="growth-label">Skills Sprouting</div>
+                    </div>
+                    <div class="growth-card">
+                        <div class="growth-icon">🌿</div>
+                        <div class="growth-value">8</div>
+                        <div class="growth-label">Skills Growing</div>
+                    </div>
+                    <div class="growth-card">
+                        <div class="growth-icon">🌳</div>
+                        <div class="growth-value">12</div>
+                        <div class="growth-label">Skills Matured</div>
+                    </div>
+                    <div class="growth-card">
+                        <div class="growth-icon">🍎</div>
+                        <div class="growth-value">5</div>
+                        <div class="growth-label">Fruits Harvested</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variation 7: Achievement Unlocks -->
+        <div id="var-7" class="variation-container">
+            <div class="achievements-container">
+                <div class="achievements-header">
+                    <div class="achievements-title">🏆 Achievement Unlocks</div>
+                    <div class="total-score">
+                        <div class="score-value">4,200</div>
+                        <div class="score-label">Career Points</div>
+                    </div>
+                </div>
+
+                <div class="achievements-grid">
+                    <div class="achievement unlocked">
+                        <div class="achievement-icon">🎯</div>
+                        <div class="achievement-name">First Match</div>
+                        <div class="achievement-desc">Found your first role match</div>
+                    </div>
+                    <div class="achievement unlocked">
+                        <div class="achievement-icon">📊</div>
+                        <div class="achievement-name">Data Master</div>
+                        <div class="achievement-desc">Uploaded 5+ documents</div>
+                    </div>
+                    <div class="achievement unlocked">
+                        <div class="achievement-icon">⚡</div>
+                        <div class="achievement-name">Quick Learner</div>
+                        <div class="achievement-desc">Completed first badge</div>
+                    </div>
+                    <div class="achievement unlocked">
+                        <div class="achievement-icon">🔥</div>
+                        <div class="achievement-name">On Fire</div>
+                        <div class="achievement-desc">78% utilization achieved</div>
+                    </div>
+                    <div class="achievement locked">
+                        <div class="achievement-icon">🎓</div>
+                        <div class="achievement-name">Certified Pro</div>
+                        <div class="achievement-desc">Complete AWS certification</div>
+                    </div>
+                    <div class="achievement locked">
+                        <div class="achievement-icon">👥</div>
+                        <div class="achievement-name">Mentor Master</div>
+                        <div class="achievement-desc">Mentor 2+ employees</div>
+                    </div>
+                    <div class="achievement locked">
+                        <div class="achievement-icon">👑</div>
+                        <div class="achievement-name">Community Leader</div>
+                        <div class="achievement-desc">Lead an initiative</div>
+                    </div>
+                    <div class="achievement locked">
+                        <div class="achievement-icon">🚀</div>
+                        <div class="achievement-name">Promotion Ready</div>
+                        <div class="achievement-desc">Reach 90% match</div>
+                    </div>
+                </div>
+
+                <div class="next-unlock">
+                    <div class="achievement-icon" style="font-size: 64px;">🎓</div>
+                    <div class="unlock-progress">
+                        <div class="unlock-title">Next Unlock: Certified Pro</div>
+                        <div class="unlock-desc">Complete your AWS Solutions Architect certification to unlock this achievement</div>
+                        <div class="unlock-bar">
+                            <div class="unlock-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variation 8: Story Chapters -->
+        <div id="var-8" class="variation-container">
+            <div class="story-container">
+                <div class="story-header">
+                    <div class="story-title">"The Rise of a Manager"</div>
+                    <div class="story-subtitle">Your career story, written one chapter at a time</div>
+                </div>
+
+                <div class="chapters">
+                    <div class="chapter completed">
+                        <div class="chapter-num">01</div>
+                        <div class="chapter-content">
+                            <div class="chapter-title">The Beginning</div>
+                            <div class="chapter-desc">You started your journey as a Senior Consultant with dreams of leadership...</div>
+                            <div class="chapter-progress">
+                                <div class="chapter-bar"><div class="chapter-fill" style="width: 100%;"></div></div>
+                                <div class="chapter-percent">100%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chapter completed">
+                        <div class="chapter-num">02</div>
+                        <div class="chapter-content">
+                            <div class="chapter-title">The Discovery</div>
+                            <div class="chapter-desc">SpringAIS revealed paths you never knew existed. The Manager role was within reach...</div>
+                            <div class="chapter-progress">
+                                <div class="chapter-bar"><div class="chapter-fill" style="width: 100%;"></div></div>
+                                <div class="chapter-percent">100%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chapter current">
+                        <div class="chapter-num">03</div>
+                        <div class="chapter-content">
+                            <div class="chapter-title">The Training</div>
+                            <div class="chapter-desc">Now you sharpen your skills. AWS certification awaits. The path is clear...</div>
+                            <div class="chapter-progress">
+                                <div class="chapter-bar"><div class="chapter-fill" style="width: 45%;"></div></div>
+                                <div class="chapter-percent">45%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chapter">
+                        <div class="chapter-num">04</div>
+                        <div class="chapter-content">
+                            <div class="chapter-title">The Mentorship</div>
+                            <div class="chapter-desc">To lead, you must first teach. Two apprentices await your guidance...</div>
+                            <div class="chapter-progress">
+                                <div class="chapter-bar"><div class="chapter-fill" style="width: 0%;"></div></div>
+                                <div class="chapter-percent">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chapter">
+                        <div class="chapter-num">05</div>
+                        <div class="chapter-content">
+                            <div class="chapter-title">The Promotion</div>
+                            <div class="chapter-desc">The final chapter awaits. Manager title earned. Your story continues...</div>
+                            <div class="chapter-progress">
+                                <div class="chapter-bar"><div class="chapter-fill" style="width: 0%;"></div></div>
+                                <div class="chapter-percent">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showVariation(num) {
+            // Hide all variations
+            document.querySelectorAll('.variation-container').forEach(v => {
+                v.classList.remove('active');
+            });
+            
+            // Deactivate all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            
+            // Show selected variation
+            document.getElementById('var-' + num).classList.add('active');
+            
+            // Activate selected nav button
+            document.querySelectorAll('.nav-btn')[num - 1].classList.add('active');
+        }
+    </script>
+</body>
+</html>
