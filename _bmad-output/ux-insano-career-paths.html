@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpringAIS - INSANO MODE Career Paths</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --ey-yellow: #FFE600;
+            --ey-yellow-dark: #E6CF00;
+            --ey-off-black: #2E2E38;
+            --ey-confident-black: #1A1A24;
+            --ey-gray-02: #C4C4CD;
+            --ey-gray-01: #747480;
+            --ey-off-white: #F6F6FA;
+            --ey-white: #FFFFFF;
+            --success: #22C55E;
+            --warning: #F59E0B;
+            --info: #3B82F6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--ey-off-white);
+            color: var(--ey-off-black);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--ey-confident-black);
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: var(--ey-gray-01);
+        }
+
+        .career-nav {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 48px;
+            flex-wrap: wrap;
+        }
+
+        .career-btn {
+            padding: 14px 28px;
+            background: var(--ey-white);
+            border: 2px solid var(--ey-gray-02);
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ey-off-black);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .career-btn:hover {
+            border-color: var(--ey-yellow);
+            background: rgba(255, 230, 0, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .career-btn.active {
+            background: var(--ey-yellow);
+            border-color: var(--ey-yellow);
+            color: var(--ey-confident-black);
+        }
+
+        .career-path {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .career-path.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ============================================
+           INSANO MODE LAYOUT
+           ============================================ */
+        .insano-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        /* Hero Row */
+        .insano-hero {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        /* Match Score Card */
+        .insano-match-card {
+            background: var(--ey-white);
+            border-radius: 20px;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .insano-match-ring {
+            width: 140px;
+            height: 140px;
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .insano-match-ring svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .insano-match-ring .ring-bg {
+            fill: none;
+            stroke: var(--ey-off-white);
+            stroke-width: 12;
+        }
+
+        .insano-match-ring .ring-progress {
+            fill: none;
+            stroke: var(--ey-yellow);
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .insano-match-value {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .insano-match-value .number {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--ey-confident-black);
+            line-height: 1;
+        }
+
+        .insano-match-value .label {
+            font-size: 11px;
+            color: var(--ey-gray-01);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .insano-match-subtitle {
+            font-size: 14px;
+            color: var(--ey-gray-01);
+            text-align: center;
+        }
+
+        /* Journey Card */
+        .insano-journey {
+            background: var(--ey-white);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .journey-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .journey-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ey-confident-black);
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            background: var(--ey-off-white);
+            border: 1px solid var(--ey-gray-02);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--ey-off-black);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--ey-yellow);
+            background: rgba(255, 230, 0, 0.05);
+        }
+
+        .journey-timeline {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px 0;
+        }
+
+        .journey-line {
+            position: absolute;
+            top: 44px;
+            left: 60px;
+            right: 60px;
+            height: 4px;
+            background: var(--ey-off-white);
+            border-radius: 2px;
+        }
+
+        .journey-line-fill {
+            height: 100%;
+            background: var(--ey-yellow);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .journey-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1;
+            width: 120px;
+        }
+
+        .journey-node-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--ey-off-white);
+            border: 4px solid var(--ey-white);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .journey-node-dot.completed {
+            background: var(--ey-yellow);
+        }
+
+        .journey-node-dot.current {
+            background: var(--ey-white);
+            border: 4px solid var(--ey-yellow);
+            box-shadow: 0 0 0 4px rgba(255,230,0,0.2);
+        }
+
+        .journey-node-dot.future {
+            background: var(--ey-gray-02);
+        }
+
+        .journey-node-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ey-confident-black);
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .journey-node-date {
+            font-size: 11px;
+            color: var(--ey-gray-01);
+        }
+
+        /* Comparison Card */
+        .insano-comparison {
+            background: var(--ey-white);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .comparison-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .comparison-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ey-confident-black);
+            margin-bottom: 4px;
+        }
+
+        .comparison-header p {
+            font-size: 12px;
+            color: var(--ey-gray-01);
+        }
+
+        .comparison-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .comparison-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .comparison-bar-label {
+            width: 80px;
+            font-size: 11px;
+            color: var(--ey-gray-01);
+            text-align: right;
+        }
+
+        .comparison-bar-track {
+            flex: 1;
+            height: 24px;
+            background: var(--ey-off-white);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .comparison-bar-you {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            height: 16px;
+            background: var(--ey-yellow);
+            border-radius: 8px;
+            transition: width 0.8s ease;
+        }
+
+        .comparison-bar-benchmark {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: var(--ey-confident-black);
+            border-radius: 2px;
+        }
+
+        .comparison-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+        }
+
+        .comparison-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--ey-gray-01);
+        }
+
+        .comparison-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .comparison-legend-dot.you { background: var(--ey-yellow); }
+        .comparison-legend-dot.benchmark { background: var(--ey-confident-black); }
+
+        /* Content Row */
+        .insano-content {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+        }
+
+        /* Radial Card */
+        .insano-radial-card {
+            background: var(--ey-white);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .radial-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .radial-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ey-confident-black);
+        }
+
+        .radial-chart {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .radial-chart svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .radial-bg-ring {
+            fill: none;
+            stroke: var(--ey-off-white);
+            stroke-width: 20;
+        }
+
+        .radial-progress-ring {
+            fill: none;
+            stroke-width: 20;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease-out;
+        }
+
+        .radial-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .radial-center-value {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--ey-confident-black);
+            line-height: 1;
+        }
+
+        .radial-center-label {
+            font-size: 12px;
+            color: var(--ey-gray-01);
+            margin-top: 4px;
+        }
+
+        .radial-legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .radial-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radial-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .radial-legend-text {
+            font-size: 12px;
+            color: var(--ey-off-black);
+        }
+
+        .radial-legend-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ey-confident-black);
+            margin-left: auto;
+        }
+
+        /* Priority Card */
+        .insano-priority {
+            background: var(--ey-white);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .priority-header {
+            margin-bottom: 24px;
+        }
+
+        .priority-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--ey-confident-black);
+            margin-bottom: 4px;
+        }
+
+        .priority-header p {
+            font-size: 12px;
+            color: var(--ey-gray-01);
+        }
+
+        .priority-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .priority-item {
+            background: var(--ey-off-white);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+        }
+
+        .priority-item:hover {
+            background: var(--ey-white);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+
+        .priority-item.high {
+            border-left-color: var(--ey-yellow);
+        }
+
+        .priority-item.medium {
+            border-left-color: var(--ey-gray-02);
+        }
+
+        .priority-rank {
+            width: 28px;
+            height: 28px;
+            background: var(--ey-white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--ey-confident-black);
+        }
+
+        .priority-info {
+            flex: 1;
+        }
+
+        .priority-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ey-confident-black);
+            margin-bottom: 2px;
+        }
+
+        .priority-impact {
+            font-size: 11px;
+            color: var(--ey-gray-01);
+        }
+
+        .priority-progress {
+            width: 60px;
+            text-align: right;
+        }
+
+        .priority-percent {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--ey-confident-black);
+        }
+
+        /* Actions Bar */
+        .insano-actions {
+            background: var(--ey-confident-black);
+            border-radius: 16px;
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .insano-actions-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .insano-actions-left span {
+            color: var(--ey-white);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .insano-action-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .insano-action-btn.primary {
+            background: var(--ey-yellow);
+            color: var(--ey-confident-black);
+        }
+
+        .insano-action-btn.primary:hover {
+            background: #FFD000;
+        }
+
+        .insano-action-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--ey-gray-01);
+            color: var(--ey-white);
+        }
+
+        .insano-action-btn.secondary:hover {
+            border-color: var(--ey-yellow);
+            color: var(--ey-yellow);
+        }
+
+        .insano-actions-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .modal-content {
+            background: var(--ey-white);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 1000px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--ey-gray-02);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--ey-confident-black);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--ey-off-white);
+            border-radius: 6px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: var(--ey-gray-02);
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 24px;
+        }
+
+        .network-viewer {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: var(--ey-confident-black);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .network-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .network-edge {
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .network-edge.active {
+            stroke: var(--ey-yellow);
+            stroke-width: 2;
+        }
+
+        .network-node-bg {
+            fill: var(--ey-off-black);
+            stroke: var(--ey-gray-01);
+            stroke-width: 2;
+        }
+
+        .network-node.allocated .network-node-bg {
+            fill: var(--ey-yellow);
+            stroke: var(--ey-yellow);
+        }
+
+        .network-node.current .network-node-bg {
+            stroke: var(--ey-yellow);
+            stroke-width: 3;
+        }
+
+        .network-legend {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            background: rgba(0,0,0,0.6);
+            padding: 12px 16px;
+            border-radius: 8px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--ey-white);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.completed { background: var(--ey-yellow); }
+        .legend-dot.in-progress { background: var(--ey-off-black); border: 2px solid var(--ey-yellow); }
+        .legend-dot.locked { background: var(--ey-gray-01); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Career Path Visualizations</h1>
+            <p class="page-subtitle">INSANO MODE - Multiple career tracks with rich data visualization</p>
+        </div>
+
+        <div class="career-nav">
+            <button class="career-btn active" onclick="showCareer(1)">Financial Advisory</button>
+            <button class="career-btn" onclick="showCareer(2)">Business Development</button>
+            <button class="career-btn" onclick="showCareer(3)">Risk & Compliance</button>
+            <button class="career-btn" onclick="showCareer(4)">Transaction Advisory</button>
+        </div>
+
+        <!-- CAREER 1: Financial Advisory -->
+        <div id="career-1" class="career-path active">
+            <div class="insano-layout">
+                <div class="insano-hero">
+                    <div class="insano-match-card">
+                        <div class="insano-match-ring">
+                            <svg viewBox="0 0 100 100">
+                                <circle class="ring-bg" cx="50" cy="50" r="42" transform="rotate(-90 50 50)"/>
+                                <circle class="ring-progress" cx="50" cy="50" r="42"
+                                        stroke="var(--ey-yellow)"
+                                        stroke-dasharray="264"
+                                        stroke-dashoffset="58"
+                                        transform="rotate(-90 50 50)"/>
+                            </svg>
+                            <div class="insano-match-value">
+                                <span class="number">78</span>
+                                <span class="label">Match</span>
+                            </div>
+                        </div>
+                        <div class="insano-match-subtitle">Manager, Financial Advisory</div>
+                    </div>
+
+                    <div class="insano-journey">
+                        <div class="journey-header">
+                            <h3>Your Career Journey</h3>
+                            <button class="btn-secondary" onclick="openModal('finance')">View Skill Tree</button>
+                        </div>
+                        <div class="journey-timeline">
+                            <div class="journey-line">
+                                <div class="journey-line-fill" style="width: 40%;"></div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot completed">✓</div>
+                                <div class="journey-node-title">Senior Associate</div>
+                                <div class="journey-node-date">Current Role</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot current"></div>
+                                <div class="journey-node-title">CFA Level III</div>
+                                <div class="journey-node-date">Jun 2025</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot future"></div>
+                                <div class="journey-node-title">Engagement Lead</div>
+                                <div class="journey-node-date">Oct 2025</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot future"></div>
+                                <div class="journey-node-title">Manager</div>
+                                <div class="journey-node-date">Mar 2026</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insano-comparison">
+                        <div class="comparison-header">
+                            <h3>Success Pattern</h3>
+                            <p>You vs. Promoted Managers</p>
+                        </div>
+                        <div class="comparison-bars">
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Financial Acumen</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 92%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 85%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Client Relations</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 70%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 80%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Deal Execution</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 75%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 78%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Team Mgmt</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 55%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 82%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-legend">
+                            <div class="comparison-legend-item">
+                                <div class="comparison-legend-dot you"></div>
+                                <span>You</span>
+                            </div>
+                            <div class="comparison-legend-item">
+                                <div class="comparison-legend-dot benchmark"></div>
+                                <span>Avg. at Promotion</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insano-content">
+                    <div class="insano-radial-card">
+                        <div class="radial-header">
+                            <h3>Skills by Category</h3>
+                        </div>
+                        <div class="radial-chart">
+                            <svg viewBox="0 0 200 200">
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="85" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="85"
+                                        stroke="#FFE600"
+                                        stroke-dasharray="534" stroke-dashoffset="42"
+                                        transform="rotate(-90 100 100)"/>
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="62" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="62"
+                                        stroke="#2E2E38"
+                                        stroke-dasharray="390" stroke-dashoffset="136"
+                                        transform="rotate(-90 100 100)"/>
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="39" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="39"
+                                        stroke="#747480"
+                                        stroke-dasharray="245" stroke-dashoffset="98"
+                                        transform="rotate(-90 100 100)"/>
+                            </svg>
+                            <div class="radial-center">
+                                <div class="radial-center-value">31</div>
+                                <div class="radial-center-label">of 45 skills</div>
+                            </div>
+                        </div>
+                        <div class="radial-legend">
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-yellow);"></div>
+                                <span class="radial-legend-text">Financial</span>
+                                <span class="radial-legend-value">92%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-off-black);"></div>
+                                <span class="radial-legend-text">Leadership</span>
+                                <span class="radial-legend-value">65%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-gray-01);"></div>
+                                <span class="radial-legend-text">Client Mgmt</span>
+                                <span class="radial-legend-value">60%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-gray-02);"></div>
+                                <span class="radial-legend-text">Deal Execution</span>
+                                <span class="radial-legend-value">75%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insano-priority">
+                        <div class="priority-header">
+                            <h3>Priority Skills</h3>
+                            <p>Highest impact on your goal</p>
+                        </div>
+                        <div class="priority-list">
+                            <div class="priority-item high">
+                                <div class="priority-rank">1</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">CFA Level III</div>
+                                    <div class="priority-impact">+10% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">65%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item high">
+                                <div class="priority-rank">2</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Client Relationship Building</div>
+                                    <div class="priority-impact">+7% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">50%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item high">
+                                <div class="priority-rank">3</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Team Leadership</div>
+                                    <div class="priority-impact">+6% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">40%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item medium">
+                                <div class="priority-rank">4</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">M&A Due Diligence</div>
+                                    <div class="priority-impact">+4% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">80%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item medium">
+                                <div class="priority-rank">5</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Proposal Development</div>
+                                    <div class="priority-impact">+3% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">55%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insano-actions">
+                    <div class="insano-actions-left">
+                        <span>Ready to continue your journey?</span>
+                    </div>
+                    <div class="insano-actions-right">
+                        <button class="insano-action-btn secondary">Find a Mentor</button>
+                        <button class="insano-action-btn secondary">Browse Courses</button>
+                        <button class="insano-action-btn primary">Continue CFA Study</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAREER 2: Business Development -->
+        <div id="career-2" class="career-path">
+            <div class="insano-layout">
+                <div class="insano-hero">
+                    <div class="insano-match-card">
+                        <div class="insano-match-ring">
+                            <svg viewBox="0 0 100 100">
+                                <circle class="ring-bg" cx="50" cy="50" r="42" transform="rotate(-90 50 50)"/>
+                                <circle class="ring-progress" cx="50" cy="50" r="42"
+                                        stroke="var(--ey-yellow)"
+                                        stroke-dasharray="264"
+                                        stroke-dashoffset="37"
+                                        transform="rotate(-90 50 50)"/>
+                            </svg>
+                            <div class="insano-match-value">
+                                <span class="number">86</span>
+                                <span class="label">Match</span>
+                            </div>
+                        </div>
+                        <div class="insano-match-subtitle">Senior Manager, Business Development</div>
+                    </div>
+
+                    <div class="insano-journey">
+                        <div class="journey-header">
+                            <h3>Your Career Journey</h3>
+                            <button class="btn-secondary" onclick="openModal('bd')">View Skill Tree</button>
+                        </div>
+                        <div class="journey-timeline">
+                            <div class="journey-line">
+                                <div class="journey-line-fill" style="width: 55%;"></div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot completed">✓</div>
+                                <div class="journey-node-title">Manager, Sales</div>
+                                <div class="journey-node-date">Current Role</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot current"></div>
+                                <div class="journey-node-title">$3M Pipeline</div>
+                                <div class="journey-node-date">Q2 2025</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot future"></div>
+                                <div class="journey-node-title">Account Lead</div>
+                                <div class="journey-node-date">Q4 2025</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot future"></div>
+                                <div class="journey-node-title">Sr. Manager</div>
+                                <div class="journey-node-date">Q2 2026</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insano-comparison">
+                        <div class="comparison-header">
+                            <h3>Success Pattern</h3>
+                            <p>You vs. Promoted Sr. Managers</p>
+                        </div>
+                        <div class="comparison-bars">
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Revenue Gen</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 88%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 82%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Client Network</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 82%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 78%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Proposal Win</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 90%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 75%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Team Building</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 72%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 80%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-legend">
+                            <div class="comparison-legend-item">
+                                <div class="comparison-legend-dot you"></div>
+                                <span>You</span>
+                            </div>
+                            <div class="comparison-legend-item">
+                                <div class="comparison-legend-dot benchmark"></div>
+                                <span>Avg. at Promotion</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insano-content">
+                    <div class="insano-radial-card">
+                        <div class="radial-header">
+                            <h3>Skills by Category</h3>
+                        </div>
+                        <div class="radial-chart">
+                            <svg viewBox="0 0 200 200">
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="85" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="85"
+                                        stroke="#FFE600"
+                                        stroke-dasharray="534" stroke-dashoffset="64"
+                                        transform="rotate(-90 100 100)"/>
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="62" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="62"
+                                        stroke="#2E2E38"
+                                        stroke-dasharray="390" stroke-dashoffset="78"
+                                        transform="rotate(-90 100 100)"/>
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="39" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="39"
+                                        stroke="#747480"
+                                        stroke-dasharray="245" stroke-dashoffset="49"
+                                        transform="rotate(-90 100 100)"/>
+                            </svg>
+                            <div class="radial-center">
+                                <div class="radial-center-value">28</div>
+                                <div class="radial-center-label">of 35 skills</div>
+                            </div>
+                        </div>
+                        <div class="radial-legend">
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-yellow);"></div>
+                                <span class="radial-legend-text">Sales</span>
+                                <span class="radial-legend-value">88%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-off-black);"></div>
+                                <span class="radial-legend-text">Networking</span>
+                                <span class="radial-legend-value">80%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-gray-01);"></div>
+                                <span class="radial-legend-text">Strategy</span>
+                                <span class="radial-legend-value">80%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-gray-02);"></div>
+                                <span class="radial-legend-text">Leadership</span>
+                                <span class="radial-legend-value">72%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insano-priority">
+                        <div class="priority-header">
+                            <h3>Priority Skills</h3>
+                            <p>Highest impact on your goal</p>
+                        </div>
+                        <div class="priority-list">
+                            <div class="priority-item high">
+                                <div class="priority-rank">1</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">C-Suite Relationship Building</div>
+                                    <div class="priority-impact">+5% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">70%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item high">
+                                <div class="priority-rank">2</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Team Development</div>
+                                    <div class="priority-impact">+4% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">55%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item high">
+                                <div class="priority-rank">3</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Strategic Account Planning</div>
+                                    <div class="priority-impact">+3% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">60%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item medium">
+                                <div class="priority-rank">4</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Cross-Selling Expertise</div>
+                                    <div class="priority-impact">+2% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">85%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item medium">
+                                <div class="priority-rank">5</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Market Analysis</div>
+                                    <div class="priority-impact">+1% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">90%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insano-actions">
+                    <div class="insano-actions-left">
+                        <span>Ready to continue your journey?</span>
+                    </div>
+                    <div class="insano-actions-right">
+                        <button class="insano-action-btn secondary">View Pipeline</button>
+                        <button class="insano-action-btn secondary">Find Sponsor</button>
+                        <button class="insano-action-btn primary">Schedule Client Meeting</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAREER 3: Risk & Compliance -->
+        <div id="career-3" class="career-path">
+            <div class="insano-layout">
+                <div class="insano-hero">
+                    <div class="insano-match-card">
+                        <div class="insano-match-ring">
+                            <svg viewBox="0 0 100 100">
+                                <circle class="ring-bg" cx="50" cy="50" r="42" transform="rotate(-90 50 50)"/>
+                                <circle class="ring-progress" cx="50" cy="50" r="42"
+                                        stroke="var(--ey-yellow)"
+                                        stroke-dasharray="264"
+                                        stroke-dashoffset="71"
+                                        transform="rotate(-90 50 50)"/>
+                            </svg>
+                            <div class="insano-match-value">
+                                <span class="number">73</span>
+                                <span class="label">Match</span>
+                            </div>
+                        </div>
+                        <div class="insano-match-subtitle">Manager, Risk Advisory</div>
+                    </div>
+
+                    <div class="insano-journey">
+                        <div class="journey-header">
+                            <h3>Your Career Journey</h3>
+                            <button class="btn-secondary" onclick="openModal('risk')">View Skill Tree</button>
+                        </div>
+                        <div class="journey-timeline">
+                            <div class="journey-line">
+                                <div class="journey-line-fill" style="width: 30%;"></div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot completed">✓</div>
+                                <div class="journey-node-title">Senior Auditor</div>
+                                <div class="journey-node-date">Current Role</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot current"></div>
+                                <div class="journey-node-title">CISA Cert</div>
+                                <div class="journey-node-date">Apr 2025</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot future"></div>
+                                <div class="journey-node-title">Team Lead</div>
+                                <div class="journey-node-date">Sep 2025</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot future"></div>
+                                <div class="journey-node-title">Manager</div>
+                                <div class="journey-node-date">Jun 2026</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insano-comparison">
+                        <div class="comparison-header">
+                            <h3>Success Pattern</h3>
+                            <p>You vs. Promoted Managers</p>
+                        </div>
+                        <div class="comparison-bars">
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Risk Analysis</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 85%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 80%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Regulatory</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 68%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 85%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">IT Controls</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 55%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 78%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Leadership</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 60%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 82%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-legend">
+                            <div class="comparison-legend-item">
+                                <div class="comparison-legend-dot you"></div>
+                                <span>You</span>
+                            </div>
+                            <div class="comparison-legend-item">
+                                <div class="comparison-legend-dot benchmark"></div>
+                                <span>Avg. at Promotion</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insano-content">
+                    <div class="insano-radial-card">
+                        <div class="radial-header">
+                            <h3>Skills by Category</h3>
+                        </div>
+                        <div class="radial-chart">
+                            <svg viewBox="0 0 200 200">
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="85" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="85"
+                                        stroke="#FFE600"
+                                        stroke-dasharray="534" stroke-dashoffset="80"
+                                        transform="rotate(-90 100 100)"/>
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="62" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="62"
+                                        stroke="#2E2E38"
+                                        stroke-dasharray="390" stroke-dashoffset="175"
+                                        transform="rotate(-90 100 100)"/>
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="39" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="39"
+                                        stroke="#747480"
+                                        stroke-dasharray="245" stroke-dashoffset="134"
+                                        transform="rotate(-90 100 100)"/>
+                            </svg>
+                            <div class="radial-center">
+                                <div class="radial-center-value">22</div>
+                                <div class="radial-center-label">of 38 skills</div>
+                            </div>
+                        </div>
+                        <div class="radial-legend">
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-yellow);"></div>
+                                <span class="radial-legend-text">Audit</span>
+                                <span class="radial-legend-value">85%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-off-black);"></div>
+                                <span class="radial-legend-text">Regulatory</span>
+                                <span class="radial-legend-value">55%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-gray-01);"></div>
+                                <span class="radial-legend-text">IT Controls</span>
+                                <span class="radial-legend-value">45%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-gray-02);"></div>
+                                <span class="radial-legend-text">Leadership</span>
+                                <span class="radial-legend-value">60%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insano-priority">
+                        <div class="priority-header">
+                            <h3>Priority Skills</h3>
+                            <p>Highest impact on your goal</p>
+                        </div>
+                        <div class="priority-list">
+                            <div class="priority-item high">
+                                <div class="priority-rank">1</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">CISA Certification</div>
+                                    <div class="priority-impact">+12% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">40%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item high">
+                                <div class="priority-rank">2</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">SOX Compliance</div>
+                                    <div class="priority-impact">+8% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">55%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item high">
+                                <div class="priority-rank">3</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Team Leadership</div>
+                                    <div class="priority-impact">+5% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">60%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item medium">
+                                <div class="priority-rank">4</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Data Analytics</div>
+                                    <div class="priority-impact">+3% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">30%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item medium">
+                                <div class="priority-rank">5</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Cybersecurity Fundamentals</div>
+                                    <div class="priority-impact">+2% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">25%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insano-actions">
+                    <div class="insano-actions-left">
+                        <span>Ready to continue your journey?</span>
+                    </div>
+                    <div class="insano-actions-right">
+                        <button class="insano-action-btn secondary">Find Study Partner</button>
+                        <button class="insano-action-btn secondary">Browse SOX Courses</button>
+                        <button class="insano-action-btn primary">Continue CISA Prep</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAREER 4: Transaction Advisory -->
+        <div id="career-4" class="career-path">
+            <div class="insano-layout">
+                <div class="insano-hero">
+                    <div class="insano-match-card">
+                        <div class="insano-match-ring">
+                            <svg viewBox="0 0 100 100">
+                                <circle class="ring-bg" cx="50" cy="50" r="42" transform="rotate(-90 50 50)"/>
+                                <circle class="ring-progress" cx="50" cy="50" r="42"
+                                        stroke="var(--ey-yellow)"
+                                        stroke-dasharray="264"
+                                        stroke-dashoffset="24"
+                                        transform="rotate(-90 50 50)"/>
+                            </svg>
+                            <div class="insano-match-value">
+                                <span class="number">91</span>
+                                <span class="label">Match</span>
+                            </div>
+                        </div>
+                        <div class="insano-match-subtitle">Senior Manager, Transaction Advisory</div>
+                    </div>
+
+                    <div class="insano-journey">
+                        <div class="journey-header">
+                            <h3>Your Career Journey</h3>
+                            <button class="btn-secondary" onclick="openModal('tas')">View Skill Tree</button>
+                        </div>
+                        <div class="journey-timeline">
+                            <div class="journey-line">
+                                <div class="journey-line-fill" style="width: 75%;"></div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot completed">✓</div>
+                                <div class="journey-node-title">Manager, TAS</div>
+                                <div class="journey-node-date">Current Role</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot completed">✓</div>
+                                <div class="journey-node-title">10+ Deals Led</div>
+                                <div class="journey-node-date">Achieved</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot current"></div>
+                                <div class="journey-node-title">$50M+ Deal</div>
+                                <div class="journey-node-date">Q1 2025</div>
+                            </div>
+                            <div class="journey-node">
+                                <div class="journey-node-dot future"></div>
+                                <div class="journey-node-title">Sr. Manager</div>
+                                <div class="journey-node-date">Q3 2025</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insano-comparison">
+                        <div class="comparison-header">
+                            <h3>Success Pattern</h3>
+                            <p>You vs. Promoted Sr. Managers</p>
+                        </div>
+                        <div class="comparison-bars">
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Deal Execution</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 95%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 88%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Valuation</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 92%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 85%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">Client Mgmt</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 88%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 82%;"></div>
+                                </div>
+                            </div>
+                            <div class="comparison-bar-row">
+                                <div class="comparison-bar-label">BD/Pipeline</div>
+                                <div class="comparison-bar-track">
+                                    <div class="comparison-bar-you" style="width: 78%;"></div>
+                                    <div class="comparison-bar-benchmark" style="left: 85%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comparison-legend">
+                            <div class="comparison-legend-item">
+                                <div class="comparison-legend-dot you"></div>
+                                <span>You</span>
+                            </div>
+                            <div class="comparison-legend-item">
+                                <div class="comparison-legend-dot benchmark"></div>
+                                <span>Avg. at Promotion</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insano-content">
+                    <div class="insano-radial-card">
+                        <div class="radial-header">
+                            <h3>Skills by Category</h3>
+                        </div>
+                        <div class="radial-chart">
+                            <svg viewBox="0 0 200 200">
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="85" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="85"
+                                        stroke="#FFE600"
+                                        stroke-dasharray="534" stroke-dashoffset="26"
+                                        transform="rotate(-90 100 100)"/>
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="62" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="62"
+                                        stroke="#2E2E38"
+                                        stroke-dasharray="390" stroke-dashoffset="31"
+                                        transform="rotate(-90 100 100)"/>
+                                <circle class="radial-bg-ring" cx="100" cy="100" r="39" transform="rotate(-90 100 100)"/>
+                                <circle class="radial-progress-ring" cx="100" cy="100" r="39"
+                                        stroke="#747480"
+                                        stroke-dasharray="245" stroke-dashoffset="54"
+                                        transform="rotate(-90 100 100)"/>
+                            </svg>
+                            <div class="radial-center">
+                                <div class="radial-center-value">38</div>
+                                <div class="radial-center-label">of 42 skills</div>
+                            </div>
+                        </div>
+                        <div class="radial-legend">
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-yellow);"></div>
+                                <span class="radial-legend-text">Deal Execution</span>
+                                <span class="radial-legend-value">95%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-off-black);"></div>
+                                <span class="radial-legend-text">Valuation</span>
+                                <span class="radial-legend-value">92%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-gray-01);"></div>
+                                <span class="radial-legend-text">Client Mgmt</span>
+                                <span class="radial-legend-value">78%</span>
+                            </div>
+                            <div class="radial-legend-item">
+                                <div class="radial-legend-color" style="background: var(--ey-gray-02);"></div>
+                                <span class="radial-legend-text">BD/Pipeline</span>
+                                <span class="radial-legend-value">78%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insano-priority">
+                        <div class="priority-header">
+                            <h3>Priority Skills</h3>
+                            <p>Highest impact on your goal</p>
+                        </div>
+                        <div class="priority-list">
+                            <div class="priority-item high">
+                                <div class="priority-rank">1</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Lead $50M+ Deal</div>
+                                    <div class="priority-impact">+5% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">80%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item high">
+                                <div class="priority-rank">2</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Business Development</div>
+                                    <div class="priority-impact">+3% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">65%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item medium">
+                                <div class="priority-rank">3</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Cross-Border Transactions</div>
+                                    <div class="priority-impact">+1% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">90%</div>
+                                </div>
+                            </div>
+                            <div class="priority-item medium">
+                                <div class="priority-rank">4</div>
+                                <div class="priority-info">
+                                    <div class="priority-name">Team Mentoring</div>
+                                    <div class="priority-impact">+1% match score if completed</div>
+                                </div>
+                                <div class="priority-progress">
+                                    <div class="priority-percent">85%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="insano-actions">
+                    <div class="insano-actions-left">
+                        <span>Almost there! Keep pushing!</span>
+                    </div>
+                    <div class="insano-actions-right">
+                        <button class="insano-action-btn secondary">View Deal Pipeline</button>
+                        <button class="insano-action-btn secondary">Request Sponsor Review</button>
+                        <button class="insano-action-btn primary">Continue $50M Deal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Tree Modal -->
+    <div class="modal-overlay" id="skillTreeModal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modal-title">Skill Development Tree</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="network-viewer">
+                    <svg class="network-svg" viewBox="0 0 900 500">
+                        <!-- Dynamic content based on career path -->
+                        <line class="network-edge active" x1="450" y1="250" x2="300" y2="150"/>
+                        <line class="network-edge active" x1="450" y1="250" x2="600" y2="150"/>
+                        <line class="network-edge active" x1="450" y1="250" x2="250" y2="280"/>
+                        <line class="network-edge" x1="450" y1="250" x2="650" y2="280"/>
+                        <line class="network-edge active" x1="450" y1="250" x2="350" y2="380"/>
+                        <line class="network-edge" x1="450" y1="250" x2="550" y2="380"/>
+
+                        <line class="network-edge active" x1="300" y1="150" x2="180" y2="100"/>
+                        <line class="network-edge active" x1="300" y1="150" x2="200" y2="200"/>
+                        <line class="network-edge active" x1="600" y1="150" x2="720" y2="100"/>
+                        <line class="network-edge" x1="600" y1="150" x2="700" y2="200"/>
+
+                        <g class="network-node current" transform="translate(450, 250)">
+                            <circle class="network-node-bg" r="28"/>
+                            <text fill="white" text-anchor="middle" dy="5" font-size="12" font-weight="600">YOU</text>
+                        </g>
+
+                        <g class="network-node allocated" transform="translate(300, 150)">
+                            <circle class="network-node-bg" r="24"/>
+                            <text fill="#1A1A24" text-anchor="middle" dy="5" font-size="10" font-weight="600">Core</text>
+                        </g>
+                        <g class="network-node allocated" transform="translate(180, 100)">
+                            <circle class="network-node-bg" r="16"/>
+                        </g>
+                        <g class="network-node allocated" transform="translate(200, 200)">
+                            <circle class="network-node-bg" r="14"/>
+                        </g>
+
+                        <g class="network-node allocated" transform="translate(600, 150)">
+                            <circle class="network-node-bg" r="24"/>
+                            <text fill="#1A1A24" text-anchor="middle" dy="5" font-size="10" font-weight="600">Client</text>
+                        </g>
+                        <g class="network-node allocated" transform="translate(720, 100)">
+                            <circle class="network-node-bg" r="16"/>
+                        </g>
+                        <g class="network-node" transform="translate(700, 200)">
+                            <circle class="network-node-bg" r="14"/>
+                        </g>
+
+                        <g class="network-node allocated" transform="translate(250, 280)">
+                            <circle class="network-node-bg" r="20"/>
+                            <text fill="#1A1A24" text-anchor="middle" dy="4" font-size="9" font-weight="600">Lead</text>
+                        </g>
+
+                        <g class="network-node" transform="translate(650, 280)">
+                            <circle class="network-node-bg" r="20"/>
+                            <text fill="white" text-anchor="middle" dy="4" font-size="9" font-weight="500">Biz</text>
+                        </g>
+
+                        <g class="network-node allocated" transform="translate(350, 380)">
+                            <circle class="network-node-bg" r="18"/>
+                        </g>
+
+                        <g class="network-node" transform="translate(550, 380)">
+                            <circle class="network-node-bg" r="18"/>
+                        </g>
+                    </svg>
+                    <div class="network-legend">
+                        <div class="legend-item">
+                            <div class="legend-dot completed"></div>
+                            <span>Completed</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot in-progress"></div>
+                            <span>In Progress</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot locked"></div>
+                            <span>Locked</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showCareer(num) {
+            document.querySelectorAll('.career-path').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.career-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('career-' + num).classList.add('active');
+            document.querySelectorAll('.career-btn')[num - 1].classList.add('active');
+        }
+
+        function openModal(careerType) {
+            const titles = {
+                'finance': 'Financial Advisory Skill Tree',
+                'bd': 'Business Development Skill Tree',
+                'risk': 'Risk & Compliance Skill Tree',
+                'tas': 'Transaction Advisory Skill Tree'
+            };
+            document.getElementById('modal-title').textContent = titles[careerType] || 'Skill Development Tree';
+            document.getElementById('skillTreeModal').classList.add('active');
+        }
+
+        function closeModal(event) {
+            if (!event || event.target.classList.contains('modal-overlay')) {
+                document.getElementById('skillTreeModal').classList.remove('active');
+            }
+        }
+
+        // Animate radial charts
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.querySelectorAll('.radial-progress-ring').forEach(ring => {
+                        ring.style.transition = 'stroke-dashoffset 1s ease-out';
+                    });
+                }
+            });
+        }, { threshold: 0.2 });
+
+        document.querySelectorAll('.insano-radial-card').forEach(card => observer.observe(card));
+    </script>
+</body>
+</html>
+
