@@ -1,0 +1,3540 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SpringAIS - Unified Dashboard with Feedback Integration</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap");
+
+      :root {
+        /* EY Brand Colors */
+        --ey-yellow: #ffe600;
+        --ey-off-black: #2e2e38;
+        --ey-confident-black: #1a1a24;
+        --ey-gray-02: #c4c4cd;
+        --ey-gray-01: #747480;
+        --ey-off-white: #f6f6fa;
+        --ey-white: #ffffff;
+
+        /* Semantic */
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --info: #3b82f6;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--ey-off-white);
+        color: var(--ey-off-black);
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      /* Header with Style Toggle */
+      .main-header {
+        background: var(--ey-white);
+        border-radius: 16px;
+        padding: 24px 32px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .user-avatar {
+        width: 56px;
+        height: 56px;
+        background: var(--ey-yellow);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+      }
+
+      .user-info h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 2px;
+      }
+
+      .user-info p {
+        font-size: 14px;
+        color: var(--ey-gray-01);
+      }
+
+      .style-toggle {
+        display: flex;
+        gap: 8px;
+        background: var(--ey-off-white);
+        padding: 4px;
+        border-radius: 8px;
+      }
+
+      .style-toggle-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        color: var(--ey-gray-01);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .style-toggle-btn.active {
+        background: var(--ey-white);
+        color: var(--ey-confident-black);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      }
+
+      /* Tabbed Interface */
+      .tabbed-interface {
+        background: var(--ey-white);
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+
+      .tab-header {
+        display: flex;
+        border-bottom: 1px solid var(--ey-gray-02);
+        background: var(--ey-off-white);
+        padding: 0 32px;
+      }
+
+      .tab {
+        padding: 16px 24px;
+        font-size: 14px;
+        font-weight: 500;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: var(--ey-gray-01);
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .tab.active {
+        background: var(--ey-white);
+        color: var(--ey-confident-black);
+        border-bottom-color: var(--ey-yellow);
+      }
+
+      .tab-content {
+        display: none;
+        padding: 32px;
+        min-height: 800px;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* ============================================
+           EXECUTIVE TAB - Snapshot View
+           ============================================ */
+      .exec-dashboard {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 24px;
+      }
+
+      .exec-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .exec-metrics-card {
+        background: var(--ey-confident-black);
+        border-radius: 12px;
+        padding: 24px;
+        color: var(--ey-white);
+      }
+
+      .exec-metrics-card h3 {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ey-gray-02);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+      }
+
+      .metric-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .metric-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .metric-label {
+        font-size: 13px;
+        color: var(--ey-gray-02);
+      }
+
+      .metric-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--ey-yellow);
+      }
+
+      .active-goals-card {
+        background: var(--ey-off-white);
+        border-radius: 12px;
+        padding: 24px;
+      }
+
+      .active-goals-card h3 {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ey-gray-01);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+      }
+
+      .goal-item {
+        background: var(--ey-white);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border-left: 4px solid var(--ey-yellow);
+      }
+
+      .goal-item.secondary {
+        border-left-color: var(--ey-gray-02);
+      }
+
+      .goal-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+
+      .goal-item-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+      }
+
+      .goal-item-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: rgba(255, 230, 0, 0.15);
+        color: var(--ey-off-black);
+      }
+
+      .goal-item-badge.secondary {
+        background: var(--ey-off-white);
+        color: var(--ey-gray-01);
+      }
+
+      .goal-item-timeline {
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        margin-bottom: 8px;
+      }
+
+      .goal-item-progress {
+        height: 4px;
+        background: var(--ey-off-white);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .goal-item-progress-fill {
+        height: 100%;
+        background: var(--ey-yellow);
+        border-radius: 2px;
+      }
+
+      .goal-item-progress-fill.secondary {
+        background: var(--ey-gray-02);
+      }
+
+      .exec-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .success-pattern-card {
+        background: var(--ey-white);
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid var(--ey-gray-02);
+      }
+
+      .success-pattern-card h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 4px;
+        text-align: center;
+      }
+
+      .success-pattern-card p {
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .comparison-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .comparison-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .comparison-bar-label {
+        width: 100px;
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        text-align: right;
+      }
+
+      .comparison-bar-track {
+        flex: 1;
+        height: 24px;
+        background: var(--ey-off-white);
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .comparison-bar-you {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        height: 16px;
+        background: var(--ey-yellow);
+        border-radius: 8px;
+      }
+
+      .comparison-bar-benchmark {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        width: 3px;
+        background: var(--ey-confident-black);
+        border-radius: 2px;
+      }
+
+      .comparison-legend {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-top: 16px;
+      }
+
+      .comparison-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--ey-gray-01);
+      }
+
+      .comparison-legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+      }
+
+      .comparison-legend-dot.you {
+        background: var(--ey-yellow);
+      }
+      .comparison-legend-dot.benchmark {
+        background: var(--ey-confident-black);
+      }
+
+      /* ============================================
+           ROADMAP TAB - Timeline Focus
+           ============================================ */
+      .roadmap-container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .roadmap-header {
+        text-align: center;
+        margin-bottom: 48px;
+      }
+
+      .roadmap-header h2 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      .roadmap-header p {
+        font-size: 16px;
+        color: var(--ey-gray-01);
+      }
+
+      .roadmap-timeline {
+        position: relative;
+        padding: 0 60px;
+      }
+
+      .roadmap-line {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        top: 40px;
+        height: 4px;
+        background: var(--ey-gray-02);
+        border-radius: 2px;
+      }
+
+      .roadmap-line-fill {
+        height: 100%;
+        background: var(--ey-yellow);
+        border-radius: 2px;
+        width: 50%;
+      }
+
+      .roadmap-nodes {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        z-index: 1;
+      }
+
+      .roadmap-node {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 200px;
+      }
+
+      .roadmap-node-dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--ey-white);
+        border: 4px solid var(--ey-gray-02);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .roadmap-node-dot.completed {
+        background: var(--ey-yellow);
+        border-color: var(--ey-yellow);
+      }
+
+      .roadmap-node-dot.current {
+        border-color: var(--ey-yellow);
+        box-shadow: 0 0 0 6px rgba(255, 230, 0, 0.2);
+      }
+
+      .roadmap-node-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        text-align: center;
+        margin-bottom: 4px;
+      }
+
+      .roadmap-node-date {
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        text-align: center;
+      }
+
+      .roadmap-node-desc {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        text-align: center;
+        margin-top: 8px;
+      }
+
+      /* ============================================
+           PORTFOLIO TAB - Detailed Management (Primary View)
+           ============================================ */
+      .portfolio-layout {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 24px;
+      }
+
+      .portfolio-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .career-goal-banner {
+        background: linear-gradient(
+          135deg,
+          var(--ey-confident-black) 0%,
+          #252530 100%
+        );
+        border-radius: 12px;
+        padding: 24px;
+        color: var(--ey-white);
+      }
+
+      .goal-banner-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+      }
+
+      .goal-banner-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .goal-banner-subtitle {
+        font-size: 14px;
+        color: var(--ey-gray-02);
+      }
+
+      .goal-banner-match {
+        text-align: right;
+      }
+
+      .goal-match-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--ey-yellow);
+      }
+
+      .goal-match-label {
+        font-size: 12px;
+        color: var(--ey-gray-02);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .goal-banner-progress {
+        margin-top: 16px;
+      }
+
+      .goal-banner-bar {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .goal-banner-fill {
+        height: 100%;
+        background: var(--ey-yellow);
+        border-radius: 4px;
+      }
+
+      .goal-banner-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--ey-gray-02);
+      }
+
+      .skill-category {
+        background: var(--ey-white);
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid var(--ey-gray-02);
+      }
+
+      .category-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .category-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .category-count {
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        font-weight: 400;
+      }
+
+      .category-progress-mini {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .category-bar-mini {
+        width: 100px;
+        height: 4px;
+        background: var(--ey-off-white);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .category-bar-fill {
+        height: 100%;
+        background: var(--ey-yellow);
+        border-radius: 2px;
+      }
+
+      .category-percent {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ey-gray-01);
+      }
+
+      .skills-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .skill-item {
+        background: var(--ey-off-white);
+        border-radius: 10px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 1px solid transparent;
+      }
+
+      .skill-item:hover {
+        background: var(--ey-white);
+        border-color: var(--ey-gray-02);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      }
+
+      .skill-ring {
+        width: 44px;
+        height: 44px;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .skill-ring svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+      }
+
+      .skill-ring-bg {
+        fill: none;
+        stroke: var(--ey-gray-02);
+        stroke-width: 4;
+      }
+
+      .skill-ring-progress {
+        fill: none;
+        stroke: var(--ey-yellow);
+        stroke-width: 4;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.5s ease;
+      }
+
+      .skill-ring-text {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+      }
+
+      .skill-details {
+        flex: 1;
+      }
+
+      .skill-details h5 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 2px;
+      }
+
+      .skill-details p {
+        font-size: 12px;
+        color: var(--ey-gray-01);
+      }
+
+      .skill-status {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .skill-status.complete {
+        background: rgba(34, 197, 94, 0.1);
+        color: var(--success);
+      }
+
+      .skill-status.progress {
+        background: rgba(255, 230, 0, 0.15);
+        color: var(--ey-off-black);
+      }
+
+      .skill-status.pending {
+        background: var(--ey-off-white);
+        color: var(--ey-gray-01);
+      }
+
+      .portfolio-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .sidebar-card {
+        background: var(--ey-white);
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid var(--ey-gray-02);
+      }
+
+      .sidebar-card h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .score-display {
+        text-align: center;
+        padding: 20px 0;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--ey-off-white);
+      }
+
+      .score-value {
+        font-size: 56px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+        line-height: 1;
+      }
+
+      .score-value span {
+        font-size: 24px;
+        color: var(--ey-gray-01);
+      }
+
+      .score-label {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        margin-top: 8px;
+      }
+
+      .score-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .breakdown-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .breakdown-label {
+        font-size: 13px;
+        color: var(--ey-off-black);
+      }
+
+      .breakdown-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+      }
+
+      .priority-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .priority-item {
+        background: var(--ey-off-white);
+        border-radius: 10px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-left: 4px solid var(--ey-yellow);
+      }
+
+      .priority-rank {
+        width: 28px;
+        height: 28px;
+        background: var(--ey-white);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+      }
+
+      .priority-info {
+        flex: 1;
+      }
+
+      .priority-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 2px;
+      }
+
+      .priority-impact {
+        font-size: 11px;
+        color: var(--ey-gray-01);
+      }
+
+      .priority-progress {
+        width: 60px;
+        text-align: right;
+      }
+
+      .priority-percent {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+      }
+
+      .quick-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: var(--ey-off-white);
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ey-off-black);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+      }
+
+      .action-btn:hover {
+        background: var(--ey-yellow);
+        color: var(--ey-confident-black);
+      }
+
+      .action-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--ey-white);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+      }
+
+      /* Hidden Add Skill Button */
+      .add-skill-hidden {
+        display: none;
+      }
+
+      /* ============================================
+           NETWORK TAB - Visualizing Relationships
+           ============================================ */
+      .network-container {
+        background: var(--ey-confident-black);
+        border-radius: 12px;
+        min-height: 700px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .network-header {
+        padding: 24px 32px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .network-header h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--ey-white);
+      }
+
+      .network-stats {
+        display: flex;
+        gap: 32px;
+      }
+
+      .network-stat {
+        text-align: center;
+      }
+
+      .network-stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--ey-yellow);
+      }
+
+      .network-stat-label {
+        font-size: 11px;
+        color: var(--ey-gray-01);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .network-body {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+      }
+
+      .network-sidebar {
+        padding: 24px;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .network-sidebar-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ey-gray-01);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+      }
+
+      .path-item {
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        margin-bottom: 12px;
+        border-left: 3px solid var(--ey-gray-01);
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+
+      .path-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .path-item.active {
+        border-left-color: var(--ey-yellow);
+        background: rgba(255, 230, 0, 0.05);
+      }
+
+      .path-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-white);
+        margin-bottom: 8px;
+      }
+
+      .path-progress-bar {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+
+      .path-progress-fill {
+        height: 100%;
+        background: var(--ey-yellow);
+        border-radius: 2px;
+      }
+
+      .path-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--ey-gray-01);
+      }
+
+      .network-canvas {
+        position: relative;
+        padding: 40px;
+      }
+
+      .canvas-svg {
+        width: 100%;
+        height: 500px;
+      }
+
+      .network-node {
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .network-node:hover {
+        filter: brightness(1.2);
+      }
+
+      .network-node-bg {
+        fill: var(--ey-off-black);
+        stroke: var(--ey-gray-01);
+        stroke-width: 2;
+      }
+
+      .network-node.allocated .network-node-bg {
+        fill: var(--ey-yellow);
+        stroke: var(--ey-yellow);
+      }
+
+      .network-node.current .network-node-bg {
+        stroke: var(--ey-yellow);
+        stroke-width: 3;
+      }
+
+      .network-edge {
+        stroke: rgba(255, 255, 255, 0.1);
+        stroke-width: 2;
+      }
+
+      .network-edge.active {
+        stroke: var(--ey-yellow);
+        stroke-width: 2;
+      }
+
+      .network-legend {
+        position: absolute;
+        bottom: 32px;
+        left: 32px;
+        display: flex;
+        gap: 24px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--ey-gray-01);
+      }
+
+      .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+
+      .legend-dot.complete {
+        background: var(--ey-yellow);
+      }
+
+      .legend-dot.current {
+        background: transparent;
+        border: 2px solid var(--ey-yellow);
+      }
+
+      .legend-dot.available {
+        background: var(--ey-off-black);
+        border: 2px solid var(--ey-gray-01);
+      }
+
+      /* Network Tooltip */
+      .network-tooltip {
+        position: absolute;
+        background: var(--ey-white);
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+        min-width: 200px;
+        border: 1px solid var(--ey-gray-02);
+      }
+
+      .network-tooltip.visible {
+        opacity: 1;
+      }
+
+      .network-tooltip h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      .network-tooltip p {
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        margin-bottom: 4px;
+      }
+
+      .network-tooltip .tooltip-progress {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--ey-gray-02);
+      }
+
+      .network-tooltip .tooltip-progress-bar {
+        height: 4px;
+        background: var(--ey-off-white);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+
+      .network-tooltip .tooltip-progress-fill {
+        height: 100%;
+        background: var(--ey-yellow);
+        border-radius: 2px;
+      }
+
+      .network-node-text {
+        font-size: 10px;
+        font-weight: 600;
+        fill: white;
+        text-anchor: middle;
+        pointer-events: none;
+      }
+
+      .network-node.allocated .network-node-text {
+        fill: var(--ey-confident-black);
+      }
+
+      .network-node:hover .network-node-bg {
+        stroke-width: 4;
+        filter: drop-shadow(0 0 8px rgba(255, 230, 0, 0.6));
+      }
+
+      .network-skill-details {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 20px;
+        max-width: 300px;
+        color: var(--ey-white);
+        display: none;
+      }
+
+      .network-skill-details.visible {
+        display: block;
+      }
+
+      .network-skill-details h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ey-yellow);
+        margin-bottom: 12px;
+      }
+
+      .network-skill-details .skill-detail-item {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .network-skill-details .skill-detail-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .network-skill-details .skill-detail-label {
+        font-size: 11px;
+        color: var(--ey-gray-02);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+
+      .network-skill-details .skill-detail-value {
+        font-size: 14px;
+        color: var(--ey-white);
+        font-weight: 500;
+      }
+
+      /* ============================================
+           GAMIFIED STYLE (POE-inspired Skill Tree) - IMPROVED
+           ============================================ */
+      body.gamified {
+        background: linear-gradient(
+          135deg,
+          #1a1a24 0%,
+          #0f0f1a 50%,
+          #1a1a24 100%
+        );
+        background-attachment: fixed;
+        color: #e8dcc4;
+      }
+
+      body.gamified::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: radial-gradient(
+            2px 2px at 20% 30%,
+            rgba(255, 230, 0, 0.15) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            2px 2px at 60% 70%,
+            rgba(255, 230, 0, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            1px 1px at 50% 50%,
+            rgba(255, 230, 0, 0.2) 0%,
+            transparent 50%
+          );
+        background-size: 200% 200%;
+        pointer-events: none;
+        z-index: 0;
+        animation: starfield 20s linear infinite;
+      }
+
+      @keyframes starfield {
+        0% {
+          background-position: 0% 0%;
+        }
+        100% {
+          background-position: 100% 100%;
+        }
+      }
+
+      body.gamified .container {
+        position: relative;
+        z-index: 1;
+      }
+
+      body.gamified .main-header {
+        background: linear-gradient(
+          135deg,
+          rgba(26, 26, 36, 0.95) 0%,
+          rgba(20, 20, 30, 0.95) 100%
+        );
+        border: 1px solid rgba(255, 230, 0, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5),
+          0 0 40px rgba(255, 230, 0, 0.1);
+      }
+
+      body.gamified .tabbed-interface {
+        background: linear-gradient(
+          135deg,
+          rgba(26, 26, 36, 0.95) 0%,
+          rgba(20, 20, 30, 0.95) 100%
+        );
+        border: 1px solid rgba(255, 230, 0, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+
+      body.gamified .tab-header {
+        background: rgba(15, 15, 20, 0.8);
+        border-bottom: 1px solid rgba(255, 230, 0, 0.2);
+      }
+
+      body.gamified .tab {
+        color: #9a8a6a;
+      }
+
+      body.gamified .tab.active {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 230, 0, 0.15) 0%,
+          rgba(255, 230, 0, 0.05) 100%
+        );
+        color: #ffe600;
+        border-bottom-color: #ffe600;
+        text-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
+      }
+
+      body.gamified .tab-content {
+        background: transparent;
+      }
+
+      body.gamified .user-info h2 {
+        color: #ffe600;
+        text-shadow: 0 0 10px rgba(255, 230, 0, 0.3);
+      }
+
+      body.gamified .user-info p {
+        color: #c4b998;
+      }
+
+      body.gamified .skill-category,
+      body.gamified .sidebar-card {
+        background: linear-gradient(
+          135deg,
+          rgba(30, 28, 25, 0.9) 0%,
+          rgba(20, 18, 15, 0.9) 100%
+        );
+        border: 1px solid rgba(139, 90, 43, 0.4);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 230, 0, 0.1);
+      }
+
+      body.gamified .career-goal-banner {
+        background: linear-gradient(
+          135deg,
+          rgba(26, 26, 36, 0.95) 0%,
+          rgba(15, 15, 20, 0.95) 100%
+        );
+        border: 1px solid rgba(255, 230, 0, 0.3);
+        box-shadow: 0 0 30px rgba(255, 230, 0, 0.2);
+      }
+
+      body.gamified .goal-banner-title {
+        color: #ffe600;
+        text-shadow: 0 0 10px rgba(255, 230, 0, 0.4);
+      }
+
+      body.gamified .category-title {
+        color: #e8dcc4;
+      }
+
+      body.gamified .skill-item {
+        background: linear-gradient(
+          135deg,
+          rgba(30, 28, 25, 0.8) 0%,
+          rgba(20, 18, 15, 0.8) 100%
+        );
+        border: 1px solid rgba(139, 90, 43, 0.4);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      body.gamified .skill-item:hover {
+        background: linear-gradient(
+          135deg,
+          rgba(40, 35, 30, 0.95) 0%,
+          rgba(30, 25, 20, 0.95) 100%
+        );
+        border-color: #ffe600;
+        box-shadow: 0 0 20px rgba(255, 230, 0, 0.4),
+          0 4px 15px rgba(0, 0, 0, 0.4);
+        transform: translateY(-2px);
+      }
+
+      body.gamified .skill-details h5 {
+        color: #e8dcc4;
+      }
+
+      body.gamified .skill-details p {
+        color: #9a8a6a;
+      }
+
+      body.gamified .skill-ring-progress {
+        stroke: #ffe600;
+        filter: drop-shadow(0 0 6px rgba(255, 230, 0, 0.6));
+      }
+
+      body.gamified .goal-banner-fill,
+      body.gamified .goal-item-progress-fill,
+      body.gamified .category-bar-fill {
+        background: linear-gradient(
+          90deg,
+          #8b5a2b 0%,
+          #ffe600 30%,
+          #ffd700 50%,
+          #ffe600 70%,
+          #8b5a2b 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 3s ease-in-out infinite;
+        box-shadow: 0 0 10px rgba(255, 230, 0, 0.4);
+      }
+
+      body.gamified .exec-metrics-card {
+        background: linear-gradient(
+          135deg,
+          rgba(26, 26, 36, 0.95) 0%,
+          rgba(15, 15, 20, 0.95) 100%
+        );
+        border: 1px solid rgba(255, 230, 0, 0.3);
+        box-shadow: 0 0 20px rgba(255, 230, 0, 0.2);
+      }
+
+      body.gamified .metric-value {
+        color: #ffe600;
+        text-shadow: 0 0 10px rgba(255, 230, 0, 0.5);
+      }
+
+      @keyframes shimmer {
+        0%,
+        100% {
+          background-position: 0% 0%;
+        }
+        50% {
+          background-position: 100% 0%;
+        }
+      }
+
+      /* Skill Tree Modal for Gamified Mode */
+      .skill-tree-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+      }
+
+      .skill-tree-modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+      }
+
+      .skill-tree-content {
+        background: rgba(20, 18, 15, 0.98);
+        border: 2px solid rgba(139, 90, 43, 0.6);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 1400px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 0 60px rgba(139, 90, 43, 0.3);
+      }
+
+      .skill-tree-header {
+        padding: 24px 32px;
+        border-bottom: 1px solid rgba(139, 90, 43, 0.4);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .skill-tree-header h3 {
+        font-family: "Cinzel", serif;
+        font-size: 20px;
+        color: #ffe600;
+        text-shadow: 0 0 10px rgba(255, 230, 0, 0.3);
+      }
+
+      .skill-tree-close {
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: rgba(30, 28, 25, 0.9);
+        border: 1px solid rgba(139, 90, 43, 0.4);
+        border-radius: 6px;
+        color: #c4b998;
+        font-size: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .skill-tree-close:hover {
+        border-color: #ffe600;
+        color: #ffe600;
+      }
+
+      .skill-tree-body {
+        flex: 1;
+        overflow: auto;
+        padding: 40px;
+      }
+
+      .skill-tree-container {
+        position: relative;
+        width: 100%;
+        height: 800px;
+      }
+
+      .skill-tree-svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Responsive */
+      @media (max-width: 1200px) {
+        .portfolio-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .exec-dashboard {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header with Style Toggle -->
+      <div class="main-header">
+        <div class="header-left">
+          <div class="user-profile">
+            <div class="user-avatar">MR</div>
+            <div class="user-info">
+              <h2>Maya Rodriguez</h2>
+              <p>Senior Consultant → Manager, Technology Consulting</p>
+            </div>
+          </div>
+        </div>
+        <div class="style-toggle">
+          <button class="style-toggle-btn active" onclick="setStyle('clean')">
+            Professional
+          </button>
+          <button class="style-toggle-btn" onclick="setStyle('gamified')">
+            Adventure
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabbed Interface -->
+      <div class="tabbed-interface">
+        <div class="tab-header">
+          <button class="tab active" onclick="switchTab('portfolio')">
+            Portfolio
+          </button>
+          <button class="tab" onclick="switchTab('executive')">
+            Executive
+          </button>
+          <button class="tab" onclick="switchTab('roadmap')">Roadmap</button>
+          <button class="tab" onclick="switchTab('network')">Network</button>
+        </div>
+
+        <!-- PORTFOLIO TAB (Primary View) -->
+        <div id="tab-portfolio" class="tab-content active">
+          <div class="portfolio-layout">
+            <div class="portfolio-main">
+              <div class="career-goal-banner">
+                <div class="goal-banner-header">
+                  <div>
+                    <div class="goal-banner-title">
+                      🎯 Manager, Technology Consulting
+                    </div>
+                    <div class="goal-banner-subtitle">
+                      Target: August 2025 • 18 months remaining
+                    </div>
+                  </div>
+                  <div class="goal-banner-match">
+                    <div class="goal-match-value">82%</div>
+                    <div class="goal-match-label">Match Score</div>
+                  </div>
+                </div>
+                <div class="goal-banner-progress">
+                  <div class="goal-banner-bar">
+                    <div class="goal-banner-fill" style="width: 57%"></div>
+                  </div>
+                  <div class="goal-banner-stats">
+                    <span>24 of 42 skills completed</span>
+                    <span>57% progress</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="skill-category">
+                <div class="category-header">
+                  <div class="category-title">
+                    ☁️ Cloud & Infrastructure
+                    <span class="category-count">8 skills</span>
+                  </div>
+                  <div class="category-progress-mini">
+                    <div class="category-bar-mini">
+                      <div class="category-bar-fill" style="width: 85%"></div>
+                    </div>
+                    <span class="category-percent">85%</span>
+                  </div>
+                </div>
+                <div class="skills-list">
+                  <div class="skill-item">
+                    <div class="skill-ring">
+                      <svg viewBox="0 0 36 36">
+                        <circle class="skill-ring-bg" cx="18" cy="18" r="15" />
+                        <circle
+                          class="skill-ring-progress"
+                          cx="18"
+                          cy="18"
+                          r="15"
+                          stroke-dasharray="94.2"
+                          stroke-dashoffset="23.55"
+                        />
+                      </svg>
+                      <div class="skill-ring-text">75%</div>
+                    </div>
+                    <div class="skill-details">
+                      <h5>AWS Solutions Architect</h5>
+                      <p>6 of 8 modules complete • Est. Mar 2025</p>
+                    </div>
+                    <span class="skill-status progress">Active</span>
+                  </div>
+                  <div class="skill-item">
+                    <div class="skill-ring">
+                      <svg viewBox="0 0 36 36">
+                        <circle class="skill-ring-bg" cx="18" cy="18" r="15" />
+                        <circle
+                          class="skill-ring-progress"
+                          cx="18"
+                          cy="18"
+                          r="15"
+                          stroke-dasharray="94.2"
+                          stroke-dashoffset="0"
+                        />
+                      </svg>
+                      <div class="skill-ring-text">100</div>
+                    </div>
+                    <div class="skill-details">
+                      <h5>AWS Cloud Practitioner</h5>
+                      <p>Certified Dec 2023</p>
+                    </div>
+                    <span class="skill-status complete">Complete</span>
+                  </div>
+                  <div class="skill-item">
+                    <div class="skill-ring">
+                      <svg viewBox="0 0 36 36">
+                        <circle class="skill-ring-bg" cx="18" cy="18" r="15" />
+                        <circle
+                          class="skill-ring-progress"
+                          cx="18"
+                          cy="18"
+                          r="15"
+                          stroke-dasharray="94.2"
+                          stroke-dashoffset="51.81"
+                        />
+                      </svg>
+                      <div class="skill-ring-text">45%</div>
+                    </div>
+                    <div class="skill-details">
+                      <h5>Kubernetes</h5>
+                      <p>Container orchestration • Est. Jun 2025</p>
+                    </div>
+                    <span class="skill-status progress">Active</span>
+                  </div>
+                  <div class="skill-item">
+                    <div class="skill-ring">
+                      <svg viewBox="0 0 36 36">
+                        <circle class="skill-ring-bg" cx="18" cy="18" r="15" />
+                        <circle
+                          class="skill-ring-progress"
+                          cx="18"
+                          cy="18"
+                          r="15"
+                          stroke-dasharray="94.2"
+                          stroke-dashoffset="0"
+                        />
+                      </svg>
+                      <div class="skill-ring-text">100</div>
+                    </div>
+                    <div class="skill-details">
+                      <h5>Docker</h5>
+                      <p>Containerization</p>
+                    </div>
+                    <span class="skill-status complete">Complete</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="skill-category">
+                <div class="category-header">
+                  <div class="category-title">
+                    👥 Leadership & Management
+                    <span class="category-count">6 skills</span>
+                  </div>
+                  <div class="category-progress-mini">
+                    <div class="category-bar-mini">
+                      <div class="category-bar-fill" style="width: 45%"></div>
+                    </div>
+                    <span class="category-percent">45%</span>
+                  </div>
+                </div>
+                <div class="skills-list">
+                  <div class="skill-item">
+                    <div class="skill-ring">
+                      <svg viewBox="0 0 36 36">
+                        <circle class="skill-ring-bg" cx="18" cy="18" r="15" />
+                        <circle
+                          class="skill-ring-progress"
+                          cx="18"
+                          cy="18"
+                          r="15"
+                          stroke-dasharray="94.2"
+                          stroke-dashoffset="37.68"
+                        />
+                      </svg>
+                      <div class="skill-ring-text">60%</div>
+                    </div>
+                    <div class="skill-details">
+                      <h5>Team Leadership</h5>
+                      <p>Leading project teams • Ongoing</p>
+                    </div>
+                    <span class="skill-status progress">Active</span>
+                  </div>
+                  <div class="skill-item">
+                    <div class="skill-ring">
+                      <svg viewBox="0 0 36 36">
+                        <circle class="skill-ring-bg" cx="18" cy="18" r="15" />
+                        <circle
+                          class="skill-ring-progress"
+                          cx="18"
+                          cy="18"
+                          r="15"
+                          stroke-dasharray="94.2"
+                          stroke-dashoffset="94.2"
+                        />
+                      </svg>
+                      <div class="skill-ring-text">0%</div>
+                    </div>
+                    <div class="skill-details">
+                      <h5>Mentorship</h5>
+                      <p>Formal mentoring program • Start Q2 2025</p>
+                    </div>
+                    <span class="skill-status pending">Planned</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="portfolio-sidebar">
+              <div class="sidebar-card">
+                <h3>📊 Match Score</h3>
+                <div class="score-display">
+                  <div class="score-value">82<span>%</span></div>
+                  <div class="score-label">Match to Manager Role</div>
+                </div>
+                <div class="score-breakdown">
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Technical Skills</span>
+                    <span class="breakdown-value">85%</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Leadership</span>
+                    <span class="breakdown-value">65%</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Consulting</span>
+                    <span class="breakdown-value">90%</span>
+                  </div>
+                  <div class="breakdown-item">
+                    <span class="breakdown-label">Business Acumen</span>
+                    <span class="breakdown-value">75%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sidebar-card">
+                <h3>🎯 Priority Skills</h3>
+                <div class="priority-list">
+                  <div class="priority-item">
+                    <div class="priority-rank">1</div>
+                    <div class="priority-info">
+                      <div class="priority-name">AWS Solutions Architect</div>
+                      <div class="priority-impact">+8% match if completed</div>
+                    </div>
+                    <div class="priority-progress">
+                      <div class="priority-percent">75%</div>
+                    </div>
+                  </div>
+                  <div class="priority-item">
+                    <div class="priority-rank">2</div>
+                    <div class="priority-info">
+                      <div class="priority-name">Team Leadership</div>
+                      <div class="priority-impact">+6% match if completed</div>
+                    </div>
+                    <div class="priority-progress">
+                      <div class="priority-percent">60%</div>
+                    </div>
+                  </div>
+                  <div class="priority-item">
+                    <div class="priority-rank">3</div>
+                    <div class="priority-info">
+                      <div class="priority-name">Mentorship Program</div>
+                      <div class="priority-impact">+5% match if completed</div>
+                    </div>
+                    <div class="priority-progress">
+                      <div class="priority-percent">0%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sidebar-card">
+                <h3>⚡ Quick Actions</h3>
+                <div class="quick-actions">
+                  <button class="action-btn">
+                    <span class="action-icon">📚</span>
+                    Continue AWS Module
+                  </button>
+                  <button class="action-btn">
+                    <span class="action-icon">👤</span>
+                    Find a Mentee
+                  </button>
+                  <button class="action-btn">
+                    <span class="action-icon">📋</span>
+                    Request Project Lead
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EXECUTIVE TAB -->
+        <div id="tab-executive" class="tab-content">
+          <div class="exec-dashboard">
+            <div class="exec-sidebar">
+              <div class="exec-metrics-card">
+                <h3>Key Metrics</h3>
+                <div class="metric-row">
+                  <span class="metric-label">Role Match</span>
+                  <span class="metric-value">82%</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Skills Active</span>
+                  <span class="metric-value">24</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Est. Timeline</span>
+                  <span class="metric-value">18mo</span>
+                </div>
+              </div>
+
+              <div class="active-goals-card">
+                <h3>Active Goals</h3>
+                <div class="goal-item">
+                  <div class="goal-item-header">
+                    <div class="goal-item-title">Manager Promotion</div>
+                    <div class="goal-item-badge">Primary</div>
+                  </div>
+                  <div class="goal-item-timeline">
+                    Target: Aug 2025 (18 months)
+                  </div>
+                  <div class="goal-item-progress">
+                    <div
+                      class="goal-item-progress-fill"
+                      style="width: 57%"
+                    ></div>
+                  </div>
+                </div>
+                <div class="goal-item secondary">
+                  <div class="goal-item-header">
+                    <div class="goal-item-title">AWS Solutions Architect</div>
+                    <div class="goal-item-badge secondary">In Progress</div>
+                  </div>
+                  <div class="goal-item-timeline">
+                    Target: Mar 2025 (3 months)
+                  </div>
+                  <div class="goal-item-progress">
+                    <div
+                      class="goal-item-progress-fill secondary"
+                      style="width: 75%"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="exec-main">
+              <div class="success-pattern-card">
+                <h3>Success Pattern Comparison</h3>
+                <p>You vs. Promoted Managers</p>
+                <div class="comparison-bars">
+                  <div class="comparison-bar-row">
+                    <div class="comparison-bar-label">Technical</div>
+                    <div class="comparison-bar-track">
+                      <div class="comparison-bar-you" style="width: 85%"></div>
+                      <div
+                        class="comparison-bar-benchmark"
+                        style="left: 80%"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="comparison-bar-row">
+                    <div class="comparison-bar-label">Leadership</div>
+                    <div class="comparison-bar-track">
+                      <div class="comparison-bar-you" style="width: 65%"></div>
+                      <div
+                        class="comparison-bar-benchmark"
+                        style="left: 85%"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="comparison-bar-row">
+                    <div class="comparison-bar-label">Consulting</div>
+                    <div class="comparison-bar-track">
+                      <div class="comparison-bar-you" style="width: 90%"></div>
+                      <div
+                        class="comparison-bar-benchmark"
+                        style="left: 75%"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="comparison-bar-row">
+                    <div class="comparison-bar-label">Business</div>
+                    <div class="comparison-bar-track">
+                      <div class="comparison-bar-you" style="width: 75%"></div>
+                      <div
+                        class="comparison-bar-benchmark"
+                        style="left: 80%"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="comparison-legend">
+                  <div class="comparison-legend-item">
+                    <div class="comparison-legend-dot you"></div>
+                    <span>You</span>
+                  </div>
+                  <div class="comparison-legend-item">
+                    <div class="comparison-legend-dot benchmark"></div>
+                    <span>Avg. at Promotion</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="success-pattern-card" style="margin-top: 24px">
+                <h3>Progress Trends</h3>
+                <p>Last 6 months performance</p>
+                <div
+                  style="
+                    height: 200px;
+                    display: flex;
+                    align-items: flex-end;
+                    justify-content: space-around;
+                    gap: 12px;
+                    margin-top: 24px;
+                    padding: 0 20px;
+                  "
+                >
+                  <div
+                    style="
+                      flex: 1;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                    "
+                  >
+                    <div
+                      style="
+                        width: 100%;
+                        background: var(--ey-yellow);
+                        border-radius: 4px 4px 0 0;
+                        margin-bottom: 8px;
+                        height: 45%;
+                        min-height: 20px;
+                      "
+                    ></div>
+                    <div style="font-size: 11px; color: var(--ey-gray-01)">
+                      Aug
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      flex: 1;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                    "
+                  >
+                    <div
+                      style="
+                        width: 100%;
+                        background: var(--ey-yellow);
+                        border-radius: 4px 4px 0 0;
+                        margin-bottom: 8px;
+                        height: 52%;
+                        min-height: 20px;
+                      "
+                    ></div>
+                    <div style="font-size: 11px; color: var(--ey-gray-01)">
+                      Sep
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      flex: 1;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                    "
+                  >
+                    <div
+                      style="
+                        width: 100%;
+                        background: var(--ey-yellow);
+                        border-radius: 4px 4px 0 0;
+                        margin-bottom: 8px;
+                        height: 58%;
+                        min-height: 20px;
+                      "
+                    ></div>
+                    <div style="font-size: 11px; color: var(--ey-gray-01)">
+                      Oct
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      flex: 1;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                    "
+                  >
+                    <div
+                      style="
+                        width: 100%;
+                        background: var(--ey-yellow);
+                        border-radius: 4px 4px 0 0;
+                        margin-bottom: 8px;
+                        height: 65%;
+                        min-height: 20px;
+                      "
+                    ></div>
+                    <div style="font-size: 11px; color: var(--ey-gray-01)">
+                      Nov
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      flex: 1;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                    "
+                  >
+                    <div
+                      style="
+                        width: 100%;
+                        background: var(--ey-yellow);
+                        border-radius: 4px 4px 0 0;
+                        margin-bottom: 8px;
+                        height: 70%;
+                        min-height: 20px;
+                      "
+                    ></div>
+                    <div style="font-size: 11px; color: var(--ey-gray-01)">
+                      Dec
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      flex: 1;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                    "
+                  >
+                    <div
+                      style="
+                        width: 100%;
+                        background: var(--ey-yellow);
+                        border-radius: 4px 4px 0 0;
+                        margin-bottom: 8px;
+                        height: 75%;
+                        min-height: 20px;
+                        position: relative;
+                      "
+                    >
+                      <div
+                        style="
+                          position: absolute;
+                          top: -20px;
+                          left: 50%;
+                          transform: translateX(-50%);
+                          font-size: 10px;
+                          color: var(--success);
+                          font-weight: 600;
+                        "
+                      >
+                        +3%
+                      </div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--ey-gray-01)">
+                      Jan
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  gap: 24px;
+                  margin-top: 24px;
+                "
+              >
+                <div class="success-pattern-card">
+                  <h3>Key Insights</h3>
+                  <div style="margin-top: 16px">
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                        margin-bottom: 12px;
+                        border-left: 3px solid var(--success);
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 13px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        ✓ On Track
+                      </div>
+                      <div style="font-size: 12px; color: var(--ey-gray-01)">
+                        Your progress is 5% ahead of average timeline
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                        margin-bottom: 12px;
+                        border-left: 3px solid var(--warning);
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 13px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        ⚠ Focus Area
+                      </div>
+                      <div style="font-size: 12px; color: var(--ey-gray-01)">
+                        Leadership skills need attention - 20% below benchmark
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                        border-left: 3px solid var(--info);
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 13px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        💡 Recommendation
+                      </div>
+                      <div style="font-size: 12px; color: var(--ey-gray-01)">
+                        Complete AWS SA cert to unlock 3 additional leadership
+                        opportunities
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="success-pattern-card">
+                  <h3>Skill Velocity</h3>
+                  <div style="margin-top: 16px">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 16px;
+                      "
+                    >
+                      <span style="font-size: 13px; color: var(--ey-gray-01)"
+                        >Skills completed this month</span
+                      >
+                      <span
+                        style="
+                          font-size: 20px;
+                          font-weight: 700;
+                          color: var(--ey-confident-black);
+                        "
+                        >3</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 16px;
+                      "
+                    >
+                      <span style="font-size: 13px; color: var(--ey-gray-01)"
+                        >Avg. per month (last 6mo)</span
+                      >
+                      <span
+                        style="
+                          font-size: 20px;
+                          font-weight: 700;
+                          color: var(--ey-confident-black);
+                        "
+                        >2.5</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 16px;
+                      "
+                    >
+                      <span style="font-size: 13px; color: var(--ey-gray-01)"
+                        >Projected completion</span
+                      >
+                      <span
+                        style="
+                          font-size: 20px;
+                          font-weight: 700;
+                          color: var(--success);
+                        "
+                        >Aug 2025</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                        margin-top: 16px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Estimated at current pace
+                      </div>
+                      <div
+                        style="
+                          font-size: 12px;
+                          color: var(--ey-confident-black);
+                          font-weight: 600;
+                        "
+                      >
+                        You're ahead of schedule by 2 months
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROADMAP TAB -->
+        <div id="tab-roadmap" class="tab-content">
+          <div class="roadmap-container">
+            <div class="roadmap-header">
+              <h2>Career Roadmap</h2>
+              <p>Senior Consultant → Manager, Technology Consulting</p>
+            </div>
+
+            <div class="roadmap-timeline">
+              <div class="roadmap-line">
+                <div class="roadmap-line-fill" style="width: 57%"></div>
+              </div>
+              <div class="roadmap-nodes">
+                <div class="roadmap-node">
+                  <div class="roadmap-node-dot completed">✓</div>
+                  <div class="roadmap-node-title">Senior Consultant</div>
+                  <div class="roadmap-node-date">Current Role</div>
+                  <div class="roadmap-node-desc">Your starting point</div>
+                </div>
+                <div class="roadmap-node">
+                  <div class="roadmap-node-dot current">→</div>
+                  <div class="roadmap-node-title">Manager</div>
+                  <div class="roadmap-node-date">Aug 2025</div>
+                  <div class="roadmap-node-desc">Next target role</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Milestone Breakdown -->
+            <div style="margin-top: 64px; display: grid; gap: 24px">
+              <div
+                style="
+                  background: var(--ey-white);
+                  border-radius: 12px;
+                  padding: 24px;
+                  border: 1px solid var(--ey-gray-02);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 20px;
+                  "
+                >
+                  <div
+                    style="
+                      width: 40px;
+                      height: 40px;
+                      background: var(--ey-yellow);
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-weight: 700;
+                      color: var(--ey-confident-black);
+                    "
+                  >
+                    1
+                  </div>
+                  <div>
+                    <h3
+                      style="
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: var(--ey-confident-black);
+                        margin-bottom: 4px;
+                      "
+                    >
+                      Complete AWS Solutions Architect Certification
+                    </h3>
+                    <p style="font-size: 13px; color: var(--ey-gray-01)">
+                      Target: March 2025 • 75% Complete
+                    </p>
+                  </div>
+                </div>
+                <div style="margin-left: 52px">
+                  <div
+                    style="
+                      height: 6px;
+                      background: var(--ey-off-white);
+                      border-radius: 3px;
+                      overflow: hidden;
+                      margin-bottom: 16px;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 100%;
+                        background: var(--ey-yellow);
+                        width: 75%;
+                        border-radius: 3px;
+                      "
+                    ></div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, 1fr);
+                      gap: 12px;
+                    "
+                  >
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Modules Completed
+                      </div>
+                      <div
+                        style="
+                          font-size: 16px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        6 of 8
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Time Remaining
+                      </div>
+                      <div
+                        style="
+                          font-size: 16px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        ~6 weeks
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      margin-top: 16px;
+                      padding: 12px;
+                      background: rgba(255, 230, 0, 0.1);
+                      border-radius: 8px;
+                      border-left: 3px solid var(--ey-yellow);
+                    "
+                  >
+                    <div
+                      style="font-size: 12px; color: var(--ey-confident-black)"
+                    >
+                      <strong>Impact:</strong> Completing this will increase
+                      your match score by 8% and unlock cloud architecture
+                      project opportunities
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style="
+                  background: var(--ey-white);
+                  border-radius: 12px;
+                  padding: 24px;
+                  border: 1px solid var(--ey-gray-02);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 20px;
+                  "
+                >
+                  <div
+                    style="
+                      width: 40px;
+                      height: 40px;
+                      background: var(--ey-gray-02);
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-weight: 700;
+                      color: var(--ey-white);
+                    "
+                  >
+                    2
+                  </div>
+                  <div>
+                    <h3
+                      style="
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: var(--ey-confident-black);
+                        margin-bottom: 4px;
+                      "
+                    >
+                      Lead a Major Client Engagement
+                    </h3>
+                    <p style="font-size: 13px; color: var(--ey-gray-01)">
+                      Target: May 2025 • Not Started
+                    </p>
+                  </div>
+                </div>
+                <div style="margin-left: 52px">
+                  <div
+                    style="
+                      height: 6px;
+                      background: var(--ey-off-white);
+                      border-radius: 3px;
+                      overflow: hidden;
+                      margin-bottom: 16px;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 100%;
+                        background: var(--ey-gray-02);
+                        width: 0%;
+                        border-radius: 3px;
+                      "
+                    ></div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, 1fr);
+                      gap: 12px;
+                    "
+                  >
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Prerequisites
+                      </div>
+                      <div
+                        style="
+                          font-size: 12px;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        AWS SA Cert + 2 years experience
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Estimated Duration
+                      </div>
+                      <div
+                        style="
+                          font-size: 12px;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        3-6 months
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      margin-top: 16px;
+                      padding: 12px;
+                      background: rgba(116, 116, 128, 0.1);
+                      border-radius: 8px;
+                      border-left: 3px solid var(--ey-gray-01);
+                    "
+                  >
+                    <div
+                      style="font-size: 12px; color: var(--ey-confident-black)"
+                    >
+                      <strong>Next Steps:</strong> Complete AWS SA certification
+                      first, then request project lead assignment from your
+                      manager
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style="
+                  background: var(--ey-white);
+                  border-radius: 12px;
+                  padding: 24px;
+                  border: 1px solid var(--ey-gray-02);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 20px;
+                  "
+                >
+                  <div
+                    style="
+                      width: 40px;
+                      height: 40px;
+                      background: var(--ey-gray-02);
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-weight: 700;
+                      color: var(--ey-white);
+                    "
+                  >
+                    3
+                  </div>
+                  <div>
+                    <h3
+                      style="
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: var(--ey-confident-black);
+                        margin-bottom: 4px;
+                      "
+                    >
+                      Start Formal Mentorship Program
+                    </h3>
+                    <p style="font-size: 13px; color: var(--ey-gray-01)">
+                      Target: Q2 2025 • Planned
+                    </p>
+                  </div>
+                </div>
+                <div style="margin-left: 52px">
+                  <div
+                    style="
+                      height: 6px;
+                      background: var(--ey-off-white);
+                      border-radius: 3px;
+                      overflow: hidden;
+                      margin-bottom: 16px;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 100%;
+                        background: var(--ey-gray-02);
+                        width: 0%;
+                        border-radius: 3px;
+                      "
+                    ></div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, 1fr);
+                      gap: 12px;
+                    "
+                  >
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Mentees Required
+                      </div>
+                      <div
+                        style="
+                          font-size: 16px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        2
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Program Duration
+                      </div>
+                      <div
+                        style="
+                          font-size: 12px;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        6-12 months
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      margin-top: 16px;
+                      padding: 12px;
+                      background: rgba(116, 116, 128, 0.1);
+                      border-radius: 8px;
+                      border-left: 3px solid var(--ey-gray-01);
+                    "
+                  >
+                    <div
+                      style="font-size: 12px; color: var(--ey-confident-black)"
+                    >
+                      <strong>Action:</strong> Contact HR to enroll in Q2 2025
+                      mentorship cohort. Applications open in March.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style="
+                  background: var(--ey-white);
+                  border-radius: 12px;
+                  padding: 24px;
+                  border: 1px solid var(--ey-gray-02);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-bottom: 20px;
+                  "
+                >
+                  <div
+                    style="
+                      width: 40px;
+                      height: 40px;
+                      background: var(--ey-gray-02);
+                      border-radius: 50%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-weight: 700;
+                      color: var(--ey-white);
+                    "
+                  >
+                    4
+                  </div>
+                  <div>
+                    <h3
+                      style="
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: var(--ey-confident-black);
+                        margin-bottom: 4px;
+                      "
+                    >
+                      Manager Promotion
+                    </h3>
+                    <p style="font-size: 13px; color: var(--ey-gray-01)">
+                      Target: August 2025 • 57% Progress
+                    </p>
+                  </div>
+                </div>
+                <div style="margin-left: 52px">
+                  <div
+                    style="
+                      height: 6px;
+                      background: var(--ey-off-white);
+                      border-radius: 3px;
+                      overflow: hidden;
+                      margin-bottom: 16px;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 100%;
+                        background: var(--ey-yellow);
+                        width: 57%;
+                        border-radius: 3px;
+                      "
+                    ></div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(3, 1fr);
+                      gap: 12px;
+                    "
+                  >
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Skills Completed
+                      </div>
+                      <div
+                        style="
+                          font-size: 16px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        24/42
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Match Score
+                      </div>
+                      <div
+                        style="
+                          font-size: 16px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        82%
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        padding: 12px;
+                        background: var(--ey-off-white);
+                        border-radius: 8px;
+                      "
+                    >
+                      <div
+                        style="
+                          font-size: 11px;
+                          color: var(--ey-gray-01);
+                          margin-bottom: 4px;
+                        "
+                      >
+                        Time Remaining
+                      </div>
+                      <div
+                        style="
+                          font-size: 16px;
+                          font-weight: 600;
+                          color: var(--ey-confident-black);
+                        "
+                      >
+                        18mo
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      margin-top: 16px;
+                      padding: 12px;
+                      background: rgba(34, 197, 94, 0.1);
+                      border-radius: 8px;
+                      border-left: 3px solid var(--success);
+                    "
+                  >
+                    <div
+                      style="font-size: 12px; color: var(--ey-confident-black)"
+                    >
+                      <strong>Status:</strong> You're on track! Complete
+                      milestones 1-3 to reach 90%+ match score by promotion
+                      time.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NETWORK TAB -->
+        <div id="tab-network" class="tab-content">
+          <div class="network-container">
+            <div class="network-header">
+              <h2>Skill Development Network</h2>
+              <div class="network-stats">
+                <div class="network-stat">
+                  <div class="network-stat-value">24</div>
+                  <div class="network-stat-label">Completed</div>
+                </div>
+                <div class="network-stat">
+                  <div class="network-stat-value">6</div>
+                  <div class="network-stat-label">In Progress</div>
+                </div>
+                <div class="network-stat">
+                  <div class="network-stat-value">12</div>
+                  <div class="network-stat-label">Available</div>
+                </div>
+                <div class="network-stat">
+                  <div class="network-stat-value">82%</div>
+                  <div class="network-stat-label">Match</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="network-body">
+              <div class="network-sidebar">
+                <div class="network-sidebar-title">Career Paths</div>
+
+                <div class="path-item active">
+                  <div class="path-name">🎯 Manager Promotion</div>
+                  <div class="path-progress-bar">
+                    <div class="path-progress-fill" style="width: 57%"></div>
+                  </div>
+                  <div class="path-stats">
+                    <span>57% complete</span>
+                    <span>Primary</span>
+                  </div>
+                </div>
+
+                <div class="path-item">
+                  <div class="path-name">☁️ Cloud Architect</div>
+                  <div class="path-progress-bar">
+                    <div class="path-progress-fill" style="width: 75%"></div>
+                  </div>
+                  <div class="path-stats">
+                    <span>75% complete</span>
+                    <span>Technical</span>
+                  </div>
+                </div>
+
+                <div class="path-item">
+                  <div class="path-name">👥 Leadership Track</div>
+                  <div class="path-progress-bar">
+                    <div class="path-progress-fill" style="width: 35%"></div>
+                  </div>
+                  <div class="path-stats">
+                    <span>35% complete</span>
+                    <span>Soft Skills</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="network-canvas" style="position: relative">
+                <svg class="canvas-svg" viewBox="0 0 700 500" id="networkSvg">
+                  <!-- Edges -->
+                  <line
+                    class="network-edge active"
+                    x1="350"
+                    y1="250"
+                    x2="250"
+                    y2="150"
+                  />
+                  <line
+                    class="network-edge active"
+                    x1="350"
+                    y1="250"
+                    x2="450"
+                    y2="150"
+                  />
+                  <line
+                    class="network-edge active"
+                    x1="350"
+                    y1="250"
+                    x2="200"
+                    y2="280"
+                  />
+                  <line
+                    class="network-edge"
+                    x1="350"
+                    y1="250"
+                    x2="500"
+                    y2="280"
+                  />
+                  <line
+                    class="network-edge active"
+                    x1="350"
+                    y1="250"
+                    x2="280"
+                    y2="380"
+                  />
+                  <line
+                    class="network-edge"
+                    x1="350"
+                    y1="250"
+                    x2="420"
+                    y2="380"
+                  />
+
+                  <line
+                    class="network-edge active"
+                    x1="250"
+                    y1="150"
+                    x2="150"
+                    y2="100"
+                  />
+                  <line
+                    class="network-edge active"
+                    x1="250"
+                    y1="150"
+                    x2="180"
+                    y2="200"
+                  />
+                  <line
+                    class="network-edge active"
+                    x1="450"
+                    y1="150"
+                    x2="550"
+                    y2="100"
+                  />
+                  <line
+                    class="network-edge"
+                    x1="450"
+                    y1="150"
+                    x2="520"
+                    y2="200"
+                  />
+
+                  <line
+                    class="network-edge active"
+                    x1="200"
+                    y1="280"
+                    x2="100"
+                    y2="320"
+                  />
+                  <line
+                    class="network-edge"
+                    x1="500"
+                    y1="280"
+                    x2="600"
+                    y2="320"
+                  />
+
+                  <!-- Center node (Current) -->
+                  <g
+                    class="network-node current"
+                    transform="translate(350, 250)"
+                    data-skill="current-role"
+                    data-name="You - Senior Consultant"
+                    data-progress="100"
+                    data-desc="Your current position. All skills connect from here."
+                  >
+                    <circle class="network-node-bg" r="28" />
+                    <text class="network-node-text" dy="6" font-size="12">
+                      YOU
+                    </text>
+                  </g>
+
+                  <!-- Technical cluster -->
+                  <g
+                    class="network-node allocated"
+                    transform="translate(250, 150)"
+                    data-skill="cloud"
+                    data-name="Cloud Infrastructure"
+                    data-progress="85"
+                    data-desc="Core cloud skills including AWS, containers, and infrastructure"
+                  >
+                    <circle class="network-node-bg" r="22" />
+                    <text class="network-node-text" dy="5" font-size="10">
+                      Cloud
+                    </text>
+                  </g>
+                  <g
+                    class="network-node allocated"
+                    transform="translate(150, 100)"
+                    data-skill="aws-sa"
+                    data-name="AWS Solutions Architect"
+                    data-progress="75"
+                    data-desc="6 of 8 modules complete. Est. completion: Mar 2025"
+                  >
+                    <circle class="network-node-bg" r="16" />
+                    <text class="network-node-text" dy="4" font-size="8">
+                      AWS SA
+                    </text>
+                  </g>
+                  <g
+                    class="network-node allocated"
+                    transform="translate(180, 200)"
+                    data-skill="docker"
+                    data-name="Docker"
+                    data-progress="100"
+                    data-desc="Containerization - Certified"
+                  >
+                    <circle class="network-node-bg" r="14" />
+                    <text class="network-node-text" dy="3" font-size="7">
+                      Docker
+                    </text>
+                  </g>
+
+                  <!-- Consulting cluster -->
+                  <g
+                    class="network-node allocated"
+                    transform="translate(450, 150)"
+                    data-skill="client"
+                    data-name="Client Relations"
+                    data-progress="90"
+                    data-desc="Strong client engagement and relationship management"
+                  >
+                    <circle class="network-node-bg" r="22" />
+                    <text class="network-node-text" dy="5" font-size="10">
+                      Client
+                    </text>
+                  </g>
+                  <g
+                    class="network-node allocated"
+                    transform="translate(550, 100)"
+                    data-skill="stakeholder"
+                    data-name="Stakeholder Communication"
+                    data-progress="100"
+                    data-desc="Executive presentations and communication"
+                  >
+                    <circle class="network-node-bg" r="16" />
+                    <text class="network-node-text" dy="4" font-size="8">
+                      Stake
+                    </text>
+                  </g>
+                  <g
+                    class="network-node"
+                    transform="translate(520, 200)"
+                    data-skill="solution-selling"
+                    data-name="Solution Selling"
+                    data-progress="0"
+                    data-desc="Identify and propose solutions to client problems"
+                  >
+                    <circle class="network-node-bg" r="14" />
+                    <text class="network-node-text" dy="3" font-size="7">
+                      Selling
+                    </text>
+                  </g>
+
+                  <!-- Leadership cluster -->
+                  <g
+                    class="network-node allocated"
+                    transform="translate(200, 280)"
+                    data-skill="leadership"
+                    data-name="Team Leadership"
+                    data-progress="60"
+                    data-desc="Leading project teams. Ongoing development."
+                  >
+                    <circle class="network-node-bg" r="20" />
+                    <text class="network-node-text" dy="4" font-size="9">
+                      Lead
+                    </text>
+                  </g>
+                  <g
+                    class="network-node allocated"
+                    transform="translate(100, 320)"
+                    data-skill="project-mgmt"
+                    data-name="Project Management"
+                    data-progress="70"
+                    data-desc="Delivery excellence and project coordination"
+                  >
+                    <circle class="network-node-bg" r="14" />
+                    <text class="network-node-text" dy="3" font-size="7">
+                      PM
+                    </text>
+                  </g>
+
+                  <!-- Business cluster -->
+                  <g
+                    class="network-node"
+                    transform="translate(500, 280)"
+                    data-skill="business"
+                    data-name="Business Acumen"
+                    data-progress="30"
+                    data-desc="Financial acumen and strategic planning"
+                  >
+                    <circle class="network-node-bg" r="20" />
+                    <text class="network-node-text" dy="4" font-size="9">
+                      Biz
+                    </text>
+                  </g>
+                  <g
+                    class="network-node"
+                    transform="translate(600, 320)"
+                    data-skill="strategy"
+                    data-name="Strategic Planning"
+                    data-progress="0"
+                    data-desc="Long-term thinking and strategy"
+                  >
+                    <circle class="network-node-bg" r="14" />
+                    <text class="network-node-text" dy="3" font-size="7">
+                      Strategy
+                    </text>
+                  </g>
+
+                  <!-- Mentorship cluster -->
+                  <g
+                    class="network-node allocated"
+                    transform="translate(280, 380)"
+                    data-skill="mentorship"
+                    data-name="Mentorship"
+                    data-progress="0"
+                    data-desc="Formal mentoring program. Start Q2 2025"
+                  >
+                    <circle class="network-node-bg" r="18" />
+                    <text class="network-node-text" dy="4" font-size="8">
+                      Mentor
+                    </text>
+                  </g>
+
+                  <!-- Strategy cluster -->
+                  <g
+                    class="network-node"
+                    transform="translate(420, 380)"
+                    data-skill="kubernetes"
+                    data-name="Kubernetes"
+                    data-progress="45"
+                    data-desc="Container orchestration. Est. completion: Jun 2025"
+                  >
+                    <circle class="network-node-bg" r="18" />
+                    <text class="network-node-text" dy="4" font-size="8">
+                      K8s
+                    </text>
+                  </g>
+                </svg>
+
+                <!-- Skill Details Panel -->
+                <div class="network-skill-details" id="skillDetails">
+                  <h3 id="skillDetailsTitle">Click a node to see details</h3>
+                  <div id="skillDetailsContent"></div>
+                </div>
+
+                <!-- Tooltip -->
+                <div class="network-tooltip" id="networkTooltip">
+                  <h4 id="tooltipTitle"></h4>
+                  <p id="tooltipDesc"></p>
+                  <div
+                    class="tooltip-progress"
+                    id="tooltipProgress"
+                    style="display: none"
+                  >
+                    <div
+                      style="
+                        font-size: 11px;
+                        color: var(--ey-gray-01);
+                        margin-bottom: 4px;
+                      "
+                    >
+                      Progress
+                    </div>
+                    <div class="tooltip-progress-bar">
+                      <div
+                        class="tooltip-progress-fill"
+                        id="tooltipProgressFill"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="network-legend">
+                  <div class="legend-item">
+                    <div class="legend-dot complete"></div>
+                    <span>Completed</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot current"></div>
+                    <span>Current Focus</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-dot available"></div>
+                    <span>Available</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skill Tree Modal (Gamified Mode) -->
+    <div class="skill-tree-modal" id="skillTreeModal">
+      <div class="skill-tree-content">
+        <div class="skill-tree-header">
+          <h3>Passive Skill Tree</h3>
+          <button class="skill-tree-close" onclick="closeSkillTree()">×</button>
+        </div>
+        <div class="skill-tree-body">
+          <div class="skill-tree-container">
+            <svg class="skill-tree-svg" viewBox="0 0 1200 1200">
+              <!-- Skill tree visualization would go here -->
+              <text
+                x="600"
+                y="600"
+                fill="#FFE600"
+                text-anchor="middle"
+                font-size="24"
+                font-family="Cinzel"
+              >
+                Skill Tree View
+              </text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function switchTab(tabName) {
+        // Hide all tabs
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((tab) => tab.classList.remove("active"));
+        document
+          .querySelectorAll(".tab")
+          .forEach((tab) => tab.classList.remove("active"));
+
+        // Show selected tab
+        document.getElementById("tab-" + tabName).classList.add("active");
+        event.target.classList.add("active");
+      }
+
+      function setStyle(style) {
+        document.body.className = style === "gamified" ? "gamified" : "";
+        document
+          .querySelectorAll(".style-toggle-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        event.target.classList.add("active");
+      }
+
+      function closeSkillTree() {
+        document.getElementById("skillTreeModal").classList.remove("active");
+      }
+
+      // Network interactivity
+      document.addEventListener("DOMContentLoaded", function () {
+        const networkNodes = document.querySelectorAll(
+          "#networkSvg .network-node"
+        );
+        const tooltip = document.getElementById("networkTooltip");
+        const skillDetails = document.getElementById("skillDetails");
+        const skillDetailsTitle = document.getElementById("skillDetailsTitle");
+        const skillDetailsContent = document.getElementById(
+          "skillDetailsContent"
+        );
+        const svg = document.getElementById("networkSvg");
+        const canvas = document.querySelector(".network-canvas");
+
+        networkNodes.forEach((node) => {
+          const skillName = node.getAttribute("data-name");
+          const skillDesc = node.getAttribute("data-desc");
+          const skillProgress = node.getAttribute("data-progress");
+
+          // Hover for tooltip
+          node.addEventListener("mouseenter", function (e) {
+            const rect = svg.getBoundingClientRect();
+            const nodeRect = node.getBoundingClientRect();
+            const transform = node.getAttribute("transform");
+            const match = transform.match(/translate\((\d+),\s*(\d+)\)/);
+
+            if (match) {
+              const x = parseFloat(match[1]);
+              const y = parseFloat(match[2]);
+              const svgRect = svg.viewBox.baseVal;
+              const scaleX = rect.width / svgRect.width;
+              const scaleY = rect.height / svgRect.height;
+
+              tooltip.style.left = rect.left + x * scaleX + 20 + "px";
+              tooltip.style.top = rect.top + y * scaleY - 60 + "px";
+
+              document.getElementById("tooltipTitle").textContent = skillName;
+              document.getElementById("tooltipDesc").textContent = skillDesc;
+
+              if (skillProgress && skillProgress !== "0") {
+                document.getElementById("tooltipProgress").style.display =
+                  "block";
+                document.getElementById("tooltipProgressFill").style.width =
+                  skillProgress + "%";
+              } else {
+                document.getElementById("tooltipProgress").style.display =
+                  "none";
+              }
+
+              tooltip.classList.add("visible");
+            }
+          });
+
+          node.addEventListener("mousemove", function (e) {
+            const rect = svg.getBoundingClientRect();
+            const transform = node.getAttribute("transform");
+            const match = transform.match(/translate\((\d+),\s*(\d+)\)/);
+
+            if (match) {
+              const x = parseFloat(match[1]);
+              const y = parseFloat(match[2]);
+              const svgRect = svg.viewBox.baseVal;
+              const scaleX = rect.width / svgRect.width;
+              const scaleY = rect.height / svgRect.height;
+
+              tooltip.style.left = rect.left + x * scaleX + 20 + "px";
+              tooltip.style.top = rect.top + y * scaleY - 60 + "px";
+            }
+          });
+
+          node.addEventListener("mouseleave", function () {
+            tooltip.classList.remove("visible");
+          });
+
+          // Click for details panel
+          node.addEventListener("click", function (e) {
+            e.stopPropagation();
+
+            // Update details panel
+            skillDetailsTitle.textContent = skillName;
+
+            let content = `<div class="skill-detail-item">
+                        <div class="skill-detail-label">Description</div>
+                        <div class="skill-detail-value">${skillDesc}</div>
+                    </div>`;
+
+            if (skillProgress && skillProgress !== "0") {
+              content += `<div class="skill-detail-item">
+                            <div class="skill-detail-label">Progress</div>
+                            <div class="skill-detail-value">${skillProgress}% Complete</div>
+                        </div>`;
+            } else if (skillProgress === "0") {
+              content += `<div class="skill-detail-item">
+                            <div class="skill-detail-label">Status</div>
+                            <div class="skill-detail-value">Not Started</div>
+                        </div>`;
+            }
+
+            // Add related skills
+            const relatedSkills = getRelatedSkills(
+              node.getAttribute("data-skill")
+            );
+            if (relatedSkills.length > 0) {
+              content += `<div class="skill-detail-item">
+                            <div class="skill-detail-label">Related Skills</div>
+                            <div class="skill-detail-value">${relatedSkills.join(
+                              ", "
+                            )}</div>
+                        </div>`;
+            }
+
+            skillDetailsContent.innerHTML = content;
+            skillDetails.classList.add("visible");
+          });
+        });
+
+        // Close details panel when clicking elsewhere
+        canvas.addEventListener("click", function (e) {
+          if (
+            e.target === canvas ||
+            e.target.classList.contains("network-canvas")
+          ) {
+            skillDetails.classList.remove("visible");
+          }
+        });
+
+        function getRelatedSkills(skillId) {
+          const relations = {
+            cloud: ["AWS SA", "Docker", "Kubernetes"],
+            "aws-sa": ["Cloud Infrastructure", "Docker"],
+            leadership: ["Project Management", "Mentorship"],
+            client: ["Stakeholder Communication", "Solution Selling"],
+            mentorship: ["Team Leadership", "Project Management"],
+            business: ["Strategic Planning", "Client Relations"],
+          };
+          return relations[skillId] || [];
+        }
+
+        // Path item selection
+        document.querySelectorAll(".path-item").forEach((item) => {
+          item.addEventListener("click", function () {
+            document
+              .querySelectorAll(".path-item")
+              .forEach((i) => i.classList.remove("active"));
+            this.classList.add("active");
+            // Could filter network view by path
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
