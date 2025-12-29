@@ -1,0 +1,3356 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SpringAIS - Progressive Career Roadmap</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap");
+
+      :root {
+        --ey-yellow: #ffe600;
+        --ey-yellow-dark: #e6cf00;
+        --ey-off-black: #2e2e38;
+        --ey-confident-black: #1a1a24;
+        --ey-gray-02: #c4c4cd;
+        --ey-gray-01: #747480;
+        --ey-off-white: #f6f6fa;
+        --ey-white: #ffffff;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --info: #3b82f6;
+        --caution: #dc2626;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--ey-off-white);
+        color: var(--ey-off-black);
+        line-height: 1.6;
+      }
+
+      body.adventure-mode {
+        font-family: "Spectral", serif;
+        background: #0a0a0f;
+        color: #c4b998;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 32px;
+      }
+
+      /* Top Navigation */
+      .top-nav {
+        background: var(--ey-white);
+        border-bottom: 1px solid var(--ey-gray-02);
+        padding: 12px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      body.adventure-mode .top-nav {
+        background: rgba(10, 10, 15, 0.98);
+        border-bottom: 1px solid rgba(139, 90, 43, 0.4);
+      }
+
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .logo {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .logo {
+        font-family: "Cinzel", serif;
+        color: #e8dcc4;
+      }
+
+      .back-link {
+        color: var(--ey-gray-01);
+        text-decoration: none;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+
+      .back-link:hover {
+        background: var(--ey-off-white);
+        color: var(--ey-off-black);
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .mode-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: var(--ey-off-white);
+        border: 1px solid var(--ey-gray-02);
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      /* Timeline Sidebar */
+      .roadmap-layout {
+        display: grid;
+        grid-template-columns: 240px 300px 1fr;
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      /* Career Destination Selector */
+      .career-selector {
+        position: sticky;
+        top: 100px;
+        height: fit-content;
+      }
+
+      .career-selector-card {
+        background: var(--ey-white);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      body.adventure-mode .career-selector-card {
+        background: rgba(30, 28, 25, 0.95);
+        border: 1px solid rgba(139, 90, 43, 0.4);
+      }
+
+      .career-selector-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--ey-gray-01);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+      }
+
+      .career-tab {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: var(--ey-off-white);
+        border: 2px solid transparent;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      body.adventure-mode .career-tab {
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .career-tab:hover {
+        border-color: var(--ey-yellow);
+        transform: translateX(4px);
+      }
+
+      .career-tab.active {
+        background: var(--ey-yellow);
+        border-color: var(--ey-yellow);
+        box-shadow: 0 4px 12px rgba(255, 230, 0, 0.3);
+      }
+
+      body.adventure-mode .career-tab.active {
+        background: rgba(255, 230, 0, 0.2);
+        border-color: #ffe600;
+      }
+
+      .career-tab-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .career-tab-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .career-tab-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      body.adventure-mode .career-tab-name {
+        color: #e8dcc4;
+      }
+
+      .career-tab.active .career-tab-name {
+        color: var(--ey-confident-black);
+      }
+
+      .career-tab-duration {
+        font-size: 10px;
+        color: var(--ey-gray-01);
+      }
+
+      .career-tab.active .career-tab-duration {
+        color: var(--ey-off-black);
+      }
+
+      .career-selector-note {
+        margin-top: 16px;
+        padding: 12px;
+        background: rgba(59, 130, 246, 0.08);
+        border-radius: 8px;
+        font-size: 11px;
+        color: var(--ey-gray-01);
+        line-height: 1.5;
+      }
+
+      body.adventure-mode .career-selector-note {
+        background: rgba(64, 156, 155, 0.1);
+      }
+
+      .timeline-sidebar {
+        position: sticky;
+        top: 100px;
+        height: fit-content;
+      }
+
+      .sidebar-card {
+        background: var(--ey-white);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        margin-bottom: 20px;
+      }
+
+      body.adventure-mode .sidebar-card {
+        background: rgba(30, 28, 25, 0.95);
+        border: 1px solid rgba(139, 90, 43, 0.4);
+      }
+
+      .sidebar-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ey-gray-01);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+      }
+
+      .timeline-estimate {
+        text-align: center;
+        padding: 20px;
+        background: var(--ey-off-white);
+        border-radius: 12px;
+        margin-bottom: 20px;
+      }
+
+      body.adventure-mode .timeline-estimate {
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .estimate-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--ey-yellow);
+        margin-bottom: 8px;
+      }
+
+      .estimate-label {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+      }
+
+      .estimate-range {
+        font-size: 11px;
+        color: var(--ey-gray-01);
+        margin-top: 4px;
+      }
+
+      .progress-summary {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--ey-off-white);
+        margin-bottom: 12px;
+      }
+
+      body.adventure-mode .progress-summary {
+        border-bottom-color: rgba(139, 90, 43, 0.3);
+      }
+
+      .progress-summary:last-child {
+        border-bottom: none;
+      }
+
+      .summary-label {
+        font-size: 13px;
+        color: var(--ey-off-black);
+      }
+
+      body.adventure-mode .summary-label {
+        color: #c4b998;
+      }
+
+      .summary-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .summary-value {
+        color: #ffe600;
+      }
+
+      /* Progressive Roadmap Flow */
+      .roadmap-flow {
+        background: var(--ey-white);
+        border-radius: 16px;
+        padding: 40px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      body.adventure-mode .roadmap-flow {
+        background: rgba(30, 28, 25, 0.95);
+        border: 1px solid rgba(139, 90, 43, 0.4);
+      }
+
+      .flow-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .flow-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .flow-title {
+        font-family: "Cinzel", serif;
+        color: #e8dcc4;
+      }
+
+      .flow-subtitle {
+        font-size: 15px;
+        color: var(--ey-gray-01);
+      }
+
+      /* Roadmap Sections */
+      .roadmap-section {
+        margin-bottom: 48px;
+        position: relative;
+      }
+
+      /* Vertical timeline line - temporarily disabled
+      .roadmap-section::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: -48px;
+        width: 3px;
+        background: linear-gradient(180deg, var(--ey-yellow) 0%, var(--ey-gray-02) 100%);
+        transform: translateX(-50%);
+        z-index: 1;
+      }
+      */
+
+      .roadmap-section:last-child::before {
+        display: none;
+      }
+
+      .roadmap-section.locked::before {
+        background: var(--ey-gray-02);
+      }
+
+      /* Section Types */
+      .section-marker {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 24px;
+        z-index: 2;
+      }
+
+      .marker-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 20px;
+        background: var(--ey-yellow);
+        color: var(--ey-confident-black);
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(255, 230, 0, 0.3);
+      }
+
+      .marker-badge.completed {
+        background: var(--success);
+        color: white;
+      }
+
+      .marker-badge.current {
+        background: var(--ey-yellow);
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .marker-badge.locked {
+        background: var(--ey-gray-02);
+        color: var(--ey-gray-01);
+        box-shadow: none;
+      }
+
+      @keyframes pulse {
+        0%, 100% { box-shadow: 0 4px 12px rgba(255, 230, 0, 0.3); }
+        50% { box-shadow: 0 4px 20px rgba(255, 230, 0, 0.6); }
+      }
+
+      /* Completed Section */
+      .completed-section {
+        background: rgba(34, 197, 94, 0.05);
+        border: 2px solid var(--success);
+        border-radius: 12px;
+        padding: 24px;
+        position: relative;
+        z-index: 2;
+      }
+
+      body.adventure-mode .completed-section {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: var(--success);
+      }
+
+      .completed-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .completed-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      body.adventure-mode .completed-title {
+        color: #e8dcc4;
+      }
+
+      .completed-skills {
+        font-size: 14px;
+        color: var(--ey-gray-01);
+      }
+
+      .foundation-skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .foundation-skill-badge {
+        background: var(--ey-white);
+        border: 2px solid var(--success);
+        border-radius: 10px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.2s;
+      }
+
+      .foundation-skill-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+      }
+
+      body.adventure-mode .foundation-skill-badge {
+        background: rgba(30, 28, 25, 0.95);
+        border-color: var(--success);
+      }
+
+      .skill-check {
+        font-size: 18px;
+        color: var(--success);
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .skill-name-badge {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        flex: 1;
+      }
+
+      body.adventure-mode .skill-name-badge {
+        color: #e8dcc4;
+      }
+
+      /* Decision Point */
+      .decision-point {
+        background: var(--ey-off-white);
+        border: 3px dashed var(--ey-yellow);
+        border-radius: 16px;
+        padding: 32px;
+        position: relative;
+        z-index: 2;
+      }
+
+      body.adventure-mode .decision-point {
+        background: rgba(139, 90, 43, 0.1);
+        border-color: rgba(255, 230, 0, 0.5);
+      }
+
+      .decision-header {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .decision-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .decision-title {
+        color: #e8dcc4;
+      }
+
+      .decision-instruction {
+        font-size: 14px;
+        color: var(--ey-gray-01);
+      }
+
+      .decision-options {
+        display: grid;
+        gap: 16px;
+      }
+
+      .decision-option {
+        background: var(--ey-white);
+        border: 2px solid var(--ey-gray-02);
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .decision-option:hover {
+        border-color: var(--ey-yellow);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+      }
+
+      .decision-option.selected {
+        border-color: var(--ey-yellow);
+        background: rgba(255, 230, 0, 0.05);
+        box-shadow: 0 4px 12px rgba(255, 230, 0, 0.2);
+      }
+
+      body.adventure-mode .decision-option {
+        background: rgba(30, 28, 25, 0.95);
+        border-color: rgba(139, 90, 43, 0.4);
+      }
+
+      body.adventure-mode .decision-option.selected {
+        background: rgba(255, 230, 0, 0.1);
+        border-color: #ffe600;
+      }
+
+      .decision-option.recommended::after {
+        content: '⭐ RECOMMENDED';
+        position: absolute;
+        top: -12px;
+        right: 20px;
+        background: var(--ey-yellow);
+        color: var(--ey-confident-black);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+
+      .option-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+
+      .option-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .option-title {
+        color: #e8dcc4;
+      }
+
+      .option-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: var(--ey-off-white);
+        color: var(--ey-gray-01);
+        font-weight: 600;
+      }
+
+      .option-meta {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        color: var(--ey-gray-01);
+      }
+
+      .option-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .option-description {
+        font-size: 14px;
+        color: var(--ey-gray-01);
+        line-height: 1.5;
+      }
+
+      .option-impact {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--ey-off-white);
+        font-size: 13px;
+        color: var(--success);
+        font-weight: 500;
+      }
+
+      body.adventure-mode .option-impact {
+        border-top-color: rgba(139, 90, 43, 0.3);
+      }
+
+      .selected-choice {
+        background: rgba(255, 230, 0, 0.1);
+        border: 2px solid var(--ey-yellow);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+      }
+
+      body.adventure-mode .selected-choice {
+        background: rgba(255, 230, 0, 0.15);
+      }
+
+      .selected-info {
+        flex: 1;
+      }
+
+      .selected-label {
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        margin-bottom: 4px;
+      }
+
+      .selected-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .selected-name {
+        color: #e8dcc4;
+      }
+
+      .change-btn {
+        padding: 8px 16px;
+        background: var(--ey-white);
+        border: 1px solid var(--ey-gray-02);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .change-btn:hover {
+        background: var(--ey-off-white);
+        border-color: var(--ey-yellow);
+      }
+
+      /* Parallel Skills */
+      .parallel-skills {
+        background: var(--ey-off-white);
+        border: 2px solid var(--ey-yellow);
+        border-radius: 16px;
+        padding: 32px;
+        position: relative;
+        z-index: 2;
+      }
+
+      body.adventure-mode .parallel-skills {
+        background: rgba(139, 90, 43, 0.1);
+      }
+
+      .parallel-header {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .parallel-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .parallel-title {
+        color: #e8dcc4;
+      }
+
+      .parallel-requirement {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+      }
+
+      .skills-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+
+      .skill-card {
+        background: var(--ey-white);
+        border-radius: 12px;
+        padding: 20px;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .skill-card:hover {
+        border-color: var(--ey-yellow);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      body.adventure-mode .skill-card {
+        background: rgba(30, 28, 25, 0.95);
+        border-color: rgba(139, 90, 43, 0.3);
+      }
+
+      .skill-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+
+      .skill-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .skill-name {
+        color: #e8dcc4;
+      }
+
+      .skill-status {
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .skill-status.active {
+        background: rgba(255, 230, 0, 0.15);
+        color: var(--ey-off-black);
+      }
+
+      body.adventure-mode .skill-status.active {
+        color: #ffe600;
+      }
+
+      .skill-status.complete {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--success);
+      }
+
+      .skill-progress-bar {
+        height: 8px;
+        background: var(--ey-off-white);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .skill-progress-bar {
+        background: rgba(139, 90, 43, 0.2);
+      }
+
+      .skill-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--ey-yellow), #ffd000);
+        border-radius: 4px;
+      }
+
+      .skill-progress-text {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .skill-progress-text {
+        color: #ffe600;
+      }
+
+      .skill-description {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        margin-top: 8px;
+      }
+
+      /* Locked Section - Grayed Out But Visible */
+      .locked-section {
+        background: var(--ey-off-white);
+        border: 2px solid var(--ey-gray-02);
+        border-radius: 16px;
+        padding: 32px;
+        opacity: 0.6;
+        position: relative;
+        z-index: 2;
+      }
+
+      body.adventure-mode .locked-section {
+        background: rgba(0, 0, 0, 0.1);
+        border-color: rgba(139, 90, 43, 0.3);
+      }
+
+      .upcoming-phase-note {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: rgba(59, 130, 246, 0.08);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 3px solid var(--info);
+      }
+
+      body.adventure-mode .upcoming-phase-note {
+        background: rgba(64, 156, 155, 0.1);
+      }
+
+      .upcoming-note-text {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        line-height: 1.5;
+      }
+
+      .upcoming-note-text strong {
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .upcoming-note-text strong {
+        color: #e8dcc4;
+      }
+
+      /* Info Banner */
+      .info-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        background: rgba(59, 130, 246, 0.08);
+        border-radius: 12px;
+        border-left: 3px solid var(--info);
+        margin-top: 32px;
+      }
+
+      body.adventure-mode .info-banner {
+        background: rgba(64, 156, 155, 0.1);
+      }
+
+      .info-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+
+      .info-text {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        line-height: 1.6;
+      }
+
+      .info-text strong {
+        color: var(--ey-off-black);
+      }
+
+      body.adventure-mode .info-text strong {
+        color: #e8dcc4;
+      }
+
+      /* Preview Button */
+      .preview-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: var(--ey-off-white);
+        border: 1px solid var(--ey-gray-02);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 12px;
+      }
+
+      .preview-btn:hover {
+        background: var(--ey-yellow);
+        border-color: var(--ey-yellow);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      body.adventure-mode .preview-btn {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: rgba(139, 90, 43, 0.4);
+        color: #c4b998;
+      }
+
+      body.adventure-mode .preview-btn:hover {
+        background: rgba(255, 230, 0, 0.2);
+        border-color: #ffe600;
+        color: #ffe600;
+      }
+
+      /* Preview Modal */
+      .preview-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      .preview-modal.active {
+        display: flex;
+      }
+
+      .preview-content {
+        background: var(--ey-white);
+        border-radius: 20px;
+        max-width: 900px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s ease-out;
+      }
+
+      body.adventure-mode .preview-content {
+        background: rgba(30, 28, 25, 0.98);
+        border: 2px solid rgba(139, 90, 43, 0.5);
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .preview-header {
+        padding: 32px 40px 24px;
+        border-bottom: 2px solid var(--ey-off-white);
+        position: sticky;
+        top: 0;
+        background: var(--ey-white);
+        border-radius: 20px 20px 0 0;
+        z-index: 10;
+      }
+
+      body.adventure-mode .preview-header {
+        background: rgba(30, 28, 25, 0.98);
+        border-bottom-color: rgba(139, 90, 43, 0.3);
+      }
+
+      .preview-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+
+      .preview-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .preview-title {
+        font-family: "Cinzel", serif;
+        color: #e8dcc4;
+      }
+
+      .preview-close {
+        font-size: 28px;
+        color: var(--ey-gray-01);
+        cursor: pointer;
+        line-height: 1;
+        padding: 4px;
+        transition: all 0.2s;
+      }
+
+      .preview-close:hover {
+        color: var(--ey-confident-black);
+        transform: rotate(90deg);
+      }
+
+      .preview-subtitle {
+        font-size: 14px;
+        color: var(--ey-gray-01);
+      }
+
+      .preview-body {
+        padding: 32px 40px;
+      }
+
+      .preview-timeline {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px;
+        background: rgba(255, 230, 0, 0.08);
+        border-radius: 12px;
+        margin-bottom: 32px;
+      }
+
+      body.adventure-mode .preview-timeline {
+        background: rgba(255, 230, 0, 0.1);
+      }
+
+      .timeline-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--ey-off-black);
+        font-weight: 600;
+      }
+
+      body.adventure-mode .timeline-item {
+        color: #c4b998;
+      }
+
+      .timeline-arrow {
+        color: var(--ey-gray-02);
+        font-size: 16px;
+      }
+
+      .preview-section {
+        margin-bottom: 32px;
+      }
+
+      .preview-section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      body.adventure-mode .preview-section-title {
+        color: #e8dcc4;
+      }
+
+      .preview-steps {
+        display: grid;
+        gap: 12px;
+      }
+
+      .preview-step {
+        background: var(--ey-off-white);
+        border-radius: 10px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      body.adventure-mode .preview-step {
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .step-number {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ey-yellow);
+        background: var(--ey-confident-black);
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      body.adventure-mode .step-number {
+        background: rgba(255, 230, 0, 0.2);
+        color: #ffe600;
+      }
+
+      .step-content {
+        flex: 1;
+      }
+
+      .step-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 4px;
+      }
+
+      body.adventure-mode .step-title {
+        color: #e8dcc4;
+      }
+
+      .step-description {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        line-height: 1.5;
+      }
+
+      .future-decisions {
+        display: grid;
+        gap: 12px;
+      }
+
+      .future-decision {
+        background: rgba(59, 130, 246, 0.08);
+        border-left: 3px solid var(--info);
+        border-radius: 8px;
+        padding: 16px 20px;
+      }
+
+      body.adventure-mode .future-decision {
+        background: rgba(64, 156, 155, 0.1);
+      }
+
+      .decision-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--info);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+      }
+
+      .decision-question {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .decision-question {
+        color: #e8dcc4;
+      }
+
+      .decision-options-preview {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+      }
+
+      .preview-footer {
+        padding: 24px 40px;
+        border-top: 2px solid var(--ey-off-white);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        bottom: 0;
+        background: var(--ey-white);
+        border-radius: 0 0 20px 20px;
+      }
+
+      body.adventure-mode .preview-footer {
+        background: rgba(30, 28, 25, 0.98);
+        border-top-color: rgba(139, 90, 43, 0.3);
+      }
+
+      .preview-note {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        font-style: italic;
+      }
+
+      .select-path-btn {
+        padding: 12px 24px;
+        background: var(--ey-yellow);
+        color: var(--ey-confident-black);
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .select-path-btn:hover {
+        background: var(--ey-yellow-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 230, 0, 0.4);
+      }
+
+      /* Disclaimer Banner */
+      .disclaimer-banner {
+        background: rgba(59, 130, 246, 0.08);
+        border: 2px solid var(--info);
+        border-radius: 16px;
+        padding: 24px 28px;
+        margin-bottom: 32px;
+        position: relative;
+      }
+
+      body.adventure-mode .disclaimer-banner {
+        background: rgba(64, 156, 155, 0.1);
+        border-color: rgba(64, 156, 155, 0.5);
+      }
+
+      .disclaimer-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      .disclaimer-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+
+      .disclaimer-content {
+        flex: 1;
+      }
+
+      .disclaimer-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .disclaimer-title {
+        color: #e8dcc4;
+      }
+
+      .disclaimer-text {
+        font-size: 14px;
+        color: var(--ey-gray-01);
+        line-height: 1.6;
+        margin-bottom: 16px;
+      }
+
+      .disclaimer-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .disclaimer-btn {
+        padding: 8px 16px;
+        background: var(--ey-white);
+        border: 1px solid var(--ey-gray-02);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .disclaimer-btn:hover {
+        background: var(--info);
+        color: white;
+        border-color: var(--info);
+      }
+
+      body.adventure-mode .disclaimer-btn {
+        background: rgba(30, 28, 25, 0.95);
+        border-color: rgba(139, 90, 43, 0.4);
+        color: #c4b998;
+      }
+
+      .disclaimer-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 20px;
+        color: var(--ey-gray-01);
+        cursor: pointer;
+        padding: 4px;
+        line-height: 1;
+      }
+
+      .disclaimer-close:hover {
+        color: var(--ey-confident-black);
+      }
+
+      /* Beyond Skills Section */
+      .beyond-skills-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--ey-off-white);
+      }
+
+      body.adventure-mode .beyond-skills-section {
+        border-top-color: rgba(139, 90, 43, 0.3);
+      }
+
+      .beyond-skills-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        font-size: 12px;
+        color: var(--ey-gray-01);
+      }
+
+      .beyond-skills-icon {
+        font-size: 14px;
+        opacity: 0.5;
+      }
+
+      .skills-note {
+        font-size: 11px;
+        color: var(--ey-gray-01);
+        font-style: italic;
+        margin-top: 8px;
+      }
+
+      .counselor-btn {
+        width: 100%;
+        padding: 10px;
+        background: var(--ey-yellow);
+        color: var(--ey-confident-black);
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 12px;
+      }
+
+      .counselor-btn:hover {
+        background: var(--ey-yellow-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 230, 0, 0.3);
+      }
+
+      /* Privacy Indicator */
+      .privacy-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(34, 197, 94, 0.1);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--success);
+        cursor: help;
+      }
+
+      body.adventure-mode .privacy-indicator {
+        background: rgba(34, 197, 94, 0.15);
+      }
+
+      /* Essential Qualities */
+      .essential-qualities {
+        background: var(--ey-white);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      body.adventure-mode .essential-qualities {
+        background: rgba(30, 28, 25, 0.95);
+        border: 1px solid rgba(139, 90, 43, 0.4);
+      }
+
+      .quality-item {
+        padding: 12px;
+        background: var(--ey-off-white);
+        border-radius: 8px;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+      }
+
+      body.adventure-mode .quality-item {
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .quality-item:hover {
+        background: rgba(255, 230, 0, 0.1);
+        border-left: 3px solid var(--ey-yellow);
+        padding-left: 9px;
+      }
+
+      .quality-question {
+        font-size: 13px;
+        color: var(--ey-confident-black);
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+
+      body.adventure-mode .quality-question {
+        color: #e8dcc4;
+      }
+
+      .quality-action {
+        font-size: 11px;
+        color: var(--info);
+        cursor: pointer;
+      }
+
+      .quality-action:hover {
+        text-decoration: underline;
+      }
+
+      /* Success Stories Carousel */
+      .success-stories {
+        margin-top: 40px;
+        padding: 32px;
+        background: var(--ey-off-white);
+        border-radius: 16px;
+      }
+
+      body.adventure-mode .success-stories {
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .stories-header {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .stories-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .stories-title {
+        color: #e8dcc4;
+      }
+
+      .stories-subtitle {
+        font-size: 14px;
+        color: var(--ey-gray-01);
+      }
+
+      .story-card {
+        background: var(--ey-white);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 16px;
+        border-left: 4px solid var(--ey-yellow);
+      }
+
+      body.adventure-mode .story-card {
+        background: rgba(30, 28, 25, 0.95);
+        border-left-color: #ffe600;
+      }
+
+      .story-quote {
+        font-size: 15px;
+        color: var(--ey-confident-black);
+        line-height: 1.6;
+        font-style: italic;
+        margin-bottom: 12px;
+      }
+
+      body.adventure-mode .story-quote {
+        color: #c4b998;
+      }
+
+      .story-attribution {
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        font-weight: 600;
+      }
+
+      /* Counselor Checkpoint */
+      .counselor-checkpoint {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: rgba(255, 230, 0, 0.08);
+        border-radius: 12px;
+        border-left: 3px solid var(--ey-yellow);
+        margin-top: 16px;
+      }
+
+      body.adventure-mode .counselor-checkpoint {
+        background: rgba(255, 230, 0, 0.1);
+      }
+
+      .checkpoint-icon {
+        font-size: 20px;
+      }
+
+      .checkpoint-text {
+        flex: 1;
+        font-size: 13px;
+        color: var(--ey-confident-black);
+        font-weight: 500;
+      }
+
+      body.adventure-mode .checkpoint-text {
+        color: #e8dcc4;
+      }
+
+      .checkpoint-btn {
+        padding: 6px 14px;
+        background: var(--ey-yellow);
+        color: var(--ey-confident-black);
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+
+      .checkpoint-btn:hover {
+        background: var(--ey-yellow-dark);
+      }
+
+      /* Evidence Tracking */
+      .evidence-section {
+        margin-top: 16px;
+        padding: 16px;
+        background: var(--ey-off-white);
+        border-radius: 10px;
+      }
+
+      body.adventure-mode .evidence-section {
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .evidence-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .evidence-label {
+        color: #e8dcc4;
+      }
+
+      .evidence-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--ey-gray-02);
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: inherit;
+        resize: vertical;
+        min-height: 60px;
+      }
+
+      body.adventure-mode .evidence-input {
+        background: rgba(30, 28, 25, 0.95);
+        border-color: rgba(139, 90, 43, 0.4);
+        color: #c4b998;
+      }
+
+      .evidence-hint {
+        font-size: 11px;
+        color: var(--ey-gray-01);
+        margin-top: 6px;
+      }
+
+      /* Chatbot Integration */
+      .chatbot-trigger {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 60px;
+        height: 60px;
+        background: var(--ey-yellow);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s;
+        z-index: 999;
+      }
+
+      .chatbot-trigger:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 24px rgba(255, 230, 0, 0.4);
+      }
+
+      .chatbot-tooltip {
+        position: absolute;
+        bottom: 70px;
+        right: 0;
+        background: var(--ey-confident-black);
+        color: white;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+
+      .chatbot-trigger:hover .chatbot-tooltip {
+        opacity: 1;
+      }
+
+      /* Pause Feature */
+      .pause-section {
+        padding: 20px;
+        background: rgba(249, 115, 22, 0.08);
+        border-radius: 12px;
+        border: 2px dashed var(--warning);
+        text-align: center;
+      }
+
+      body.adventure-mode .pause-section {
+        background: rgba(249, 115, 22, 0.1);
+      }
+
+      .pause-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ey-confident-black);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .pause-title {
+        color: #e8dcc4;
+      }
+
+      .pause-description {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        margin-bottom: 12px;
+      }
+
+      .pause-btn {
+        padding: 8px 20px;
+        background: var(--warning);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .pause-btn:hover {
+        background: #ea580c;
+        transform: translateY(-1px);
+      }
+
+      /* Context Note */
+      .context-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        background: rgba(255, 230, 0, 0.15);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--ey-gray-01);
+        margin-bottom: 8px;
+      }
+
+      body.adventure-mode .context-note {
+        background: rgba(255, 230, 0, 0.2);
+      }
+
+      .context-note strong {
+        color: var(--ey-confident-black);
+      }
+
+      body.adventure-mode .context-note strong {
+        color: #ffe600;
+      }
+
+      /* Help Menu */
+      .help-menu {
+        position: relative;
+      }
+
+      .help-toggle {
+        padding: 8px 16px;
+        background: var(--ey-off-white);
+        border: 1px solid var(--ey-gray-02);
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+      }
+
+      .help-toggle:hover {
+        background: var(--ey-white);
+        border-color: var(--ey-yellow);
+      }
+
+      .help-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 8px;
+        background: var(--ey-white);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        min-width: 240px;
+        display: none;
+        z-index: 101;
+      }
+
+      body.adventure-mode .help-dropdown {
+        background: rgba(30, 28, 25, 0.98);
+        border: 1px solid rgba(139, 90, 43, 0.4);
+      }
+
+      .help-dropdown.active {
+        display: block;
+      }
+
+      .help-item {
+        padding: 12px 16px;
+        color: var(--ey-confident-black);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-bottom: 1px solid var(--ey-off-white);
+      }
+
+      body.adventure-mode .help-item {
+        color: #c4b998;
+        border-bottom-color: rgba(139, 90, 43, 0.3);
+      }
+
+      .help-item:last-child {
+        border-bottom: none;
+      }
+
+      .help-item:hover {
+        background: var(--ey-off-white);
+        padding-left: 20px;
+      }
+
+      body.adventure-mode .help-item:hover {
+        background: rgba(255, 230, 0, 0.1);
+      }
+
+      .help-item-icon {
+        margin-right: 8px;
+      }
+
+      /* Tooltip Enhancement */
+      .info-tooltip {
+        position: relative;
+        display: inline-flex;
+        cursor: help;
+        color: var(--info);
+        margin-left: 4px;
+      }
+
+      .tooltip-content {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 8px;
+        padding: 12px 16px;
+        background: var(--ey-confident-black);
+        color: white;
+        border-radius: 8px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        z-index: 1000;
+        max-width: 300px;
+        white-space: normal;
+      }
+
+      .info-tooltip:hover .tooltip-content {
+        opacity: 1;
+      }
+
+      /* Celebration Animation */
+      @keyframes celebrate {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+
+      .celebration {
+        animation: celebrate 0.6s ease-in-out;
+      }
+
+      /* Wellness Checkpoint */
+      .wellness-checkpoint {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        background: rgba(139, 92, 246, 0.08);
+        border-radius: 12px;
+        margin-top: 16px;
+      }
+
+      body.adventure-mode .wellness-checkpoint {
+        background: rgba(139, 92, 246, 0.1);
+      }
+
+      .wellness-icon {
+        font-size: 20px;
+      }
+
+      .wellness-text {
+        font-size: 13px;
+        color: var(--ey-gray-01);
+        line-height: 1.5;
+      }
+
+      .wellness-link {
+        color: var(--info);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .wellness-link:hover {
+        text-decoration: underline;
+      }
+
+      /* Responsive */
+      @media (max-width: 1024px) {
+        .roadmap-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .career-selector,
+        .timeline-sidebar {
+          position: relative;
+          top: 0;
+        }
+
+        .career-selector {
+          margin-bottom: 24px;
+        }
+
+        .career-selector-card {
+          padding: 16px;
+        }
+
+        .career-tab {
+          padding: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+      <div class="nav-left">
+        <div class="logo">SpringAIS</div>
+        <a href="ux-unified-dashboard-v2.html" class="back-link">
+          <span>←</span>
+          <span>Back to Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-right">
+        <div class="help-menu">
+          <button class="help-toggle" onclick="toggleHelpMenu()">
+            <span>❓</span>
+            <span>Help & Support</span>
+          </button>
+          <div class="help-dropdown" id="helpDropdown">
+            <div class="help-item" onclick="scheduleCounselor()">
+              <span class="help-item-icon">📅</span>
+              Schedule Counselor Meeting
+            </div>
+            <div class="help-item" onclick="findMentor()">
+              <span class="help-item-icon">🎓</span>
+              Find a Mentor
+            </div>
+            <div class="help-item" onclick="joinStudyGroup()">
+              <span class="help-item-icon">👥</span>
+              Join Study Group
+            </div>
+            <div class="help-item" onclick="openChatbot()">
+              <span class="help-item-icon">💬</span>
+              Career Coach Chatbot
+            </div>
+            <div class="help-item" onclick="accessWellness()">
+              <span class="help-item-icon">🧘</span>
+              Wellness Resources
+            </div>
+          </div>
+        </div>
+        <div class="privacy-indicator" title="Your roadmap is private to you. You control what you share with your counselor.">
+          <span>🔒</span>
+          <span>Private</span>
+        </div>
+        <button class="mode-toggle" onclick="toggleAdventureMode()">
+          <span id="modeIcon">🎮</span>
+          <span id="modeLabel">Adventure Mode</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="roadmap-layout">
+        <!-- Career Destination Selector -->
+        <div class="career-selector">
+          <div class="career-selector-card">
+            <div class="career-selector-title">Career Destination</div>
+            
+            <div class="career-tab active" onclick="switchCareerPath('manager')">
+              <div class="career-tab-icon">👥</div>
+              <div class="career-tab-content">
+                <div class="career-tab-name">Manager</div>
+                <div class="career-tab-duration">12-18 months</div>
+              </div>
+            </div>
+
+            <div class="career-tab" onclick="switchCareerPath('cloud-architect')">
+              <div class="career-tab-icon">☁️</div>
+              <div class="career-tab-content">
+                <div class="career-tab-name">Lead Cloud Architect</div>
+                <div class="career-tab-duration">18-24 months</div>
+              </div>
+            </div>
+
+            <div class="career-tab" onclick="switchCareerPath('principal-engineer')">
+              <div class="career-tab-icon">🔬</div>
+              <div class="career-tab-content">
+                <div class="career-tab-name">Principal Engineer</div>
+                <div class="career-tab-duration">24-30 months</div>
+              </div>
+            </div>
+
+            <div class="career-tab" onclick="switchCareerPath('specialist')">
+              <div class="career-tab-icon">🎯</div>
+              <div class="career-tab-content">
+                <div class="career-tab-name">Senior Specialist</div>
+                <div class="career-tab-duration">15-20 months</div>
+              </div>
+            </div>
+
+            <div class="career-tab" onclick="switchCareerPath('data-lead')">
+              <div class="career-tab-icon">📊</div>
+              <div class="career-tab-content">
+                <div class="career-tab-name">Data Science Lead</div>
+                <div class="career-tab-duration">20-26 months</div>
+              </div>
+            </div>
+
+            <div class="career-selector-note">
+              💡 Your completed skills transfer across paths. Switch anytime to explore different destinations.
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline Sidebar -->
+        <div class="timeline-sidebar">
+          <div class="sidebar-card">
+            <div class="sidebar-title">Estimated Timeline</div>
+            <div class="timeline-estimate">
+              <div class="estimate-value" id="totalMonths">12-18</div>
+              <div class="estimate-label">months to Manager</div>
+              <div class="estimate-range" id="timelineRange">
+                Based on current selections
+                <span class="info-tooltip">
+                  ℹ️
+                  <span class="tooltip-content">
+                    Timeline estimates are based on average course completion times and may vary based on your pace, project workload, and personal circumstances. This is a guide, not a deadline.
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="sidebar-title">Your Progress</div>
+            <div class="progress-summary">
+              <span class="summary-label">Skills Completed</span>
+              <span class="summary-value" id="completedCount">24</span>
+            </div>
+            <div class="progress-summary">
+              <span class="summary-label">In Progress</span>
+              <span class="summary-value" id="inProgressCount">6</span>
+            </div>
+            <div class="progress-summary">
+              <span class="summary-label">
+                Skills Alignment
+                <span class="info-tooltip">
+                  ℹ️
+                  <span class="tooltip-content">
+                    Skills alignment shows how well your completed skills match the target role requirements. This does not represent overall promotion readiness.
+                  </span>
+                </span>
+              </span>
+              <span class="summary-value" id="roleMatch">82%*</span>
+            </div>
+            <div class="skills-note">*Skills only - not promotion readiness</div>
+
+            <div class="beyond-skills-section">
+              <div style="font-size: 11px; font-weight: 700; color: var(--ey-gray-01); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                Beyond Skills
+              </div>
+              <div class="beyond-skills-item">
+                <span class="beyond-skills-icon">🤝</span>
+                <span>Counselor Advocacy</span>
+              </div>
+              <div class="beyond-skills-item">
+                <span class="beyond-skills-icon">💼</span>
+                <span>Client Impact</span>
+              </div>
+              <div class="beyond-skills-item">
+                <span class="beyond-skills-icon">👁️</span>
+                <span>Leadership Visibility</span>
+              </div>
+              <div class="beyond-skills-item">
+                <span class="beyond-skills-icon">📊</span>
+                <span>Business Need</span>
+              </div>
+              <div class="skills-note" style="margin-top: 12px;">
+                These factors also influence promotion decisions
+              </div>
+            </div>
+
+            <button class="counselor-btn" onclick="scheduleCounselor()">
+              📅 Talk to Counselor
+            </button>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="sidebar-title">Path Choices</div>
+            <div id="choicesSummary">
+              <div style="font-size: 13px; color: var(--ey-gray-01);">
+                Make decisions to build your path
+              </div>
+            </div>
+            <button class="counselor-btn" onclick="shareWithCounselor()" style="background: var(--ey-white); border: 1px solid var(--ey-gray-02); color: var(--ey-confident-black); margin-top: 16px;">
+              📤 Share with Counselor
+            </button>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="pause-section">
+              <div class="pause-title">Need a Break?</div>
+              <div class="pause-description">
+                Taking a break is okay. Your career is a marathon, not a sprint.
+              </div>
+              <button class="pause-btn" onclick="pauseRoadmap()">
+                ⏸️ Pause My Roadmap
+              </button>
+            </div>
+          </div>
+
+          <div class="essential-qualities">
+            <div class="sidebar-title">Essential Qualities</div>
+            <div style="font-size: 12px; color: var(--ey-gray-01); margin-bottom: 12px;">
+              Reflect on these with your counselor
+            </div>
+            <div class="quality-item">
+              <div class="quality-question">
+                Do I communicate effectively with executives?
+              </div>
+              <div class="quality-action" onclick="scheduleCounselor()">
+                Discuss with counselor →
+              </div>
+            </div>
+            <div class="quality-item">
+              <div class="quality-question">
+                Have I demonstrated client relationship management?
+              </div>
+              <div class="quality-action" onclick="scheduleCounselor()">
+                Discuss with counselor →
+              </div>
+            </div>
+            <div class="quality-item">
+              <div class="quality-question">
+                Do I mentor and develop others?
+              </div>
+              <div class="quality-action" onclick="scheduleCounselor()">
+                Discuss with counselor →
+              </div>
+            </div>
+            <div class="quality-item">
+              <div class="quality-question">
+                Have I shown strategic thinking in projects?
+              </div>
+              <div class="quality-action" onclick="scheduleCounselor()">
+                Discuss with counselor →
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progressive Roadmap Flow -->
+        <div class="roadmap-flow">
+          <div class="flow-header">
+            <div class="context-note">
+              <span>📍</span>
+              <strong id="currentDestination">Manager</strong> • Advisory - Technology Consulting
+            </div>
+            <h1 class="flow-title">Your Path to <span id="destinationRole">Manager</span></h1>
+            <p class="flow-subtitle">Build your personalized career roadmap</p>
+          </div>
+
+          <!-- Disclaimer Banner -->
+          <div class="disclaimer-banner" id="disclaimerBanner">
+            <span class="disclaimer-close" onclick="dismissDisclaimer()">×</span>
+            <div class="disclaimer-header">
+              <div class="disclaimer-icon">ℹ️</div>
+              <div class="disclaimer-content">
+                <div class="disclaimer-title">About Your Roadmap</div>
+                <div class="disclaimer-text">
+                  This roadmap is a <strong>development guide</strong> based on typical career paths, not a promotion guarantee. 
+                  Promotion decisions involve multiple factors including skills, performance, counselor advocacy, client impact, 
+                  leadership visibility, and business needs. Use this as a tool to guide your development conversations with your counselor.
+                </div>
+                <div class="disclaimer-actions">
+                  <button class="disclaimer-btn" onclick="learnMore()">Learn More</button>
+                  <button class="disclaimer-btn" onclick="scheduleCounselor()">Talk to Counselor</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1: Foundation (Completed) -->
+          <div class="roadmap-section" id="section-foundation">
+            <div class="section-marker">
+              <span class="marker-badge completed">
+                <span>✓</span>
+                <span>Foundation Complete</span>
+              </span>
+            </div>
+            <div class="completed-section">
+              <div class="completed-header">
+                <div class="completed-title">
+                  <span>📚</span>
+                  <span>Foundation Skills</span>
+                </div>
+                <span class="completed-skills">4 skills • 100%</span>
+              </div>
+              <div class="foundation-skills-grid">
+                <div class="foundation-skill-badge">
+                  <span class="skill-check">✓</span>
+                  <span class="skill-name-badge">AWS Cloud Practitioner</span>
+                </div>
+                <div class="foundation-skill-badge">
+                  <span class="skill-check">✓</span>
+                  <span class="skill-name-badge">Docker</span>
+                </div>
+                <div class="foundation-skill-badge">
+                  <span class="skill-check">✓</span>
+                  <span class="skill-name-badge">Terraform</span>
+                </div>
+                <div class="foundation-skill-badge">
+                  <span class="skill-check">✓</span>
+                  <span class="skill-name-badge">Agile/Scrum</span>
+                </div>
+              </div>
+              
+              <div class="evidence-section">
+                <div class="evidence-label">How did you demonstrate these skills?</div>
+                <textarea class="evidence-input" placeholder="Example: Led infrastructure migration for Project Phoenix using Terraform and Docker. Managed team sprint ceremonies as Scrum Master for 6 months.">Led infrastructure migration for Project Phoenix using Terraform and Docker. Managed team sprint ceremonies as Scrum Master for 6 months.</textarea>
+                <div class="evidence-hint">💡 These notes help prepare for counselor conversations</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Time Requirement (In Progress) -->
+          <div class="roadmap-section" id="section-time">
+            <div class="section-marker">
+              <span class="marker-badge current">
+                <span>⏱</span>
+                <span>In Progress</span>
+              </span>
+            </div>
+            <div class="completed-section" style="border-color: var(--ey-yellow); background: rgba(255, 230, 0, 0.05); position: relative; z-index: 2;">
+              <div class="completed-header">
+                <div class="completed-title">
+                  <span>📅</span>
+                  <span>12 Months in Current Position</span>
+                </div>
+                <span class="completed-skills">Approximately 6 months remaining</span>
+              </div>
+              <div class="completed-skills" style="margin-top: 12px;">
+                This is a universal requirement for Manager promotion. Use this time to build complementary skills and demonstrate impact.
+              </div>
+              
+              <div class="wellness-checkpoint">
+                <div class="wellness-icon">💚</div>
+                <div class="wellness-text">
+                  <strong>Remember to balance work, learning, and life.</strong> If you're on a demanding project, it's okay to adjust your learning pace. 
+                  <a href="#" class="wellness-link" onclick="accessWellness(); return false;">Access wellness resources</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Technical Certification Decision -->
+          <div class="roadmap-section" id="section-cert-decision">
+            <div class="section-marker">
+              <span class="marker-badge current">
+                <span>🎯</span>
+                <span>Choose Your Path</span>
+              </span>
+            </div>
+            <div id="certDecision">
+              <div class="decision-point">
+                <div class="decision-header">
+                  <h3 class="decision-title">Select Your Technical Certification</h3>
+                  <p class="decision-instruction">Choose one certification to pursue (this impacts your timeline and role match)</p>
+                </div>
+                <div class="decision-options">
+                  <div class="decision-option recommended" onclick="selectCertification('aws-sa')">
+                    <div class="option-header">
+                      <div class="option-title">AWS Solutions Architect</div>
+                      <div class="option-badge">In Progress: 75%</div>
+                    </div>
+                    <div class="option-meta">
+                      <div class="option-meta-item">
+                        <span>⏱</span>
+                        <span>~3 months</span>
+                      </div>
+                      <div class="option-meta-item">
+                        <span>📚</span>
+                        <span>8 modules</span>
+                      </div>
+                      <div class="option-meta-item">
+                        <span>⭐</span>
+                        <span>+8% role match</span>
+                      </div>
+                    </div>
+                    <div class="option-description">
+                      Professional certification for designing distributed systems on AWS. You're already 75% complete (6 of 8 modules done).
+                    </div>
+                    <div class="option-impact">
+                      💡 Best ROI - Already in progress, highest role match boost, unlocks cloud architecture projects
+                    </div>
+                    <button class="preview-btn" onclick="event.stopPropagation(); showPreview('aws-sa')">
+                      👁️ Preview This Path
+                    </button>
+                  </div>
+
+                  <div class="decision-option" onclick="selectCertification('azure')">
+                    <div class="option-header">
+                      <div class="option-title">Azure Solutions Expert</div>
+                      <div class="option-badge">Not Started</div>
+                    </div>
+                    <div class="option-meta">
+                      <div class="option-meta-item">
+                        <span>⏱</span>
+                        <span>~4 months</span>
+                      </div>
+                      <div class="option-meta-item">
+                        <span>📚</span>
+                        <span>10 modules</span>
+                      </div>
+                      <div class="option-meta-item">
+                        <span>⭐</span>
+                        <span>+7% role match</span>
+                      </div>
+                    </div>
+                    <div class="option-description">
+                      Microsoft Azure certification covering enterprise cloud solutions. Valuable for multi-cloud strategy roles.
+                    </div>
+                    <div class="option-impact">
+                      💡 Multi-cloud credential, strong enterprise demand, longer timeline
+                    </div>
+                    <button class="preview-btn" onclick="event.stopPropagation(); showPreview('azure')">
+                      👁️ Preview This Path
+                    </button>
+                  </div>
+
+                  <div class="decision-option" onclick="selectCertification('gcp')">
+                    <div class="option-header">
+                      <div class="option-title">Google Cloud Professional</div>
+                      <div class="option-badge">Not Started</div>
+                    </div>
+                    <div class="option-meta">
+                      <div class="option-meta-item">
+                        <span>⏱</span>
+                        <span>~3.5 months</span>
+                      </div>
+                      <div class="option-meta-item">
+                        <span>📚</span>
+                        <span>9 modules</span>
+                      </div>
+                      <div class="option-meta-item">
+                        <span>⭐</span>
+                        <span>+7% role match</span>
+                      </div>
+                    </div>
+                    <div class="option-description">
+                      Google Cloud Platform certification focusing on data and ML capabilities. Growing market demand.
+                    </div>
+                    <div class="option-impact">
+                      💡 Emerging platform, ML/AI focus, competitive timing
+                    </div>
+                    <button class="preview-btn" onclick="event.stopPropagation(); showPreview('gcp')">
+                      👁️ Preview This Path
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="counselor-checkpoint">
+                <div class="checkpoint-icon">🤝</div>
+                <div class="checkpoint-text">
+                  Before proceeding, we recommend discussing your certification choice with your counselor
+                </div>
+                <button class="checkpoint-btn" onclick="scheduleCounselor()">
+                  Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Parallel Leadership Skills (Always Visible) -->
+          <div class="roadmap-section" id="section-leadership" style="opacity: 0.7;">
+            <div class="section-marker">
+              <span class="marker-badge" style="background: var(--ey-gray-02); color: var(--ey-gray-01);">
+                <span>👥</span>
+                <span>Next Steps</span>
+              </span>
+            </div>
+            <div class="upcoming-phase-note">
+              <div style="font-size: 20px;">💡</div>
+              <div class="upcoming-note-text">
+                <strong>Preview your next phase.</strong> These skills typically become active after your certification choice, but you can review and plan ahead now.
+              </div>
+            </div>
+            <div class="parallel-skills">
+              <div class="parallel-header">
+                <h3 class="parallel-title">Leadership & Management Skills</h3>
+                <p class="parallel-requirement">Complete at least 2 of these 3 skills before proceeding (any order)</p>
+              </div>
+              <div class="skills-grid">
+                <div class="skill-card">
+                  <div class="skill-header">
+                    <div class="skill-name">Team Leadership</div>
+                    <div class="skill-status active">Active</div>
+                  </div>
+                  <div class="skill-progress-bar">
+                    <div class="skill-progress-fill" style="width: 60%"></div>
+                  </div>
+                  <div class="skill-progress-text">60% complete</div>
+                  <div class="skill-description">
+                    Leading and motivating teams, setting direction, fostering collaboration across diverse groups.
+                  </div>
+                </div>
+
+                <div class="skill-card">
+                  <div class="skill-header">
+                    <div class="skill-name">Mentorship Program</div>
+                    <div class="skill-status">Start Now</div>
+                  </div>
+                  <div class="skill-progress-bar">
+                    <div class="skill-progress-fill" style="width: 0%"></div>
+                  </div>
+                  <div class="skill-progress-text">0% complete</div>
+                  <div class="skill-description">
+                    Formal mentorship of 2 junior consultants. Critical for demonstrating people development capability.
+                  </div>
+                </div>
+
+                <div class="skill-card">
+                  <div class="skill-header">
+                    <div class="skill-name">Strategic Thinking</div>
+                    <div class="skill-status active">Active</div>
+                  </div>
+                  <div class="skill-progress-bar">
+                    <div class="skill-progress-fill" style="width: 30%"></div>
+                  </div>
+                  <div class="skill-progress-text">30% complete</div>
+                  <div class="skill-description">
+                    Developing long-term vision, analyzing trends, aligning initiatives with business objectives.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Next Decision (Always Visible) -->
+          <div class="roadmap-section" id="section-next-decision" style="opacity: 0.7;">
+            <div class="section-marker">
+              <span class="marker-badge" style="background: var(--ey-gray-02); color: var(--ey-gray-01);">
+                <span>🚀</span>
+                <span>Future Phase</span>
+              </span>
+            </div>
+            <div class="upcoming-phase-note">
+              <div style="font-size: 20px;">💡</div>
+              <div class="upcoming-note-text">
+                <strong>Looking ahead.</strong> This decision typically comes after building your leadership skills, but feel free to explore your options now.
+              </div>
+            </div>
+            <div class="decision-point">
+              <div class="decision-header">
+                <h3 class="decision-title">Demonstrate Leadership</h3>
+                <p class="decision-instruction">Choose how you'll demonstrate your readiness for Manager responsibilities</p>
+              </div>
+              <div class="decision-options">
+                <div class="decision-option recommended" onclick="selectLeadership('client-engagement')">
+                  <div class="option-header">
+                    <div class="option-title">Lead Client Engagement</div>
+                    <div class="option-badge">Available Soon</div>
+                  </div>
+                  <div class="option-meta">
+                    <div class="option-meta-item">
+                      <span>⏱</span>
+                      <span>4-6 months</span>
+                    </div>
+                    <div class="option-meta-item">
+                      <span>💰</span>
+                      <span>Budget responsibility</span>
+                    </div>
+                    <div class="option-meta-item">
+                      <span>👥</span>
+                      <span>Team of 3-5</span>
+                    </div>
+                  </div>
+                  <div class="option-description">
+                    Take full ownership of a significant client project including P&L responsibility, team management, and executive stakeholder communication.
+                  </div>
+                  <div class="option-impact">
+                    💡 Most comprehensive demonstration, closest to actual Manager role, builds financial acumen
+                  </div>
+                </div>
+
+                <div class="decision-option" onclick="selectLeadership('internal-program')">
+                  <div class="option-header">
+                    <div class="option-title">Internal Program Leadership</div>
+                    <div class="option-badge">Available Soon</div>
+                  </div>
+                  <div class="option-meta">
+                    <div class="option-meta-item">
+                      <span>⏱</span>
+                      <span>3-4 months</span>
+                    </div>
+                    <div class="option-meta-item">
+                      <span>👥</span>
+                      <span>5+ people</span>
+                    </div>
+                    <div class="option-meta-item">
+                      <span>📊</span>
+                      <span>Cross-functional</span>
+                    </div>
+                  </div>
+                  <div class="option-description">
+                    Lead an internal initiative (training program, process improvement, etc.) managing diverse stakeholders and delivering measurable results.
+                  </div>
+                  <div class="option-impact">
+                    💡 Lower risk environment, builds change management skills, demonstrates leadership at scale
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 6: Manager Readiness Phase (Upcoming - Visible but Grayed) -->
+          <div class="roadmap-section" id="section-locked">
+            <div class="section-marker">
+              <span class="marker-badge" style="background: var(--ey-gray-02); color: var(--ey-gray-01);">
+                <span>🎓</span>
+                <span>Upcoming Phase</span>
+              </span>
+            </div>
+            <div class="locked-section">
+              <div class="upcoming-phase-note">
+                <div style="font-size: 20px;">💡</div>
+                <div class="upcoming-note-text">
+                  <strong>This phase is visible for your planning.</strong> While typically unlocked after completing earlier steps, you're welcome to review all content and plan ahead. Your career roadmap respects your judgment and integrity.
+                </div>
+              </div>
+
+              <div class="parallel-skills" style="opacity: 0.8;">
+                <div class="parallel-header">
+                  <h3 class="parallel-title">Manager Readiness Skills</h3>
+                  <p class="parallel-requirement">Complete all final requirements for Manager promotion eligibility</p>
+                </div>
+                <div class="skills-grid">
+                  <div class="skill-card">
+                    <div class="skill-header">
+                      <div class="skill-name">Budget Management</div>
+                      <div class="skill-status">Available Next</div>
+                    </div>
+                    <div class="skill-progress-bar">
+                      <div class="skill-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="skill-progress-text">Not started</div>
+                    <div class="skill-description">
+                      Financial planning, P&L accountability, and resource allocation for projects and teams
+                    </div>
+                  </div>
+                  
+                  <div class="skill-card">
+                    <div class="skill-header">
+                      <div class="skill-name">Performance Management</div>
+                      <div class="skill-status">Available Next</div>
+                    </div>
+                    <div class="skill-progress-bar">
+                      <div class="skill-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="skill-progress-text">Not started</div>
+                    <div class="skill-description">
+                      Goal setting, feedback delivery, and team evaluation processes
+                    </div>
+                  </div>
+                  
+                  <div class="skill-card">
+                    <div class="skill-header">
+                      <div class="skill-name">Executive Presence</div>
+                      <div class="skill-status">Available Next</div>
+                    </div>
+                    <div class="skill-progress-bar">
+                      <div class="skill-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="skill-progress-text">Not started</div>
+                    <div class="skill-description">
+                      Senior leadership communication, board presentations, and executive stakeholder management
+                    </div>
+                  </div>
+
+                  <div class="skill-card">
+                    <div class="skill-header">
+                      <div class="skill-name">Business Development</div>
+                      <div class="skill-status">Available Next</div>
+                    </div>
+                    <div class="skill-progress-bar">
+                      <div class="skill-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="skill-progress-text">Not started</div>
+                    <div class="skill-description">
+                      Client relationship building, proposal development, and opportunity identification
+                    </div>
+                  </div>
+
+                  <div class="skill-card">
+                    <div class="skill-header">
+                      <div class="skill-name">Strategic Planning</div>
+                      <div class="skill-status">Available Next</div>
+                    </div>
+                    <div class="skill-progress-bar">
+                      <div class="skill-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="skill-progress-text">Not started</div>
+                    <div class="skill-description">
+                      Long-term roadmap development, portfolio management, and business unit strategy
+                    </div>
+                  </div>
+
+                  <div class="skill-card">
+                    <div class="skill-header">
+                      <div class="skill-name">Change Management</div>
+                      <div class="skill-status">Available Next</div>
+                    </div>
+                    <div class="skill-progress-bar">
+                      <div class="skill-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="skill-progress-text">Not started</div>
+                    <div class="skill-description">
+                      Leading organizational transformation, managing resistance, and driving adoption
+                    </div>
+                  </div>
+                </div>
+
+                <div class="counselor-checkpoint" style="margin-top: 24px;">
+                  <div class="checkpoint-icon">🤝</div>
+                  <div class="checkpoint-text">
+                    Discuss Manager readiness expectations and timing with your counselor
+                  </div>
+                  <button class="checkpoint-btn" onclick="scheduleCounselor()">
+                    Schedule
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Banner -->
+          <div class="info-banner">
+            <div class="info-icon">ℹ️</div>
+            <div class="info-text">
+              <strong>Your path is flexible.</strong> You can change your decisions at any time by clicking "Change" next to your selections. Your timeline and recommendations will adjust automatically based on your choices.
+            </div>
+          </div>
+
+          <!-- Success Stories -->
+          <div class="success-stories">
+            <div class="stories-header">
+              <h3 class="stories-title">Real Career Journeys</h3>
+              <p class="stories-subtitle">Everyone's path is unique - here are some examples from your peers</p>
+            </div>
+            
+            <div class="story-card">
+              <div class="story-quote">
+                "My path to Manager took 3 years instead of 18 months, and it was exactly right for me. I took time to build deep client relationships and really master the technical skills. The extra time meant I felt genuinely prepared when I was promoted."
+              </div>
+              <div class="story-attribution">— Senior Manager, Advisory</div>
+            </div>
+
+            <div class="story-card">
+              <div class="story-quote">
+                "I changed certification paths halfway through when I realized cloud architecture wasn't my passion. Switching to a data engineering focus added 4 months to my timeline, but led to opportunities I love. Don't be afraid to pivot."
+              </div>
+              <div class="story-attribution">— Manager, Technology Consulting</div>
+            </div>
+
+            <div class="story-card">
+              <div class="story-quote">
+                "I paused my roadmap for 8 months when my second child was born. When I came back, my counselor helped me rebuild momentum. Taking that break didn't hurt my career - it made me a better leader with perspective on work-life balance."
+              </div>
+              <div class="story-attribution">— Manager, Digital Transformation</div>
+            </div>
+
+            <div class="story-card">
+              <div class="story-quote">
+                "The skills were only part of the equation. What really mattered was demonstrating leadership on client projects and building relationships with partners. The roadmap helped me organize my development, but the human connections made the difference."
+              </div>
+              <div class="story-attribution">— Manager, Cloud Infrastructure</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chatbot Trigger -->
+    <div class="chatbot-trigger" onclick="openChatbot()">
+      💬
+      <div class="chatbot-tooltip">Ask Career Coach</div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="preview-modal" id="previewModal" onclick="closePreview(event)">
+      <div class="preview-content" onclick="event.stopPropagation()">
+        <div class="preview-header">
+          <div class="preview-title-row">
+            <h2 class="preview-title" id="previewTitle">Path Preview</h2>
+            <span class="preview-close" onclick="closePreview()">&times;</span>
+          </div>
+          <p class="preview-subtitle" id="previewSubtitle">See what this path looks like</p>
+        </div>
+        
+        <div class="preview-body" id="previewBody">
+          <!-- Dynamic content will be inserted here -->
+        </div>
+
+        <div class="preview-footer">
+          <p class="preview-note">You can change your path at any time</p>
+          <button class="select-path-btn" id="selectPathBtn" onclick="selectFromPreview()">
+            Select This Path
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // State management
+      const userChoices = {
+        certification: null,
+        leadership: null,
+        careerDestination: 'manager' // Track current destination
+      };
+
+      let currentPreviewPath = null;
+
+      // Career paths data
+      const careerPaths = {
+        'manager': {
+          name: 'Manager',
+          icon: '👥',
+          timeline: '12-18',
+          focus: 'People Leadership & Business Management'
+        },
+        'cloud-architect': {
+          name: 'Lead Cloud Architect',
+          icon: '☁️',
+          timeline: '18-24',
+          focus: 'Technical Architecture & System Design'
+        },
+        'principal-engineer': {
+          name: 'Principal Engineer',
+          icon: '🔬',
+          timeline: '24-30',
+          focus: 'Innovation & Technical Leadership'
+        },
+        'specialist': {
+          name: 'Senior Specialist',
+          icon: '🎯',
+          timeline: '15-20',
+          focus: 'Deep Domain Expertise'
+        },
+        'data-lead': {
+          name: 'Data Science Lead',
+          icon: '📊',
+          timeline: '20-26',
+          focus: 'Analytics & Data Strategy'
+        }
+      };
+
+      // Switch career destination
+      function switchCareerPath(pathId) {
+        const path = careerPaths[pathId];
+        
+        // Update active state in sidebar
+        document.querySelectorAll('.career-tab').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+        
+        // Update destination displays
+        document.getElementById('currentDestination').textContent = path.name;
+        document.getElementById('destinationRole').textContent = path.name;
+        document.getElementById('totalMonths').textContent = path.timeline;
+        document.querySelector('.estimate-label').textContent = `months to ${path.name}`;
+        
+        // Store selection
+        userChoices.careerDestination = pathId;
+        
+        // Show transition message
+        if (pathId !== 'manager') {
+          showCareerSwitchMessage(path);
+        }
+      }
+
+      function showCareerSwitchMessage(path) {
+        // In production, this would load a different roadmap
+        alert(`Switching to ${path.name} path\n\n${path.icon} Focus: ${path.focus}\n⏱️ Timeline: ${path.timeline} months\n\n✅ Your completed foundation skills transfer to this path\n\n⚠️ In production, this would load a different roadmap with:\n• Different certification options\n• Role-specific skill requirements\n• ${path.name}-specific milestones\n• Relevant success criteria\n\nFor this demo, the Manager roadmap remains displayed to show the UI pattern.`);
+      }
+
+      const certificationDetails = {
+        'aws-sa': { name: 'AWS Solutions Architect', months: 1.5, progress: 75, matchBoost: 8 },
+        'azure': { name: 'Azure Solutions Expert', months: 4, progress: 0, matchBoost: 7 },
+        'gcp': { name: 'Google Cloud Professional', months: 3.5, progress: 0, matchBoost: 7 }
+      };
+
+      const leadershipDetails = {
+        'client-engagement': { name: 'Lead Client Engagement', months: 5 },
+        'internal-program': { name: 'Internal Program Leadership', months: 3.5 }
+      };
+
+      // Path preview data
+      const pathPreviews = {
+        'aws-sa': {
+          title: 'AWS Solutions Architect Path',
+          subtitle: 'Complete remaining modules and unlock cloud leadership opportunities',
+          timeline: '~3 months • 2 modules remaining • +8% role match',
+          steps: [
+            { title: 'Complete Module 7: Advanced Networking', description: 'VPC design, Direct Connect, Transit Gateway, and hybrid cloud architectures (2 weeks)', time: '2 weeks' },
+            { title: 'Complete Module 8: Security & Compliance', description: 'IAM best practices, KMS, CloudTrail, and compliance frameworks (2 weeks)', time: '2 weeks' },
+            { title: 'Practice Exams & Review', description: 'Take 3 full-length practice exams and review weak areas (1 week)', time: '1 week' },
+            { title: 'Schedule & Pass Certification Exam', description: 'Book exam slot and achieve AWS Solutions Architect certification', time: '1 week' }
+          ],
+          decisions: [
+            { question: 'Choose Your Leadership Demonstration', options: 'Lead Client Engagement (4-6 months) OR Internal Program Leadership (3-4 months)' },
+            { question: 'Select Specialization Focus', options: 'Cloud Architecture Projects OR Migration Leadership OR DevOps Integration' }
+          ]
+        },
+        'azure': {
+          title: 'Azure Solutions Expert Path',
+          subtitle: 'Build enterprise cloud expertise with Microsoft Azure',
+          timeline: '~4 months • 10 modules • +7% role match',
+          steps: [
+            { title: 'Azure Fundamentals (AZ-900)', description: 'Cloud concepts, core Azure services, security, and pricing (3 weeks)', time: '3 weeks' },
+            { title: 'Azure Administrator (AZ-104)', description: 'Manage Azure subscriptions, implement storage, and configure virtual networking (4 weeks)', time: '4 weeks' },
+            { title: 'Azure Solutions Architect Design', description: 'Advanced solution design for compute, network, storage, and security (6 weeks)', time: '6 weeks' },
+            { title: 'Hands-on Projects', description: 'Build 2 real-world Azure solutions to demonstrate expertise (3 weeks)', time: '3 weeks' },
+            { title: 'Certification Exam Preparation', description: 'Practice exams and final preparation for Azure certification', time: '2 weeks' }
+          ],
+          decisions: [
+            { question: 'Choose Your Leadership Demonstration', options: 'Lead Client Engagement (4-6 months) OR Internal Program Leadership (3-4 months)' },
+            { question: 'Select Azure Specialization', options: 'Enterprise Migration OR Multi-cloud Strategy OR Azure DevOps Leadership' }
+          ]
+        },
+        'gcp': {
+          title: 'Google Cloud Professional Path',
+          subtitle: 'Master GCP with focus on data and ML capabilities',
+          timeline: '~3.5 months • 9 modules • +7% role match',
+          steps: [
+            { title: 'GCP Fundamentals', description: 'Core infrastructure, storage, and networking concepts (2 weeks)', time: '2 weeks' },
+            { title: 'Compute & Containers', description: 'Compute Engine, GKE, and serverless computing (3 weeks)', time: '3 weeks' },
+            { title: 'Data Engineering & ML', description: 'BigQuery, Dataflow, and ML Engine essentials (4 weeks)', time: '4 weeks' },
+            { title: 'Security & Architecture', description: 'IAM, security controls, and architectural best practices (3 weeks)', time: '3 weeks' },
+            { title: 'Certification Preparation', description: 'Practice exams and hands-on scenario review', time: '2 weeks' }
+          ],
+          decisions: [
+            { question: 'Choose Your Leadership Demonstration', options: 'Lead Client Engagement (4-6 months) OR Internal Program Leadership (3-4 months)' },
+            { question: 'Select GCP Specialization', options: 'Data Engineering Leadership OR ML/AI Projects OR Cloud-Native Development' }
+          ]
+        }
+      };
+
+      // Show preview modal
+      function showPreview(pathId) {
+        currentPreviewPath = pathId;
+        const preview = pathPreviews[pathId];
+        
+        document.getElementById('previewTitle').textContent = preview.title;
+        document.getElementById('previewSubtitle').textContent = preview.subtitle;
+        
+        const bodyHTML = `
+          <div class="info-banner" style="margin-bottom: 24px;">
+            <div class="info-icon">⚠️</div>
+            <div class="info-text">
+              <strong>Important Context:</strong><br>
+              • Timelines are estimates - adjust to your situation and workload<br>
+              • Complete the skills AND demonstrate them in real work<br>
+              • Discuss your progress regularly with your counselor<br>
+              • Promotion timing also depends on business needs and performance
+            </div>
+          </div>
+
+          <div class="preview-timeline">
+            <div class="timeline-item">
+              <span>⏱️</span>
+              <span>${preview.timeline}</span>
+            </div>
+          </div>
+
+          <div class="preview-section">
+            <h3 class="preview-section-title">
+              <span>🗺️</span>
+              <span>Your Journey</span>
+            </h3>
+            <div class="preview-steps">
+              ${preview.steps.map((step, index) => `
+                <div class="preview-step">
+                  <div class="step-number">${index + 1}</div>
+                  <div class="step-content">
+                    <div class="step-title">${step.title}</div>
+                    <div class="step-description">${step.description}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="preview-section">
+            <h3 class="preview-section-title">
+              <span>🔮</span>
+              <span>Future Decisions on This Path</span>
+            </h3>
+            <div class="future-decisions">
+              ${preview.decisions.map(decision => `
+                <div class="future-decision">
+                  <div class="decision-label">Decision Point Ahead</div>
+                  <div class="decision-question">${decision.question}</div>
+                  <div class="decision-options-preview">${decision.options}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="preview-section">
+            <h3 class="preview-section-title">
+              <span>💡</span>
+              <span>Alternative Paths</span>
+            </h3>
+            <div class="info-text" style="font-size: 13px; line-height: 1.6;">
+              Remember: Certifications can also be demonstrated through equivalent project experience. 
+              Discuss alternative ways to show your expertise with your counselor.
+            </div>
+          </div>
+        `;
+        
+        document.getElementById('previewBody').innerHTML = bodyHTML;
+        document.getElementById('previewModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+
+      // Close preview modal
+      function closePreview(event) {
+        if (!event || event.target.id === 'previewModal') {
+          document.getElementById('previewModal').classList.remove('active');
+          document.body.style.overflow = 'auto';
+          currentPreviewPath = null;
+        }
+      }
+
+      // Select path from preview
+      function selectFromPreview() {
+        if (currentPreviewPath) {
+          selectCertification(currentPreviewPath);
+          closePreview();
+        }
+      }
+
+      // Toggle Adventure Mode
+      function toggleAdventureMode() {
+        document.body.classList.toggle("adventure-mode");
+        const isAdventure = document.body.classList.contains("adventure-mode");
+        document.getElementById("modeIcon").textContent = isAdventure ? "💼" : "🎮";
+        document.getElementById("modeLabel").textContent = isAdventure ? "Professional Mode" : "Adventure Mode";
+      }
+
+      // Select Certification
+      function selectCertification(certId) {
+        userChoices.certification = certId;
+        
+        // Update UI to show selection
+        const certDetails = certificationDetails[certId];
+        document.getElementById('certDecision').innerHTML = `
+          <div class="selected-choice">
+            <div class="selected-info">
+              <div class="selected-label">Your Technical Certification</div>
+              <div class="selected-name">${certDetails.name} • ${certDetails.progress > 0 ? certDetails.progress + '% complete' : 'Not started'}</div>
+            </div>
+            <button class="change-btn" onclick="changeCertification()">Change</button>
+          </div>
+          
+          <div class="counselor-checkpoint">
+            <div class="checkpoint-icon">🤝</div>
+            <div class="checkpoint-text">
+              Before proceeding, we recommend discussing your certification choice with your counselor
+            </div>
+            <button class="checkpoint-btn" onclick="scheduleCounselor()">
+              Schedule
+            </button>
+          </div>
+        `;
+
+        // Activate next section (make it more prominent, but it was already visible)
+        const leadershipSection = document.getElementById('section-leadership');
+        leadershipSection.style.opacity = '1';
+        leadershipSection.querySelector('.marker-badge').style.background = 'var(--ey-yellow)';
+        leadershipSection.querySelector('.marker-badge').style.color = 'var(--ey-confident-black)';
+        leadershipSection.querySelector('.marker-badge span:last-child').textContent = 'Build Concurrently';
+        
+        // Remove the "preview" note since they've progressed
+        const previewNote = leadershipSection.querySelector('.upcoming-phase-note');
+        if (previewNote) {
+          previewNote.style.display = 'none';
+        }
+        
+        // Update choices summary
+        updateChoicesSummary();
+        updateTimeline();
+
+        // Smooth scroll to next section
+        setTimeout(() => {
+          leadershipSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+
+      // Change Certification
+      function changeCertification() {
+        userChoices.certification = null;
+        
+        // Show decision options again
+        document.getElementById('certDecision').innerHTML = `
+          <div class="decision-point">
+            <div class="decision-header">
+              <h3 class="decision-title">Select Your Technical Certification</h3>
+              <p class="decision-instruction">Choose one certification to pursue (this impacts your timeline and role match)</p>
+            </div>
+            <div class="decision-options">
+              <div class="decision-option recommended" onclick="selectCertification('aws-sa')">
+                <div class="option-header">
+                  <div class="option-title">AWS Solutions Architect</div>
+                  <div class="option-badge">In Progress: 75%</div>
+                </div>
+                <div class="option-meta">
+                  <div class="option-meta-item"><span>⏱</span><span>~3 months</span></div>
+                  <div class="option-meta-item"><span>📚</span><span>8 modules</span></div>
+                  <div class="option-meta-item"><span>⭐</span><span>+8% role match</span></div>
+                </div>
+                <div class="option-description">
+                  Professional certification for designing distributed systems on AWS. You're already 75% complete (6 of 8 modules done).
+                </div>
+                <div class="option-impact">
+                  💡 Best ROI - Already in progress, highest role match boost, unlocks cloud architecture projects
+                </div>
+                <button class="preview-btn" onclick="event.stopPropagation(); showPreview('aws-sa')">
+                  👁️ Preview This Path
+                </button>
+              </div>
+              <div class="decision-option" onclick="selectCertification('azure')">
+                <div class="option-header">
+                  <div class="option-title">Azure Solutions Expert</div>
+                  <div class="option-badge">Not Started</div>
+                </div>
+                <div class="option-meta">
+                  <div class="option-meta-item"><span>⏱</span><span>~4 months</span></div>
+                  <div class="option-meta-item"><span>📚</span><span>10 modules</span></div>
+                  <div class="option-meta-item"><span>⭐</span><span>+7% role match</span></div>
+                </div>
+                <div class="option-description">
+                  Microsoft Azure certification covering enterprise cloud solutions. Valuable for multi-cloud strategy roles.
+                </div>
+                <div class="option-impact">
+                  💡 Multi-cloud credential, strong enterprise demand, longer timeline
+                </div>
+                <button class="preview-btn" onclick="event.stopPropagation(); showPreview('azure')">
+                  👁️ Preview This Path
+                </button>
+              </div>
+              <div class="decision-option" onclick="selectCertification('gcp')">
+                <div class="option-header">
+                  <div class="option-title">Google Cloud Professional</div>
+                  <div class="option-badge">Not Started</div>
+                </div>
+                <div class="option-meta">
+                  <div class="option-meta-item"><span>⏱</span><span>~3.5 months</span></div>
+                  <div class="option-meta-item"><span>📚</span><span>9 modules</span></div>
+                  <div class="option-meta-item"><span>⭐</span><span>+7% role match</span></div>
+                </div>
+                <div class="option-description">
+                  Google Cloud Platform certification focusing on data and ML capabilities. Growing market demand.
+                </div>
+                <div class="option-impact">
+                  💡 Emerging platform, ML/AI focus, competitive timing
+                </div>
+                <button class="preview-btn" onclick="event.stopPropagation(); showPreview('gcp')">
+                  👁️ Preview This Path
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="counselor-checkpoint">
+            <div class="checkpoint-icon">🤝</div>
+            <div class="checkpoint-text">
+              Before proceeding, we recommend discussing your certification choice with your counselor
+            </div>
+            <button class="checkpoint-btn" onclick="scheduleCounselor()">
+              Schedule
+            </button>
+          </div>
+        `;
+
+        // Dim subsequent sections again (but keep them visible)
+        const leadershipSection = document.getElementById('section-leadership');
+        leadershipSection.style.opacity = '0.7';
+        leadershipSection.querySelector('.marker-badge').style.background = 'var(--ey-gray-02)';
+        leadershipSection.querySelector('.marker-badge').style.color = 'var(--ey-gray-01)';
+        leadershipSection.querySelector('.marker-badge span:last-child').textContent = 'Next Steps';
+        
+        // Show preview note again
+        const previewNote = leadershipSection.querySelector('.upcoming-phase-note');
+        if (previewNote) {
+          previewNote.style.display = 'flex';
+        }
+
+        const nextDecision = document.getElementById('section-next-decision');
+        nextDecision.style.opacity = '0.7';
+        
+        updateChoicesSummary();
+        updateTimeline();
+      }
+
+      // Select Leadership
+      function selectLeadership(leadId) {
+        userChoices.leadership = leadId;
+        
+        // Update UI
+        const leadDetails = leadershipDetails[leadId];
+        const section = document.getElementById('section-next-decision');
+        section.querySelector('.decision-point').innerHTML = `
+          <div class="selected-choice">
+            <div class="selected-info">
+              <div class="selected-label">Your Leadership Demonstration</div>
+              <div class="selected-name">${leadDetails.name} • ${leadDetails.months} months</div>
+            </div>
+            <button class="change-btn" onclick="changeLeadership()">Change</button>
+          </div>
+        `;
+
+        // Activate final section (make more prominent)
+        const finalSection = document.getElementById('section-locked');
+        finalSection.style.opacity = '1';
+        finalSection.querySelector('.marker-badge').style.background = 'var(--ey-yellow)';
+        finalSection.querySelector('.marker-badge').style.color = 'var(--ey-confident-black)';
+        finalSection.querySelector('.marker-badge span:last-child').textContent = 'Final Phase';
+        
+        // Hide the preview note
+        const previewNote = finalSection.querySelector('.upcoming-phase-note');
+        if (previewNote) {
+          previewNote.style.display = 'none';
+        }
+
+        updateChoicesSummary();
+        updateTimeline();
+
+        setTimeout(() => {
+          finalSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+
+      // Change Leadership
+      function changeLeadership() {
+        // Implementation similar to changeCertification
+        alert('Leadership selection reset. In production, this would show the decision options again.');
+      }
+
+      // Update choices summary sidebar
+      function updateChoicesSummary() {
+        let html = '';
+        
+        if (userChoices.certification) {
+          const cert = certificationDetails[userChoices.certification];
+          html += `
+            <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--ey-off-white);">
+              <div style="font-size: 11px; color: var(--ey-gray-01); margin-bottom: 4px;">CERTIFICATION</div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--ey-confident-black);">${cert.name}</div>
+            </div>
+          `;
+        }
+        
+        if (userChoices.leadership) {
+          const lead = leadershipDetails[userChoices.leadership];
+          html += `
+            <div style="margin-bottom: 12px;">
+              <div style="font-size: 11px; color: var(--ey-gray-01); margin-bottom: 4px;">LEADERSHIP</div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--ey-confident-black);">${lead.name}</div>
+            </div>
+          `;
+        }
+        
+        if (!html) {
+          html = '<div style="font-size: 13px; color: var(--ey-gray-01);">Make decisions to build your path</div>';
+        }
+        
+        document.getElementById('choicesSummary').innerHTML = html;
+      }
+
+      // Update timeline estimate
+      function updateTimeline() {
+        let months = 6; // Base 6 months remaining for time requirement
+        
+        if (userChoices.certification) {
+          months += certificationDetails[userChoices.certification].months;
+        } else {
+          months += 3; // Average estimate
+        }
+        
+        months += 4; // Leadership skills (parallel, so doesn't add much)
+        
+        if (userChoices.leadership) {
+          months += leadershipDetails[userChoices.leadership].months;
+        } else {
+          months += 4; // Average estimate
+        }
+        
+        const minMonths = Math.floor(months);
+        const maxMonths = Math.ceil(months + 2);
+        
+        document.getElementById('totalMonths').textContent = `${minMonths}-${maxMonths}`;
+        document.getElementById('timelineRange').textContent = userChoices.certification 
+          ? 'Based on your selections'
+          : 'Based on current selections';
+        
+        // Update role match if cert selected
+        if (userChoices.certification) {
+          const newMatch = 82 + certificationDetails[userChoices.certification].matchBoost;
+          document.getElementById('roleMatch').textContent = `${newMatch}%`;
+        }
+      }
+
+      // Change Leadership
+      function changeLeadership() {
+        // Implementation similar to changeCertification
+        alert('Leadership selection reset. In production, this would show the decision options again.');
+      }
+      function toggleHelpMenu() {
+        const dropdown = document.getElementById('helpDropdown');
+        dropdown.classList.toggle('active');
+      }
+
+      // Close help menu when clicking outside
+      document.addEventListener('click', function(event) {
+        const helpMenu = document.querySelector('.help-menu');
+        if (helpMenu && !helpMenu.contains(event.target)) {
+          document.getElementById('helpDropdown').classList.remove('active');
+        }
+      });
+
+      function scheduleCounselor() {
+        alert('Opening counselor scheduling system...\n\nIn production, this would:\n• Connect to your counselor\'s calendar\n• Show available meeting slots\n• Send meeting invitation\n• Prepare your roadmap summary for discussion');
+      }
+
+      function findMentor() {
+        alert('Opening mentor matching system...\n\nIn production, this would:\n• Show mentors in your target area\n• Display their expertise and availability\n• Enable you to request mentorship\n• Connect you with peer learning opportunities');
+      }
+
+      function joinStudyGroup() {
+        alert('Opening study group finder...\n\nIn production, this would:\n• Show active study groups for your certifications\n• Display meeting times and members\n• Enable you to join or create groups\n• Connect you with peers on similar paths');
+      }
+
+      function openChatbot() {
+        alert('Opening Career Coach chatbot...\n\nIn production, this would:\n• Launch interactive AI career coach\n• Answer questions about your roadmap\n• Provide guidance on decisions\n• Help prepare for counselor meetings\n• Offer study tips and resources\n\nNote: The chatbot complements (not replaces) your counselor relationship.');
+      }
+
+      function accessWellness() {
+        alert('Opening wellness resources...\n\nIn production, this would:\n• Connect to EY wellness programs\n• Show work-life balance resources\n• Provide stress management tools\n• Link to counseling services\n• Share time management strategies');
+      }
+
+      function shareWithCounselor() {
+        alert('Generating roadmap summary...\n\nIn production, this would create a shareable summary including:\n• Your selected paths and decisions\n• Skills completed and in progress\n• Evidence and demonstration notes\n• Timeline estimates\n• Questions for discussion\n\nYou can print, email, or share this summary with your counselor.');
+      }
+
+      function pauseRoadmap() {
+        const confirmed = confirm('Pause your roadmap?\n\nThis will:\n• Hide progress notifications\n• Remove timeline pressure\n• Keep all your data safe\n• Allow you to resume anytime\n\nYour career is a marathon, not a sprint. Taking a break is completely okay.');
+        
+        if (confirmed) {
+          alert('Roadmap paused.\n\nYou can resume anytime from your settings. Your progress is saved and will be here when you\'re ready to continue.\n\nRemember: Many successful people take non-linear paths. Focus on what\'s right for you.');
+        }
+      }
+
+      function dismissDisclaimer() {
+        document.getElementById('disclaimerBanner').style.display = 'none';
+      }
+
+      function learnMore() {
+        alert('Understanding Your Roadmap\n\nThis tool helps you:\n• Visualize typical career development paths\n• Organize your skill-building efforts\n• Prepare for counselor discussions\n• Track your growth over time\n\nWhat this is NOT:\n• A promotion guarantee\n• A performance evaluation\n• A replacement for counselor guidance\n• A complete picture of promotion criteria\n\nPromotion decisions involve:\n✓ Technical skills (shown here)\n✓ Performance and impact\n✓ Counselor advocacy\n✓ Client relationships\n✓ Leadership visibility\n✓ Business needs\n✓ Cultural fit\n✓ Many other human factors\n\nUse this roadmap as one tool in your development journey, alongside regular counselor conversations and real-world experience.');
+      }
+
+      // Add celebration animation when sections complete
+      function celebrateCompletion(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.classList.add('celebration');
+          setTimeout(() => {
+            element.classList.remove('celebration');
+          }, 600);
+        }
+      }
+
+      // Update timeline text to be softer
+      function updateTimeline() {
+        let months = 6; // Base 6 months remaining for time requirement
+        
+        if (userChoices.certification) {
+          months += certificationDetails[userChoices.certification].months;
+        } else {
+          months += 3; // Average estimate
+        }
+        
+        months += 4; // Leadership skills (parallel, so doesn't add much)
+        
+        if (userChoices.leadership) {
+          months += leadershipDetails[userChoices.leadership].months;
+        } else {
+          months += 4; // Average estimate
+        }
+        
+        const minMonths = Math.floor(months);
+        const maxMonths = Math.ceil(months + 3); // Wider range for flexibility
+        
+        document.getElementById('totalMonths').textContent = `${minMonths}-${maxMonths}`;
+        
+        // Softer language with confidence interval
+        const rangeText = document.getElementById('timelineRange');
+        if (rangeText) {
+          rangeText.innerHTML = `
+            Estimated based on your selections
+            <span class="info-tooltip">
+              ℹ️
+              <span class="tooltip-content">
+                Timeline estimates are based on average course completion times and may vary based on your pace, project workload, and personal circumstances. This is a guide, not a deadline.
+              </span>
+            </span>
+          `;
+        }
+        
+        // Update skills alignment (not "role match")
+        if (userChoices.certification) {
+          const newMatch = 82 + certificationDetails[userChoices.certification].matchBoost;
+          document.getElementById('roleMatch').textContent = `${newMatch}%*`;
+        }
+      }
+    </script>
+  </body>
+</html>
