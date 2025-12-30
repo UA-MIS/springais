@@ -49,6 +49,7 @@
         max-width: 1500px;
         margin: 0 auto;
         padding: 24px 32px;
+        min-height: 600px;
       }
 
       /* ============================================
@@ -1069,13 +1070,42 @@
            ============================================ */
       .view-container {
         display: none;
+        visibility: hidden;
       }
 
       .view-container.active {
-        display: block;
+        display: block !important;
+        visibility: visible;
         animation: fadeIn 0.3s ease;
+        min-height: 600px;
+        height: auto;
+        position: relative;
+      }
+      
+      #roadmap-view.active {
+        min-height: 600px !important;
+        height: auto;
+        display: block !important;
+        visibility: visible !important;
+        background: #f0f0f0 !important;
       }
 
+      #roadmap-view.active * {
+        visibility: visible !important;
+      }
+
+      #network-view.active {
+        min-height: 700px !important;
+        height: auto;
+        display: block !important;
+        visibility: visible !important;
+        background: #f0f0f0 !important;
+      }
+
+      #network-view.active * {
+        visibility: visible !important;
+      }
+      
       @keyframes fadeIn {
         from {
           opacity: 0;
@@ -2551,12 +2581,14 @@
         grid-template-columns: 240px 300px 1fr;
         gap: 24px;
         margin-top: 24px;
+        min-height: 500px;
       }
 
       #roadmap-view {
         overflow-y: auto;
         overflow-x: hidden;
         max-height: calc(100vh - 120px);
+        min-height: 600px;
       }
 
       #roadmap-view::-webkit-scrollbar {
@@ -5080,16 +5112,16 @@
       <div class="nav-left">
         <div class="logo">SpringAIS</div>
         <div class="view-tabs">
-          <button class="view-tab active" onclick="showView('portfolio')">
+          <button class="view-tab active" onclick="showView('portfolio', this)">
             Portfolio
           </button>
-          <button class="view-tab" onclick="showView('executive')">
+          <button class="view-tab" onclick="showView('executive', this)">
             Executive
           </button>
-          <button class="view-tab" onclick="showView('roadmap')">
+          <button class="view-tab" onclick="showView('roadmap', this)">
             Roadmap
           </button>
-          <button class="view-tab" onclick="showView('network')">
+          <button class="view-tab" onclick="showView('network', this)">
             Network
           </button>
         </div>
@@ -5823,6 +5855,7 @@
                     <span>Leadership</span>
                     <span>Starting</span>
                   </div>
+                </div>
                 </div>
 
                 <div class="info-banner" style="margin-top: 24px">
@@ -8719,16 +8752,27 @@ Led infrastructure migration for Project Phoenix using Terraform and Docker. Man
 
     <script>
       // View switching
-      function showView(viewName) {
-        document
-          .querySelectorAll(".view-container")
-          .forEach((v) => v.classList.remove("active"));
-        document
-          .querySelectorAll(".view-tab")
-          .forEach((t) => t.classList.remove("active"));
+      function showView(viewName, buttonElement) {
+        // Remove active class from all views
+        document.querySelectorAll(".view-container").forEach((v) => {
+          v.classList.remove("active");
+        });
 
-        document.getElementById(viewName + "-view").classList.add("active");
-        event.target.classList.add("active");
+        // Remove active class from all tabs
+        document.querySelectorAll(".view-tab").forEach((t) => {
+          t.classList.remove("active");
+        });
+
+        // Add active class to target view
+        const viewElement = document.getElementById(viewName + "-view");
+        if (viewElement) {
+          viewElement.classList.add("active");
+        }
+
+        // Add active class to clicked tab
+        if (buttonElement && buttonElement.classList) {
+          buttonElement.classList.add("active");
+        }
       }
 
       // Executive Tab Switching
