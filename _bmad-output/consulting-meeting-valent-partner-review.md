@@ -430,7 +430,7 @@ Judges will score us on:
 
 ### Technical Questions
 
-5. **Architecture:** Is the technical approach sound? Any concerns about scalability, security, or AI risks? Should we consider microservices architecture for production, or is the current monolithic structure sufficient? Are there any bottlenecks in the current stack (FastAPI → LangChain → GPT-5.2 → Chroma/Qdrant pipeline)?
+5. **Architecture:** Is the technical approach sound? Any concerns about scalability, security, or AI risks? Should we consider microservices architecture for production, or is the current monolithic structure sufficient? Are there any bottlenecks in the current stack (FastAPI → LangChain → GPT-5.2 Instant → Chroma/Qdrant pipeline)?
 
 6. **Dual LLM Validation:** Is the explainability approach sufficient? Does the dual LLM validation pattern effectively address hallucination concerns? Should we add additional validation layers or confidence thresholds? Are the evidence quotes and confidence scores (high/medium/low) sufficient for governance requirements?
 

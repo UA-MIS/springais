@@ -909,7 +909,7 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
 
 **Technical Risks & Solutions:**
 
-**Risk: GPT-5.2 hallucinates skills or makes poor inferences**
+**Risk: GPT-5.2 Instant hallucinates skills or makes poor inferences**
 
 - ✅ **MITIGATION - Dual LLM Validation:**
   - LLM #1: Infer skills + provide QUOTES/evidence from source data
@@ -1022,8 +1022,8 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
 **2. LLM Strategy:**
 
 - ✅ **Dual LLM Validation** (confirmed)
-  - GPT-5.2 for skill inference + provide quotes/evidence from source
-  - GPT-5.2 validation comparing quotes to inferred skills
+  - GPT-5.2 Instant for skill inference + provide quotes/evidence from source
+  - GPT-5.2 Instant validation comparing quotes to inferred skills
   - No training data available for fine-tuning
   - Dual validation approach optimal for timeline and reliability
 
@@ -1033,7 +1033,7 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
   - Scrape all available public data:
     - EY job postings (public website)
     - LinkedIn profiles (if legally/technically possible)
-  - Use GPT-5.2 to generate realistic synthetic data for gaps
+  - Use GPT-5.2 Instant to generate realistic synthetic data for gaps
   - Goal: Maximum accuracy and realism (only need 5-10 perfect profiles for competition)
   - **Future-proof architecture:** Design schema/data layer to easily plug in SuccessFactors/Credly if obtained
   - Modular data pipeline allows swapping synthetic → real data without code changes
@@ -1059,7 +1059,7 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
 
 **How it Works:**
 
-- Convert skills to embeddings via GPT-5.2 embeddings API (1536-dimensional vectors)
+- Convert skills to embeddings via GPT-5.2 Instant embeddings API (1536-dimensional vectors)
 - Store employee skill embeddings and role requirement embeddings in Chroma vector database
 - Semantic similarity search finds closest matches using cosine distance
 - **Handles synonyms automatically** (C# = csharp = C Sharp via semantic proximity in vector space)
@@ -1068,7 +1068,7 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
 
 **Implementation Stack:**
 
-- GPT-5.2 Embeddings API
+- GPT-5.2 Instant Embeddings API
 - Chroma (local vector database - Docker deployment, NO external API dependencies)
 - LangChain for orchestration
 - Cosine similarity for matching
@@ -1093,7 +1093,7 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
 
 **Explainability for Demo:**
 
-- "We use GPT-5.2 vector embeddings for semantic AI matching"
+- "We use GPT-5.2 Instant vector embeddings for semantic AI matching"
 - "Skills are compared in 1536-dimensional semantic space, not keyword matching"
 - "The system automatically understands 'React' matches 'Frontend Framework' requirements"
 - "Same technology powering modern AI search systems"
@@ -1120,10 +1120,10 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
 **Skill Extraction & Inference:**
 
 1. ✅ Document upload (resume, PDF parsing)
-2. ✅ Dual LLM skill inference (GPT-5.2 extract + validate with quotes)
+2. ✅ Dual LLM skill inference (GPT-5.2 Instant extract + validate with quotes)
 3. ✅ Confidence scoring for inferred skills
 
-**Matching Engine (Pure Vector Approach):** 4. ✅ Vector embeddings generation (GPT-5.2 embeddings API - 1536 dimensions) 5. ✅ Chroma vector database integration (local, no external dependencies) 6. ✅ Semantic similarity matching (cosine distance for employee → role matching) 7. ✅ Match scoring with confidence intervals (73-79%) 8. ✅ Related skills discovery (vector neighbors for success patterns)
+**Matching Engine (Pure Vector Approach):** 4. ✅ Vector embeddings generation (GPT-5.2 Instant embeddings API - 1536 dimensions) 5. ✅ Chroma vector database integration (local, no external dependencies) 6. ✅ Semantic similarity matching (cosine distance for employee → role matching) 7. ✅ Match scoring with confidence intervals (73-79%) 8. ✅ Related skills discovery (vector neighbors for success patterns)
 
 **Upskilling Plan Generation:** 9. ✅ Skill gap analysis (required skills - current skills = gaps) 10. ✅ Personalized learning path generation (what to learn to close gaps) 11. ✅ Time estimates for skill acquisition
 
@@ -1229,10 +1229,10 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
 
 **Week 2-3: Core AI Pipeline (Tier 1 - 40 pts worth)**
 
-- GPT-5.2 API integration + LangChain
+- GPT-5.2 Instant API integration + LangChain
 - Dual LLM skill inference (extract + validate with quotes)
 - Confidence scoring logic
-- Vector embeddings generation (GPT-5.2 embeddings API)
+- Vector embeddings generation (GPT-5.2 Instant embeddings API)
 - **Deliverable:** Upload resume → see extracted skills with confidence scores
 
 **Week 4: Matching Engine (Tier 1 - 20 pts worth)**
@@ -1307,7 +1307,7 @@ Daily goals adapt to pace, streak tracking, adjusts difficulty based on performa
 **Epic 2: AI Skill Inference Pipeline**
 
 - **Owner:** Backend Dev + Connecting Dev
-- Dual LLM validation (GPT-5.2)
+- Dual LLM validation (GPT-5.2 Instant)
 - Quote extraction and confidence scoring
 - Vector embeddings generation
 - LLM prompt engineering
@@ -1720,7 +1720,7 @@ This is a **career development and self-improvement tool**, not a promotion pred
 
 **Core Innovation - What Sets You Apart:**
 
-1. **Dual GPT-5.2 Validation** (Explainability: 20 pts)
+1. **Dual GPT-5.2 Instant Validation** (Explainability: 20 pts)
 
    - LLM #1: Extract skills with quotes/evidence from resume
    - LLM #2: Validate quote supports inferred skill
@@ -1729,7 +1729,7 @@ This is a **career development and self-improvement tool**, not a promotion pred
 
 2. **Pure Vector Semantic Matching** (AI Functionality: 20 pts, Innovation: 10 pts)
 
-   - GPT-5.2 embeddings (1536-dimensional vectors)
+   - GPT-5.2 Instant embeddings (1536-dimensional vectors)
    - Chroma local vector database (no external dependencies)
    - Automatic synonym handling (no manual normalization needed)
    - Automatic skill hierarchy understanding
@@ -1779,9 +1779,9 @@ This is a **career development and self-improvement tool**, not a promotion pred
 
 **No External API Dependencies for Core Features:**
 
-- ✅ All skill extraction: GPT-5.2 (you control)
+- ✅ All skill extraction: GPT-5.2 Instant (you control)
 - ✅ All matching: Chroma local (no API limits)
-- ✅ All embeddings: GPT-5.2 (cached aggressively)
+- ✅ All embeddings: GPT-5.2 Instant (cached aggressively)
 - ⏸️ O\*NET: Optional for metadata only
 
 **Why This Wins:**
