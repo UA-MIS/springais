@@ -27,7 +27,7 @@ SpringAIS is an AI-powered internal talent mobility platform that transforms how
 
 The platform addresses a critical business challenge: EY loses talented employees to competitors because internal opportunities remain invisible, while hiring managers default to external recruiting because finding qualified internal candidates is difficult and time-consuming. This costs EY 3-5x more per hire while eroding institutional knowledge and employee engagement.
 
-SpringAIS solves this through three breakthrough innovations: (1) **Semantic AI matching** using GPT-5.2 vector embeddings that understand skill relationships beyond keywords, (2) **Success pattern analysis** revealing what actually drives career advancement across six metric categories—financial performance, compliance, quality, development, people leadership, and feedback themes—based on primary research with EY employees, and (3) **Career Journey Map visualization** that transforms abstract career advice into concrete, motivating progression paths.
+SpringAIS solves this through three breakthrough innovations: (1) **Semantic AI matching** using GPT-5.2 Instant vector embeddings that understand skill relationships beyond keywords, (2) **Success pattern analysis** revealing what actually drives career advancement across six metric categories—financial performance, compliance, quality, development, people leadership, and feedback themes—based on primary research with EY employees, and (3) **Career Journey Map visualization** that transforms abstract career advice into concrete, motivating progression paths.
 
 **Business Impact:** Increased retention through visible career paths, reduced external hiring costs, faster talent development, and measurable improvements in employee engagement. **Technical Innovation:** Dual LLM validation for explainable AI, pure vector semantic matching, comprehensive success pattern benchmarking, and privacy-first anonymous matching.
 
@@ -105,7 +105,7 @@ Meanwhile, the advancement process feels opaque. Employees receive feedback that
 
 **Phase 1: Discovery - "Opportunities You Didn't Know Existed"**
 - Employees upload resume, Credly badges, and career documents
-- Dual LLM validation (GPT-5.2) extracts and verifies skills with evidence quotes
+- Dual LLM validation (GPT-5.2 Instant) extracts and verifies skills with evidence quotes
 - Pure vector semantic matching finds role alignments across ALL of EY (not just current service line)
 - Discovery modes surface different opportunity types:
   - **Best Fit** (70%+ match, ready now)
@@ -157,7 +157,7 @@ Meanwhile, the advancement process feels opaque. Employees receive feedback that
 ### Key Differentiators
 
 **1. Semantic AI, Not Keyword Matching**
-- GPT-5.2 vector embeddings (1536-dimensional semantic space)
+- GPT-5.2 Instant vector embeddings (1536-dimensional semantic space)
 - Automatically handles synonyms, skill hierarchies, related competencies
 - Chroma vector database for local, reliable matching
 - No manual skill normalization required
@@ -797,14 +797,14 @@ SpringAIS MVP represents a **fully-featured production-ready platform** built in
 
 **1. Skill Extraction & Inference**
 - Document upload (resume, Credly badges, project descriptions, certifications)
-- Dual LLM validation (GPT-5.2):
+- Dual LLM validation (GPT-5.2 Instant):
   - LLM #1: Extract skills WITH evidence quotes from source documents
   - LLM #2: Validate that quote actually supports inferred skill
 - Confidence scoring for every skill inference (high/medium/low)
 - Human-readable explanations showing evidence for each inferred skill
 
 **2. Semantic Matching Engine**
-- Vector embeddings generation (GPT-5.2 embeddings API - 1536 dimensions)
+- Vector embeddings generation (GPT-5.2 Instant embeddings API - 1536 dimensions)
 - Chroma vector database integration (local deployment, no external dependencies)
 - Semantic similarity matching (cosine distance for employee → role matching)
 - Match scoring with confidence intervals (e.g., "73-79% alignment")
@@ -1016,9 +1016,9 @@ SpringAIS MVP represents a **fully-featured production-ready platform** built in
 - EY PX360 live integration (experience data feeds)
 
 **5. Custom ML Development (Approach Constraint)**
-- Fine-tuning custom LLMs vs. using GPT-5.2 API
+- Fine-tuning custom LLMs vs. using GPT-5.2 Instant API
 - Training proprietary embeddings models
-- Custom NLP models for feedback analysis (using GPT-5.2 instead)
+- Custom NLP models for feedback analysis (using GPT-5.2 Instant instead)
 
 ---
 
@@ -1046,7 +1046,7 @@ SpringAIS MVP represents a **fully-featured production-ready platform** built in
 - Complete hiring manager workflow (post role → see matches → opt-ins → candidate management → analytics)
 - Complete admin workflow (governance → fairness dashboards → talent analytics → calibration support)
 - Dual LLM validation with logged evidence
-- Pure vector semantic matching (Chroma + GPT-5.2 embeddings)
+- Pure vector semantic matching (Chroma + GPT-5.2 Instant embeddings)
 - Success pattern analysis across 6 metric categories
 - Career Journey Map with React Flow
 - Career Competitiveness Dashboard with all metric visualizations

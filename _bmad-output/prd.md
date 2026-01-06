@@ -24,7 +24,7 @@ date: "2025-12-18"
 
 **Author:** Clays
 **Date:** 2025-12-18
-**Last Updated:** 2025-12-23 (Major tech stack overhaul: Azure AD B2C for auth/SSO, Azure Blob Storage for uploads, LangSmith for GPT-5.2 observability + Azure Application Insights for embedding metrics + Sentry for error tracking, Azure Key Vault for secrets, PostgreSQL + pgvector for vector search (no Chroma in MVP), Redis for caching, GitHub Actions for CI/CD; development accelerators: FastAPI boilerplate template, React admin template, LangChain examples, React Flow examples; refined: text-embedding-3-large for vectorization (3072-D), GPT-5.2 for extraction/generation, proficiency context through aggregate skill profiles, pre-cached common skills, aggregate matching algorithm, threshold-based search, synonym handling, two parallel processes, natural progression always shown, trajectory-based path comparison with wall detection, lateral move display when aligned, multi-skill extraction per quote, per-skill embedding architecture with caching, multiple opt-ins allowed, terminal level handling, trajectory depth limit, time estimate source, translation confidence weighting)
+**Last Updated:** 2025-12-23 (Major tech stack overhaul: Azure AD B2C for auth/SSO, Azure Blob Storage for uploads, LangSmith for GPT-5.2 Instant observability + Azure Application Insights for embedding metrics + Sentry for error tracking, Azure Key Vault for secrets, PostgreSQL + pgvector for vector search (no Chroma in MVP), Redis for caching, GitHub Actions for CI/CD; development accelerators: FastAPI boilerplate template, React admin template, LangChain examples, React Flow examples; refined: text-embedding-3-large for vectorization (3072-D), GPT-5.2 Instant for extraction/generation, proficiency context through aggregate skill profiles, pre-cached common skills, aggregate matching algorithm, threshold-based search, synonym handling, two parallel processes, natural progression always shown, trajectory-based path comparison with wall detection, lateral move display when aligned, multi-skill extraction per quote, per-skill embedding architecture with caching, multiple opt-ins allowed, terminal level handling, trajectory depth limit, time estimate source, translation confidence weighting)
 
 ---
 
@@ -50,7 +50,7 @@ Traditional HR systems fail because:
 
 SpringAIS solves this through three breakthrough innovations:
 
-1. **Semantic AI Matching** - GPT-5.2 vector embeddings understand skill relationships beyond keywords
+1. **Semantic AI Matching** - GPT-5.2 Instant vector embeddings understand skill relationships beyond keywords
 2. **Dual LLM Validation** - Extract skills WITH evidence quotes, then validate—eliminating hallucinations with explainable AI
 3. **Success Pattern Analysis** - The insight competitors miss: what ACTUALLY drives advancement across six metric categories (financial, compliance, quality, development, people, feedback themes)
 
@@ -160,7 +160,7 @@ SpringAIS solves this through three breakthrough innovations:
 - Redis caching layer (sessions + LLM caching)
 - Azure AD B2C authentication (SSO-ready) integrated from day 1 (dev == prod auth flow)
 - Azure Blob Storage for document uploads integrated from day 1 (dev == prod storage behavior)
-- Observability baseline: LangSmith (GPT-5.2 calls) + Azure Application Insights (embedding calls + general metrics) + Sentry (error tracking)
+- Observability baseline: LangSmith (GPT-5.2 Instant calls) + Azure Application Insights (embedding calls + general metrics) + Sentry (error tracking)
 - Secrets: Azure Key Vault (prod) + local `.env` (dev), with a clear migration path
 - CI/CD: GitHub Actions deploy pipeline for private repo (build/test/deploy)
 - React frontend + shadcn/ui
@@ -178,7 +178,7 @@ SpringAIS solves this through three breakthrough innovations:
 - Vector embeddings generation
 - Token counting (tiktoken) for accurate cost tracking
 - Retry logic (tenacity) for API resilience
-- LangSmith integration for GPT-5.2 observability (prompt/response tracing, debugging)
+- LangSmith integration for GPT-5.2 Instant observability (prompt/response tracing, debugging)
 
 **Epic 3: Matching Engine**
 
@@ -372,7 +372,7 @@ Traditional HR systems use keyword matching, which breaks constantly:
 - "C#" doesn't match "csharp" or "C Sharp"
 - No understanding that React expertise implies JavaScript knowledge
 
-SpringAIS uses **text-embedding-3-large** for semantic skill vectorization. GPT-5.2 handles skill extraction and text generation; text-embedding-3-large handles vectorization. Skills that are semantically related cluster together in vector space.
+SpringAIS uses **text-embedding-3-large** for semantic skill vectorization. GPT-5.2 Instant handles skill extraction and text generation; text-embedding-3-large handles vectorization. Skills that are semantically related cluster together in vector space.
 
 **Per-Skill Embedding Architecture:** Each extracted skill is independently embedded into a 3072-dimensional vector using text-embedding-3-large. This is NOT a per-resume embedding—each skill gets its own vector:
 
@@ -548,7 +548,7 @@ Flag any step in a trajectory with <50% match as a "wall." This helps employees 
 - Per-request cost tracking in audit logs (via tiktoken token counting)
 - Accurate token counting before/after API calls (tiktoken)
 - **Split observability strategy:**
-  - **LangSmith:** GPT-5.2 calls (skill extraction, validation) - full prompt/response tracing, token usage, cost per call
+  - **LangSmith:** GPT-5.2 Instant calls (skill extraction, validation) - full prompt/response tracing, token usage, cost per call
   - **Application Insights:** Embedding calls (text-embedding-3-large) - aggregate metrics (counts, costs, latency)
 - Token counts sent to Application Insights as custom metrics
 - Alert thresholds: >$0.50/inference triggers review
