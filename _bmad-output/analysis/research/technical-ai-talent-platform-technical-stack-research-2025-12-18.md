@@ -92,7 +92,7 @@ The development of AI-driven talent mobility platforms represents a convergence 
 - FastAPI has become the standard for high-performance Python APIs
 - React continues to dominate frontend development with improved TypeScript support
 
-_Source: [FastAPI Documentation](https://fastapi.tiangolo.com/), [OpenAI GPT-5.2](https://platform.openai.com/docs/models/gpt-5.2/)_
+_Source: [FastAPI Documentation](https://fastapi.tiangolo.com/), [OpenAI GPT-5.2 Instant](https://platform.openai.com/docs/models/gpt-5.2-chat-latest/)_
 
 ### Technical Research Methodology
 
@@ -341,7 +341,7 @@ _Source: [FastAPI GitHub](https://github.com/tiangolo/fastapi), [React GitHub](h
 
 - **O\*NET API v2.0:** RESTful endpoints with OpenAPI specification support. The API provides streamlined JSON responses with consistent property names, making data parsing straightforward. Endpoints support skill taxonomy queries, technology skills search, and registered apprenticeship reports.
 
-- **OpenAI GPT-5.2 API:** RESTful API with rate limiting and prompt caching support. The API uses standard HTTP POST requests with JSON payloads for chat completions and embeddings generation.
+- **OpenAI GPT-5.2 Instant API:** RESTful API with rate limiting and prompt caching support. The API uses standard HTTP POST requests with JSON payloads for chat completions and embeddings generation.
 
 **RESTful APIs:** All external integrations use REST principles with JSON request/response formats. FastAPI's automatic OpenAPI generation enables client code generation and API documentation.
 
@@ -403,7 +403,7 @@ React Frontend (HTTPS) → FastAPI Backend (REST)
                     ↓                   ↓
             External APIs        Internal Services
          (Credly, O*NET,        (PostgreSQL, Chroma,
-          OpenAI GPT-5.2)         Redis Cache)
+          OpenAI GPT-5.2 Instant)         Redis Cache)
 ```
 
 _Source: [FastAPI Middleware Documentation](https://fastapi.tiangolo.com/advanced/middleware/)_
@@ -510,7 +510,7 @@ _Source: [FastAPI Security Tutorial](https://fastapi.tiangolo.com/tutorial/secur
 - **Caching:** Cache skill taxonomy data (changes infrequently)
 - **OpenAPI Support:** Use OpenAPI spec for client code generation
 
-**OpenAI GPT-5.2 API Integration:**
+**OpenAI GPT-5.2 Instant API Integration:**
 
 - **Authentication:** API key in Authorization header
 - **Rate Limiting:** Tier-based limits (500-15,000 RPM, 500K-40M TPM)
@@ -594,7 +594,7 @@ This hybrid approach provides flexibility: start with PostgreSQL + pgvector for 
 
 **RAG-Inspired Architecture:** The platform incorporates Retrieval-Augmented Generation (RAG) patterns:
 
-- **Vector Embeddings:** Skills converted to embeddings via GPT-5.2 embeddings API
+- **Vector Embeddings:** Skills converted to embeddings via GPT-5.2 Instant embeddings API
 - **Semantic Search:** Vector similarity search finds semantically similar skills and roles
 - **Hybrid Retrieval:** Combines dense vector retrieval with potential keyword-based filtering
 - **Context-Aware Matching:** Uses retrieved skill context to improve match accuracy
@@ -788,7 +788,7 @@ _Source: [Bias Mitigation Frameworks](https://arxiv.org/abs/2509.04515), [Adapti
 1. **Data Ingestion:** SuccessFactors API → Employee profiles
 2. **Data Enrichment:** Credly API → Badge/skill data
 3. **Skill Inference:** LLM extracts and infers skills from documents
-4. **Embedding Generation:** GPT-5.2 embeddings API → Vector embeddings
+4. **Embedding Generation:** GPT-5.2 Instant embeddings API → Vector embeddings
 5. **Vector Storage:** Embeddings stored in pgvector or dedicated vector DB
 6. **Matching:** Vector similarity search + scoring algorithm → Match results
 
@@ -862,7 +862,7 @@ _Source: [FastAPI Deployment](https://fastapi.tiangolo.com/deployment/), [Docker
 
 **Phase 2 (Weeks 3-4): Core AI Pipeline**
 
-- GPT-5.2 API integration + LangChain
+- GPT-5.2 Instant API integration + LangChain
 - Dual LLM skill inference (extract + validate with quotes)
 - Confidence scoring logic
 - Vector embeddings generation
@@ -1117,7 +1117,7 @@ _Source: [AI Talent Platform Team Organization](https://www.peoplebox.ai/wp-cont
 
 - **Skill Inference:** GPT-5.2 Instant for accuracy (justified for competition)
 - **Simple Tasks:** Could use GPT-3.5 Turbo for basic operations (future optimization)
-- **Complex Reasoning:** GPT-5.2 for dual validation and complex matching logic
+- **Complex Reasoning:** GPT-5.2 Instant for dual validation and complex matching logic
 
 **Rate Limiting and Throttling:**
 
@@ -1148,7 +1148,7 @@ _Source: [AI Talent Platform Team Organization](https://www.peoplebox.ai/wp-cont
 
 **Budget for Competition:**
 
-- **LLM API Costs:** Budget for GPT-5.2 usage (manageable for 5-10 profiles)
+- **LLM API Costs:** Budget for GPT-5.2 Instant usage (manageable for 5-10 profiles)
 - **Infrastructure:** Free (local deployment)
 - **External APIs:** SuccessFactors/Credly/O\*NET may have free tiers or demo access
 
@@ -1158,7 +1158,7 @@ _Source: [LLM Cost Optimization](https://arxiv.org/abs/2411.05276), [OpenAI Prom
 
 **Technical Risks:**
 
-**Risk: GPT-5.2 hallucinates skills or makes poor inferences**
+**Risk: GPT-5.2 Instant hallucinates skills or makes poor inferences**
 
 - **Mitigation:** Dual LLM validation (LLM #1 extracts, LLM #2 validates with quotes)
 - **Fallback:** Human review for low-confidence extractions
@@ -1249,7 +1249,7 @@ _Source: [AI MVP Risk Management](https://www.zestminds.com/blog/ai-mvp-developm
 
 **Weeks 2-3: Core AI Pipeline**
 
-- GPT-5.2 API integration + LangChain
+- GPT-5.2 Instant API integration + LangChain
 - Dual LLM skill inference
 - Confidence scoring
 - Vector embeddings generation
@@ -1373,7 +1373,7 @@ _Source: [AI MVP Success Metrics](https://www.streamlogic.com/tech-council/30-60
    - URL: https://fastapi.tiangolo.com/
    - Used for: API framework patterns, async architecture, security best practices
 
-2. **OpenAI Platform Documentation:** GPT-5.2 model specifications, prompt caching, rate limits
+2. **OpenAI Platform Documentation:** GPT-5.2 Instant model specifications, prompt caching, rate limits
 
    - URL: https://platform.openai.com/docs/
    - Used for: LLM integration patterns, cost optimization strategies, API specifications

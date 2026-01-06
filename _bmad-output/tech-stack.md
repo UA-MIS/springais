@@ -1,75 +1,58 @@
 # SpringAIS Technical Stack Documentation
 
-**Last Updated:** 2025-12-23  
-**Status:** MVP Architecture Approved  
-**Azure Student Tier:** $0/month (all services covered)
+**Last Updated:** 2026-01-02
+**Status:** MVP Architecture - Competition Demo
+**Total Infrastructure Cost:** $0/month
 
 ---
 
 ## Executive Summary
 
-SpringAIS leverages Azure Student Tier services and open-source frameworks to minimize custom development while maintaining enterprise-grade capabilities. This stack saves **6-8 weeks** of development time by using managed services and pre-built solutions instead of building from scratch.
+SpringAIS leverages **free-tier services and local development** to minimize costs while maintaining demo-ready capabilities. This stack is optimized for an **8-week competition timeline** with local demo deployment (no cloud hosting required).
 
-**Key Principle:** Only code what we HAVE to. Use managed services, APIs, and open-source libraries for everything else.
+**Key Principle:** Only code what we HAVE to. Use open-source frameworks, free APIs, and local infrastructure for everything else.
+
+**Key Architectural Decision:** Run demo locally on laptops during judging - no cloud hosting needed. This is MORE impressive (judges see it work in real-time) and costs $0.
 
 ---
 
-## Infrastructure Services (Azure - $0/mo Student Tier)
+## Infrastructure Services (All Free)
 
 ### Core Services
 
-| Service                              | Purpose                                                  | Development (Dev)                | Production         | Dev Strategy                  |
-| ------------------------------------ | -------------------------------------------------------- | -------------------------------- | ------------------ | ----------------------------- |
-| **Azure PostgreSQL Flexible Server** | Main database + pgvector for embeddings                  | Docker: `pgvector/pgvector:pg16` | Azure PostgreSQL   | Local (identical behavior) ✅ |
-| **Azure Cache for Redis**            | Session cache, skill embedding cache, LLM response cache | Docker: `redis:7-alpine`         | Azure Redis Cache  | Local (identical behavior) ✅ |
-| **Azure Blob Storage**               | Resume/document uploads                                  | **Azure Blob Storage**           | Azure Blob Storage | Azure (slight differences) ⚠️ |
-| **Azure AD B2C**                     | Authentication + EY SSO integration                      | **Azure AD B2C**                 | Azure AD B2C       | Azure (auth flow differs) ⚠️  |
-| **Azure App Service**                | FastAPI hosting                                          | `uvicorn` locally                | Azure App Service  | Local (identical code) ✅     |
-| **Azure Functions**                  | Async skill extraction jobs                              | FastAPI BackgroundTasks          | Azure Functions    | Local (simpler for MVP) ✅    |
+| Service | Purpose | Development | Demo/Production | Cost |
+|---------|---------|-------------|-----------------|------|
+| **PostgreSQL + pgvector** | Main database + vector embeddings | Docker local | Docker local or Supabase (optional) | $0 |
+| **Redis** | Session cache, skill embedding cache, LLM response cache | Docker local | Docker local or Upstash (optional) | $0 |
+| **File Storage** | Resume/document uploads | Local filesystem or Supabase | Local filesystem | $0 |
+| **Authentication** | User auth for demo | Simple JWT or Supabase Auth | Simple JWT | $0 |
+| **Backend** | FastAPI application | uvicorn locally | uvicorn locally | $0 |
+| **Frontend** | React application | Vite dev server | Vite build (static) | $0 |
 
-**Dev Strategy Rationale:**
+**Development & Demo Strategy:**
+- **Everything runs locally** in Docker Compose
+- **No cloud dependencies** for demo
+- **Optional Supabase** if you want free cloud hosting later (not required for competition)
+- **Git-based database sharing** for team collaboration
 
-- **Local Docker (PostgreSQL, Redis):** Identical behavior, faster iteration, offline-capable
-- **Azure Services (Blob Storage, AD B2C):** Connect to real Azure to catch differences early
-- **Local Code (FastAPI, BackgroundTasks):** Same code runs identically, easier debugging
+### Why Local-First Architecture?
 
-### Why Azure Services?
-
-- **$0 cost** on Student Tier (covers MVP needs)
-- **Enterprise-ready** - Production-grade infrastructure
-- **Managed services** - No infrastructure maintenance
-- **SSO integration** - Azure AD B2C handles SAML/OIDC for EY integration
-- **Scalability** - Auto-scales as needed
-- **pgvector extension** - Built-in vector search (no separate vector DB needed)
+- **$0 cost** - No monthly hosting bills
+- **Demo reliability** - No "server is down" moments during judging
+- **Fast iteration** - No deployment delays
+- **Portable** - Runs on any laptop with Docker
+- **Impressive** - Judges see real-time execution, not a hosted demo
+- **Team collaboration** - Git-based SQL dumps for data sharing
 
 ---
 
 ## External Free Services & APIs
 
-| Service            | Purpose                                                   | Why Use It                           | Integration Complexity         |
-| ------------------ | --------------------------------------------------------- | ------------------------------------ | ------------------------------ |
-| **O\*NET API**     | Skills taxonomy (39K+ skills, occupations, relationships) | Free, comprehensive, saves 2-3 weeks | Low - REST API wrapper         |
-| **LlamaIndex OSS** | RAG pipeline structure, document parsing                  | Free, well-documented, saves 1 week  | Medium - Framework integration |
-| **React Flow**     | Career path visualization, skill trees                    | Free, already in PRD, saves 3-4 days | Low - React component          |
-| **OpenAI API**     | Skill extraction, validation, gap analysis                | Direct API access                    | Low - SDK integration          |
-
----
-
-## Additional Azure Services (Free on Student Tier)
-
-| Service                        | Purpose                                           | Time Saved | Why Use It                                           | Integration                |
-| ------------------------------ | ------------------------------------------------- | ---------- | ---------------------------------------------------- | -------------------------- |
-| **Azure Application Insights** | Monitoring, logging, performance tracking         | 2-3 days   | Built-in with App Service, automatic instrumentation | Low - Auto-instrumentation |
-| **Azure Key Vault**            | Secrets management (API keys, connection strings) | 1 day      | Secure secret storage, rotation support              | Low - SDK integration      |
-
----
-
-## Additional Third-Party Services (Free Tiers)
-
-| Service            | Purpose                       | Time Saved | Why Use It                                                      | Cost                       |
-| ------------------ | ----------------------------- | ---------- | --------------------------------------------------------------- | -------------------------- |
-| **Sentry**         | Error tracking and monitoring | 1-2 days   | Automatic error grouping, stack traces                          | Free tier: 5K events/month |
-| **GitHub Actions** | CI/CD pipeline                | 2-3 days   | Free for private repos (2,000 min/month), easy Azure deployment | Free (private repos)       |
+| Service | Purpose | Why Use It | Cost |
+|---------|---------|------------|------|
+| **O\*NET API** | Skills taxonomy (39K+ skills, occupations, relationships) | Free, comprehensive, saves 2-3 weeks | $0 |
+| **OpenAI API** | Skill extraction, validation, embeddings | Direct API access | Pay-per-use |
+| **React Flow** | Career path visualization, skill trees | Free open-source, saves 3-4 days | $0 |
 
 ---
 
@@ -78,159 +61,193 @@ SpringAIS leverages Azure Student Tier services and open-source frameworks to mi
 ### Backend Stack
 
 **Framework:**
-
 - **FastAPI** (Python 3.11+) - Async REST API framework
   - Auto-generates OpenAPI 3.0 docs
   - Pydantic validation
-  - WebSocket support for real-time notifications
+  - WebSocket support for real-time notifications (optional)
+  - Runs locally via uvicorn
 
 **Database:**
-
 - **PostgreSQL 16** with **pgvector extension**
   - Structured data (employees, roles, matches, audit logs)
   - Vector embeddings storage (3072-D vectors from text-embedding-3-large)
   - Unified database (no separate vector DB needed)
-  - **Why pgvector over Chroma:**
+  - Runs in Docker locally
+  - **Why pgvector:**
     - Single database for all data
-    - Better production performance
-    - Easier to maintain
-    - PRD mentions pgvector as option
+    - Excellent semantic search performance
+    - Easier to maintain than separate vector DB
+    - Industry standard for vector similarity search
 
 **Caching:**
-
-- **Azure Redis Cache** (via `redis-py`)
-  - **LangChain Semantic Cache** - Similar prompts → cached LLM responses (68.8% API reduction)
+- **Redis** (via `redis-py`)
+  - **LangChain Semantic Cache** - Similar prompts → cached LLM responses (68.8% API reduction target)
   - **Redis Direct Cache** - Exact matches for:
     - Skill extraction results (7 days TTL)
     - Embeddings (indefinite TTL)
-    - O\*NET API responses
-    - Session data
+    - O\*NET API responses (24 hours TTL)
+    - Session data (15 minutes TTL)
+  - Runs in Docker locally
 
-**LLM Orchestration:**
-
+**LLM Integration:**
+- **OpenAI SDK** - Direct API calls for:
+  - **GPT-5.2 Instant:** Real-time skill extraction during demo (user uploads)
+  - **GPT-5.2 Instant:** User-facing text generation (match explanations, gap analysis)
+  - **GPT-5 Nano:** Synthetic data generation (one-time, offline)
+  - **text-embedding-3-large:** Skill embeddings for vector search
 - **LangChain** - LLM orchestration, prompt management, semantic caching
-- **LlamaIndex** - RAG pipeline structure, document parsing, chunking
-- **OpenAI SDK** - Direct API calls for GPT-5.2 Instant and text-embedding-3-large
-- **LangSmith** - LLM observability for GPT-5.2 calls (skill extraction, validation)
-  - Traces GPT-5.2 prompt/response pairs for debugging
-  - Token usage tracking per call
-  - Cost attribution per feature
-  - Prompt versioning and A/B testing
-  - Free tier: 5K traces/month (covers MVP GPT-5.2 calls)
-  - **Why separate from embeddings:** Purpose-built for LLM debugging, not needed for simple embedding API calls
-- **tiktoken** - Accurate token counting for cost estimation and monitoring
-  - Counts tokens before/after API calls for precise cost tracking
-  - Sends token counts to Application Insights as custom metrics
-  - More accurate than character-count approximations (20-30% improvement)
-- **tenacity** - Retry logic with exponential backoff for OpenAI API
-  - Handles rate limits and transient failures gracefully
-  - Configurable retry strategies for production resilience
+- **tiktoken** - Accurate token counting for cost estimation
 
 **File Storage:**
-
-- **Azure Blob Storage** - Resume/document uploads
-- **Development:** Connect to real Azure Blob Storage (Student Tier)
-  - Ensures dev/prod parity for file operations
-  - Tests real SDK behavior and CORS configurations
-  - Catches Azure-specific edge cases early
-  - **Why not Azurite:** SDK differences, CORS edge cases, large file handling differs
+- **Local Filesystem** - Resume/document uploads stored locally
+- **Optional: Supabase Storage** - If you want cloud storage later (1GB free)
 
 **Document Processing:**
-
-- **LlamaIndex** - Primary document parsing (PDF, Word, text) via RAG pipeline
-- **pdfplumber** (optional backup) - Enhanced PDF text extraction if LlamaIndex parsing insufficient
-  - Handles complex layouts, tables, headers better than basic PDF libraries
-  - Fallback for edge cases LlamaIndex may miss
-- **python-docx** (optional backup) - Word document parsing if LlamaIndex needs assistance
+- **PyPDF2** or **pdfplumber** - PDF text extraction
+- **python-docx** - Word document parsing
 
 **Authentication:**
-
-- **Azure AD B2C** - Enterprise auth + SSO
-  - **Development:** Connect to real Azure AD B2C (Student Tier)
-  - Handles SAML/OIDC for EY integration
-  - User management
-  - Token validation middleware
-  - **Why real Azure in dev:** Auth flow differences (redirects, tokens, OIDC) need real testing
+- **JWT tokens** - Simple auth for demo
+- **Optional: Supabase Auth** - If you want full auth later (includes SSO support)
 
 **Background Jobs:**
-
-- **Azure Functions** - Async skill extraction processing
-- **Local Dev:** FastAPI BackgroundTasks (inline processing)
+- **FastAPI BackgroundTasks** - Async skill extraction processing (inline)
+- Simple for MVP, no separate job queue needed
 
 **Monitoring & Logging:**
-
-- **LangSmith** - LLM observability for GPT-5.2 calls (skill extraction, validation)
-  - Traces GPT-5.2 prompt/response pairs
-  - Token usage and cost per call
-  - Prompt debugging and versioning
-  - Free tier: 5K traces/month (sufficient for MVP)
-  - **Scope:** Only GPT-5.2 calls (not embedding calls)
-- **Azure Application Insights** - Monitoring for embeddings and general metrics (free on Student Tier)
-  - Auto-instrumentation with App Service
-  - Custom metrics for embedding calls (text-embedding-3-large):
-    - Embedding call counts
-    - Embedding costs (aggregate)
-    - Embedding latency
-  - Custom metrics for general system metrics:
-    - Cache hit rates
-    - Response times
-    - Error rates
-  - Per PRD requirement: "Cost monitoring" and "Performance benchmarks"
-  - Receives token counts from tiktoken for accurate cost tracking
-  - **Scope:** Embedding calls + general system metrics (not GPT-5.2 detailed traces)
-- **structlog** - Structured JSON logging (Azure App Insights compatible)
-- **Sentry** (recommended) - Error tracking and alerting (free tier: 5K events/month)
-  - Better than custom error tracking
-  - Automatic error grouping, stack traces
-  - Alerts for critical errors
-- **tiktoken** - Token counting for accurate LLM cost estimation
-  - Counts tokens before/after OpenAI API calls
-  - Sends token counts to Application Insights as custom metrics
-  - Enables precise cost monitoring (vs. character-count approximations)
+- **structlog** - Structured JSON logging
+- **Optional: Sentry** - Error tracking (free tier: 5K events/month)
 
 **Secrets Management:**
-
-- **Azure Key Vault** - Secure storage for API keys, connection strings (free on Student Tier)
-  - Store OpenAI API keys, Azure connection strings, O\*NET API keys
-  - Automatic rotation support
-  - Better than environment variables for production
+- **Environment variables** - .env file (gitignored)
+- **Optional: Azure Key Vault** - If you deploy to production later
 
 ### Frontend Stack
 
 **Framework:**
-
 - **React 18+** with **TypeScript**
-- **Vite** - Build tool and dev server
+- **Vite** - Build tool and dev server (fast, modern)
 
 **UI Components:**
-
 - **shadcn/ui** - Professional component library
   - Built on Radix UI primitives
   - Tailwind CSS styling
   - Accessible by default
 
 **Visualization:**
-
 - **React Flow** - Career path visualization, skill trees
   - Interactive node graphs
   - Custom node/edge rendering
+  - Shows career progression paths
 
 **Charts & Analytics:**
-
 - **Recharts** - Dashboard visualizations
   - Success pattern charts
   - Match statistics
   - Career competitiveness metrics
 
 **HTTP Client:**
-
-- **Axios** - API communication
+- **Axios** - API communication with FastAPI backend
 - **openapi-typescript** - TypeScript types generated from FastAPI OpenAPI spec
 
 **State Management:**
-
 - **React Query (TanStack Query)** - Server state management, caching
-- **Zustand** (optional) - Client state management
+- **Zustand** (optional) - Client state management if needed
+
+---
+
+## Vector Search Architecture
+
+### Why Vectorization is Critical
+
+SpringAIS's core value proposition depends on **semantic matching**, not keyword matching:
+
+**Without Vectors (Keyword Matching):**
+```
+User has: ["AWS", "Docker", "CI/CD"]
+Role requires: ["Cloud Infrastructure", "Containerization", "DevOps"]
+→ 0% keyword match ❌ (same concepts, different words)
+```
+
+**With Vectors (Semantic Matching):**
+```
+User skills embedded: [0.23, 0.84, 0.12, ...] (3072-D)
+Role requirements embedded: [0.25, 0.81, 0.15, ...] (3072-D)
+→ Cosine similarity: 0.92 ✅ (semantically similar!)
+```
+
+**Key Use Cases:**
+1. **Cross-functional discovery:** Tax accountant discovers Consulting opportunities
+2. **Synonym handling:** "Python programming" matches "Python development"
+3. **Skill relationship understanding:** "Data Analysis" similar to "SQL, Tableau, Excel"
+4. **Hidden opportunity discovery:** Core PRD differentiator
+
+### Matching Architecture (Hybrid Option C)
+
+```
+User uploads resume
+  ↓
+Extract skills (GPT-5.2 Instant, ~$0.02)
+  ↓
+Generate embeddings (text-embedding-3-large, ~$0.0001)
+  ↓
+Vector similarity search in pgvector
+  ├─ Search against ~25 role types
+  └─ Search against current job postings
+  ↓
+Top 10 matches (sorted by cosine similarity)
+  ↓
+For each match:
+  ├─ IF job posting exists:
+  │    ├─ Show job requirements (PRIMARY)
+  │    └─ Add success patterns (AUGMENTATION)
+  │        "92% of Senior Analysts also have Excel (not in posting!)"
+  │
+  └─ ELSE (no job posting):
+       └─ Show success patterns only (PRIMARY)
+           "Based on 47 current Senior Analysts..."
+  ↓
+Display ranked opportunities to user
+```
+
+**No ML ranking needed for MVP** - Vector cosine similarity is sufficient with ~25 role types. ML ranking can be added later when job posting database grows to 100+ entries.
+
+### Embedding Strategy
+
+**What gets embedded:**
+1. **Role requirements** (~25 role types × 10 skills = ~250 skill mentions)
+2. **Job posting requirements** (~30-50 postings × 10 skills = ~300-500 skill mentions)
+3. **Unique skills** (total ~1,000-1,500 unique skills after deduplication)
+
+**Embedding process:**
+```python
+# 1. Extract unique skills from all sources
+unique_skills = set()
+for employee in employees:
+    unique_skills.update(employee.skills)
+for job in job_postings:
+    unique_skills.update(job.required_skills)
+
+# 2. Embed each unique skill once
+embeddings = {}
+for skill in unique_skills:
+    embedding = openai.embeddings.create(
+        model="text-embedding-3-large",
+        input=skill
+    )
+    embeddings[skill] = embedding.data[0].embedding
+
+# 3. Cache in Redis indefinitely
+redis.set(f"embedding:{skill}", embedding, ex=None)
+```
+
+**Cost:** ~$0.003 total for all embeddings (one-time)
+
+**Pre-caching strategy:**
+- Embed all role requirement skills during setup
+- Embed all job posting skills when scraped
+- Embed user skills on-demand (cache after first use)
+- Common skills pre-cached: ~250 most common EY skills
 
 ---
 
@@ -240,31 +257,17 @@ SpringAIS leverages Azure Student Tier services and open-source frameworks to mi
 
 **Purpose:** Cache LLM responses based on semantic similarity (not exact matches)
 
-**Implementation:**
-
-```python
-from langchain.cache import RedisCache
-from langchain.globals import set_llm_cache
-import redis
-
-redis_client = redis.Redis.from_url("redis://localhost:6379")
-set_llm_cache(RedisCache(redis_client))
-```
-
 **What it caches:**
-
 - LLM prompt → response pairs
 - Uses embedding similarity (cosine similarity > 0.95)
 - Handles prompt variations automatically
 
 **Benefits:**
-
-- 68.8% API call reduction (per PRD)
+- 68.8% API call reduction target (per PRD)
 - Handles similar prompts without exact match
 - Reduces LLM costs significantly
 
 **Example:**
-
 ```
 Prompt A: "Extract skills from: 'I built Python APIs'"
 Prompt B: "Extract skills from: 'Developed Python REST APIs'"
@@ -279,18 +282,15 @@ Prompt B: "Extract skills from: 'Developed Python REST APIs'"
 **What it caches:**
 
 1. **Skill Extraction Results** (7 days TTL)
-
    - Key: `skill_extraction:{resume_hash}`
    - Value: Extracted skills with confidence scores
 
 2. **Embeddings** (Indefinite TTL)
-
    - Key: `embedding:{skill_name}`
    - Value: 3072-D vector from text-embedding-3-large
    - Pre-cached: ~250 common EY skills
 
 3. **O\*NET API Responses** (24 hours TTL)
-
    - Key: `onet_api:{endpoint}:{params}`
    - Value: API response JSON
 
@@ -299,134 +299,177 @@ Prompt B: "Extract skills from: 'Developed Python REST APIs'"
    - Value: User session data
 
 **Benefits:**
-
 - O(1) lookup time
 - Prevents redundant API calls
 - Instant responses for cached data
 
-### Cache Flow Example
+---
 
-```python
-def extract_skills(resume_text: str):
-    # 1. Check Redis (exact match)
-    resume_hash = hash(resume_text)
-    cached = redis.get(f"skill_extraction:{resume_hash}")
-    if cached:
-        return cached  # Instant return (<3s per PRD)
+## Synthetic Data Strategy
 
-    # 2. Check LangChain semantic cache (similar prompts)
-    llm_response = langchain_llm.invoke(prompt, cache=True)
+### Purpose of Synthetic Data
 
-    # 3. If cache miss, call LLM
-    if not llm_response.from_cache:
-        llm_response = openai_api.call(prompt)
+**Synthetic employees are NOT just test data** - they are the **source of success pattern analysis**:
 
-    # 4. Store in Redis (exact match) for future identical uploads
-    redis.setex(
-        f"skill_extraction:{resume_hash}",
-        7 * 24 * 3600,  # 7 days TTL
-        llm_response
-    )
-
-    return llm_response
 ```
+User: "I want to become a Senior Analyst"
+
+System analyzes 47 synthetic Senior Analysts:
+- Common skills: SQL (95%), Python (87%), Excel (92%), Tableau (78%)
+- Avg performance: 82% utilization, 4.1 client satisfaction
+- Avg experience: 4.2 years
+- Typical path: Staff (2y) → Senior (3y) → Senior Analyst
+- Common feedback: "strong analytical skills", "proactive communication"
+
+Shows user: "You have SQL & Python ✅, but need to develop Excel & Tableau skills.
+             Current Senior Analysts average 82% utilization (you: 78% - close!)
+             Typical timeline: 4.2 years experience (you: 3.5 years - on track)"
+```
+
+**This is the core differentiator:** Show what ACTUALLY drives advancement, not just job posting requirements.
+
+### EY Organizational Structure (3 Service Lines)
+
+**Distribution of 900 synthetic employees:**
+
+1. **Assurance** (300 employees, 33%)
+   - Roles: Staff → Senior → Manager → Senior Manager → Partner
+   - Core skills: Accounting, Audit, GAAP, Financial Reporting, Risk Assessment
+   - Focus areas (30% of employees): Audit, Financial Reporting, Risk & Compliance, SEC Reporting, Internal Controls, Fraud Investigation
+
+2. **Tax** (300 employees, 33%)
+   - Roles: Staff → Senior → Manager → Senior Manager → Partner
+   - Core skills: Tax Law, Tax Planning, Compliance, Research, Excel
+   - Focus areas (30% of employees): Corporate Tax, International Tax, Transfer Pricing, M&A Tax, Tax Technology, SALT, Estate Planning
+
+3. **Consulting** (300 employees, 34%)
+   - Roles: Analyst → Associate → Senior Associate → Consultant → Senior Consultant → Manager → Senior Manager → Director → Partner
+   - Core skills: Strategy, Client Management, Project Management, Stakeholder Management
+   - Focus areas (30% of employees):
+     - **Technology:** Cloud & Infrastructure, Data & Analytics, Cybersecurity, AI & Machine Learning
+     - **Business:** Strategy, Operations, Finance Transformation, Supply Chain, HR & Workforce, Customer Experience
+
+**Total role types:** ~25 (5 roles × 3 service lines, with some variation in Consulting)
+
+### Hybrid Data Generation Approach
+
+**What gets hard-coded ($0, deterministic):**
+- Role titles and hierarchy per service line
+- Core required skills per role (from scraped job postings / O*NET)
+- Years of experience ranges per role level
+- Base performance metric ranges per role level
+
+**What LLM generates (~$2 total):**
+- **GPT-5 Nano:** Individual employee performance metric variation
+- **GPT-5 Nano:** Career progression history (previous roles, durations)
+- **GPT-5 Nano:** Soft skills (3-6 per person, varied)
+- **GPT-5.2 Instant:** Feedback themes (realistic peer feedback text - user-facing)
+- **GPT-5.2 Instant:** Notable achievements (1-2 sentences per person)
+
+**Benefits of hybrid approach:**
+- 80% cost reduction vs. full LLM generation
+- Guaranteed data quality (core skills always correct)
+- Realistic variation where it matters (metrics, feedback)
+- LLM focuses on what it's good at (text generation, variation)
+
+### Data Quality Validation
+
+**Multi-layer validation ensures realism:**
+
+1. **Role distribution validation**
+   - Check pyramid structure (more junior, fewer senior)
+   - Assurance: 60 Staff, 90 Senior, 80 Manager, 50 Sr Manager, 20 Partner
+
+2. **Performance metric correlation**
+   - Higher roles should have higher average performance
+   - Partners: avg 4.5 client satisfaction vs Analysts: avg 3.8
+
+3. **Career progression realism**
+   - No impossible jumps (Staff → Partner in 2 years)
+   - Minimum time in role enforced (2 years typical)
+   - Progression follows service line tracks
+
+4. **Skill distribution realism**
+   - Core skills present in 90-100% of role holders
+   - Common skills present in 60-80% of role holders
+   - Specialization skills present in 20-40% of role holders
+
+5. **No impossible patterns**
+   - Junior roles can't have 10+ years experience
+   - Can't have more mentees than years of experience
+   - All skills must exist in O*NET taxonomy
 
 ---
 
-## Integration Architecture
+## Job Posting Strategy
 
-### O\*NET API Integration
+### Scraping & Storage
 
-**Purpose:** Skills taxonomy (39K+ skills, occupation mappings)
+**Source:** EY public careers page (legal, publicly available)
 
-**Client:**
+**Scraping frequency:**
+- Initial: Scrape all current openings (~30-50 postings)
+- Ongoing: Weekly or daily scraping to capture new postings
+- Archive closed postings (historical data is valuable)
 
+**What we extract:**
 ```python
-# Simple REST API wrapper
-class ONetClient:
-    def get_skill_info(self, skill_name: str):
-        # Check Redis cache first
-        # Call O*NET API if cache miss
-        # Cache response for 24 hours
+job_posting = {
+    "id": "uuid",
+    "title": "Senior Analyst - Assurance",
+    "service_line": "Assurance",
+    "location": "New York, NY",
+    "posted_date": "2026-01-02",
+    "closed_date": None,  # Still open
+    "required_skills": ["Accounting", "Audit", "GAAP", "Excel", "CPA"],
+    "preferred_skills": ["SEC Reporting", "SOX Compliance"],
+    "years_experience": "3-5 years",
+    "description": "Full posting text...",
+    "posting_url": "https://careers.ey.com/...",
+}
 ```
 
-**Caching Strategy:**
+**Storage:** PostgreSQL table with full-text search capabilities
 
-- Aggressive caching (24h TTL)
-- Pre-load common EY skills into database
-- Fallback to database if API unavailable
+**Growth over time:**
+- Week 1: ~30-50 postings
+- Month 3: ~100-150 postings (includes archived)
+- Month 6: ~300+ postings (comprehensive historical archive)
 
-### LlamaIndex Integration
+### Priority: Job Postings First, Success Patterns Second
 
-**Purpose:** Document parsing and RAG pipeline structure
+**When job posting exists:**
+```
+Show user:
+  PRIMARY: Job posting requirements
+    "Senior Analyst - Assurance requires: CPA, 3-5 years audit experience,
+     GAAP expertise, Excel proficiency"
 
-**Use Cases:**
-
-- Resume parsing (PDF, Word, text)
-- Document chunking
-- Retrieval patterns
-
-**Integration Points:**
-
-- Document loading (resume uploads)
-- Chunking strategy (for large documents)
-- Vector store integration (pgvector)
-
-### LangSmith Integration
-
-**Purpose:** LLM observability for GPT-5.2 calls (skill extraction, validation)
-
-**Use Cases:**
-
-- Trace GPT-5.2 prompt/response pairs
-- Debug skill extraction logic
-- Track token usage and costs per call
-- Prompt versioning and A/B testing
-
-**Integration Points:**
-
-- Skill extraction pipeline (GPT-5.2 calls)
-- Dual LLM validation pipeline (GPT-5.2 calls)
-- **Not used for:** Embedding calls (text-embedding-3-large) - tracked in Application Insights instead
-
-**Implementation:**
-
-```python
-from langsmith import traceable
-
-@traceable(name="skill_extraction")
-def extract_skills(resume_text: str):
-    # GPT-5.2 call traced in LangSmith
-    response = openai.chat.completions.create(
-        model="gpt-5.2-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response
+  AUGMENTATION: Success pattern insights
+    "Additional insights from 47 current Senior Analysts:
+     - 92% also have Excel (confirmed ✅)
+     - 78% have strong communication skills (not in posting!)
+     - Average 4.2 years experience (you: 3.5 years - on track)
+     - Common feedback: 'detail-oriented', 'client-focused'"
 ```
 
-**Why Separate from Embeddings:**
+**When no job posting exists:**
+```
+Show user:
+  PRIMARY: Success pattern analysis
+    "Senior Analyst - Assurance (based on 47 current employees):
+     - Common skills: Accounting (100%), Audit (98%), GAAP (95%),
+       Excel (92%), CPA (87%)
+     - Avg experience: 4.2 years
+     - Performance: 82% utilization, 4.1 client satisfaction
+     - Typical path: Staff (2y) → Senior (3y) → Senior Analyst"
+```
 
-- GPT-5.2 calls need full observability (prompts, responses, debugging)
-- Embedding calls are simple API calls (metrics sufficient)
-- Keeps LangSmith trace count low (free tier: 5K traces/month)
-- Right tool for the right job
-
-### LangChain Integration
-
-**Purpose:** LLM orchestration and prompt management
-
-**Use Cases:**
-
-- Dual LLM validation pipeline
-- Prompt templates
-- Semantic caching
-- Chain composition
-
-**Key Components:**
-
-- `LangChain LLM` - OpenAI wrapper with caching
-- `PromptTemplate` - Reusable prompt templates
-- `Chain` - Skill extraction → validation pipeline
+**Fallback hierarchy:**
+1. Real job posting (if available) → PRIMARY
+2. Success patterns from synthetic employees → AUGMENTATION or PRIMARY
+3. O*NET occupation profile → FALLBACK if no synthetic data for role
+4. LLM inference from role title → LAST RESORT ($0.001 per role)
 
 ---
 
@@ -434,15 +477,17 @@ def extract_skills(resume_text: str):
 
 ### Local Development Setup
 
-**Development Strategy:**
-
-- **Local Docker:** PostgreSQL, Redis (identical behavior, faster iteration)
-- **Azure Services:** Blob Storage, AD B2C (connect to real Azure to catch differences early)
-- **Local Code:** FastAPI with uvicorn (same code, easier debugging)
+**Prerequisites:**
+- Docker Desktop installed
+- Python 3.11+
+- Node.js 18+
+- Git
 
 **Docker Compose Services:**
 
 ```yaml
+version: '3.8'
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -454,192 +499,163 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./data:/data  # For SQL dumps
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   backend:
     build: ./backend
     command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     volumes:
       - ./backend:/app
+      - ./uploads:/app/uploads  # Resume uploads
     ports:
       - "8000:8000"
     environment:
-      # Local Docker services
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/springais
       - REDIS_URL=redis://redis:6379
-      # Real Azure services (from environment variables or .env file)
-      - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
-      - AZURE_AD_B2C_TENANT_ID=${AZURE_AD_B2C_TENANT_ID}
-      - AZURE_AD_B2C_CLIENT_ID=${AZURE_AD_B2C_CLIENT_ID}
-      - AZURE_AD_B2C_CLIENT_SECRET=${AZURE_AD_B2C_CLIENT_SECRET}
-      - AZURE_AD_B2C_POLICY_NAME=${AZURE_AD_B2C_POLICY_NAME}
-      # External APIs
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ONET_API_KEY=${ONET_API_KEY}
+    depends_on:
+      - postgres
+      - redis
 
   frontend:
     build: ./frontend
-    command: npm run dev
+    command: npm run dev -- --host
     volumes:
       - ./frontend:/app
+      - /app/node_modules
     ports:
       - "3000:3000"
     environment:
       - VITE_API_URL=http://localhost:8000
-      - VITE_AZURE_AD_B2C_TENANT_ID=${AZURE_AD_B2C_TENANT_ID}
-      - VITE_AZURE_AD_B2C_CLIENT_ID=${AZURE_AD_B2C_CLIENT_ID}
-      - VITE_AZURE_AD_B2C_POLICY_NAME=${AZURE_AD_B2C_POLICY_NAME}
+
+volumes:
+  postgres_data:
+  redis_data:
 ```
 
 **Environment Variables (.env file):**
 
 ```bash
-# Azure Blob Storage (from Azure Portal)
-AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...
-
-# Azure AD B2C (from Azure Portal)
-AZURE_AD_B2C_TENANT_ID=your-tenant-id
-AZURE_AD_B2C_CLIENT_ID=your-client-id
-AZURE_AD_B2C_CLIENT_SECRET=your-client-secret
-AZURE_AD_B2C_POLICY_NAME=B2C_1_signupsignin
-
-# External APIs
+# OpenAI API
 OPENAI_API_KEY=your-openai-key
+
+# O*NET API (free registration)
 ONET_API_KEY=your-onet-key
+
+# Database (local)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/springais
+REDIS_URL=redis://localhost:6379
+
+# Optional: Supabase (if using cloud features)
+SUPABASE_URL=your-supabase-url
+SUPABASE_KEY=your-supabase-key
 ```
 
 **Start Command:**
 
 ```bash
-# Load environment variables and start services
+# Start all services
 docker-compose up
+
+# Access points:
+# - Frontend: http://localhost:3000
+# - Backend API: http://localhost:8000
+# - API Docs: http://localhost:8000/docs
+# - PostgreSQL: localhost:5432
+# - Redis: localhost:6379
 ```
-
-**Access Points:**
-
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-- PostgreSQL: localhost:5432 (local Docker)
-- Redis: localhost:6379 (local Docker)
-- Azure Blob Storage: Connected via connection string
-- Azure AD B2C: Connected via tenant/client credentials
-
-**Why This Approach:**
-
-1. **PostgreSQL & Redis (Local):** Identical behavior, faster, offline-capable
-2. **Azure Blob Storage (Real Azure):** Catches SDK differences, CORS issues, large file handling
-3. **Azure AD B2C (Real Azure):** Auth flow is different - need real OIDC/SAML testing
-4. **FastAPI (Local):** Same code, easier debugging with hot reload
-
-### Development vs Production Strategy
-
-**Principle:** Use local alternatives for services with identical behavior. Connect to Azure/external sources for services with any differences.
-
-| Service             | Development                             | Production                 | Rationale                                  |
-| ------------------- | --------------------------------------- | -------------------------- | ------------------------------------------ |
-| **PostgreSQL**      | Local Docker (`pgvector/pgvector:pg16`) | Azure PostgreSQL           | Identical PostgreSQL + pgvector behavior   |
-| **Redis**           | Local Docker (`redis:7-alpine`)         | Azure Redis Cache          | Identical Redis protocol and commands      |
-| **Blob Storage**    | **Azure Blob Storage**                  | Azure Blob Storage         | SDK differences, CORS, large file handling |
-| **AD B2C**          | **Azure AD B2C**                        | Azure AD B2C               | Auth flow differences (OIDC/SAML, tokens)  |
-| **FastAPI**         | Local `uvicorn`                         | Azure App Service          | Same code, easier debugging locally        |
-| **Background Jobs** | FastAPI BackgroundTasks                 | Azure Functions (optional) | Simpler for MVP, same business logic       |
-
-**Why Connect to Azure in Dev:**
-
-1. **Azure Blob Storage:**
-
-   - Azurite emulator has limitations (advanced features, CORS edge cases)
-   - Real Azure SDK behavior differs slightly
-   - Large file uploads behave differently
-   - SAS token generation needs real Azure
-
-2. **Azure AD B2C:**
-   - Auth flow is fundamentally different (redirects, OIDC/SAML)
-   - Token format and validation differs
-   - SSO integration needs real Azure
-   - Local bypass skips critical auth logic
-
-**Benefits of This Approach:**
-
-- ✅ Catch Azure-specific issues early
-- ✅ Test real auth flows during development
-- ✅ Validate connection strings before deployment
-- ✅ Faster iteration on PostgreSQL/Redis (local Docker)
-- ✅ Same code runs identically (FastAPI)
-- ✅ No surprises at deployment time
-
-**Setup Requirements:**
-
-1. **Azure Student Tier Account** - Free credits for all services
-2. **Azure Blob Storage Account** - Create storage account, get connection string
-3. **Azure AD B2C Tenant** - Create tenant, register app, configure policies
-4. **Azure Application Insights** - Auto-enabled with App Service (no setup needed)
-5. **Azure Key Vault** - Create vault, store secrets (API keys, connection strings)
-6. **Sentry Account** - Sign up for free tier (5K events/month)
-7. **GitHub Actions** - Already available with GitHub repo (free for private repos: 2,000 min/month)
-8. **Environment Variables** - Store credentials in `.env` file (gitignored) or Azure Key Vault
-
-### Production Deployment
-
-**Azure Services:**
-
-- **Azure App Service** - FastAPI application
-- **Azure PostgreSQL Flexible Server** - Database with pgvector
-- **Azure Redis Cache** - Caching layer
-- **Azure Blob Storage** - File storage (same as dev)
-- **Azure AD B2C** - Authentication (same as dev)
-- **Azure Application Insights** - Monitoring (auto-enabled with App Service)
-- **Azure Key Vault** - Secrets management (same as dev)
-- **Azure Functions** - Background jobs (optional)
-
-**Deployment Pipeline:**
-
-- **GitHub Actions** → Azure App Service
-  - Automated on push to main branch
-  - Runs tests, builds, deploys
-  - Free for private repos: 2,000 minutes/month
-- Environment variables configured in Azure Portal or Key Vault
-- Database migrations via Alembic
-- **Note:** Blob Storage, AD B2C, Application Insights, and Key Vault already configured from dev (no changes needed)
 
 ---
 
-## What We DON'T Build (Use Services Instead)
+## Database Sharing Strategy (Git-Based)
 
-| Component                   | Solution         | Time Saved | Notes                                          |
-| --------------------------- | ---------------- | ---------- | ---------------------------------------------- |
-| **Skills Taxonomy**         | O\*NET API       | 2-3 weeks  | 39K skills, hierarchies, occupation mappings   |
-| **Vector Storage + Search** | pgvector         | 1-2 weeks  | Built into PostgreSQL, no separate vector DB   |
-| **Auth + SSO**              | Azure AD B2C     | 1-2 weeks  | Handles SAML/OIDC, EY integration ready        |
-| **File Storage**            | Azure Blob       | 2-3 days   | Upload/download resumes, no file handling code |
-| **Caching Layer**           | Redis            | 2-3 days   | Session storage, embedding cache               |
-| **RAG Pipeline Structure**  | LlamaIndex       | 1 week     | Document loading, chunking, retrieval patterns |
-| **Graph Visualization**     | React Flow       | 3-4 days   | Interactive node graphs for career paths       |
-| **Background Jobs**         | Azure Functions  | 2-3 days   | Async processing without job queues            |
-| **Database Management**     | Azure PostgreSQL | Ongoing    | Backups, scaling, maintenance handled          |
-| **Token Counting**          | tiktoken         | 0.5 days   | Accurate cost estimation vs. approximations    |
-| **Retry Logic**             | tenacity         | 0.5 days   | Handles API rate limits and transient failures |
-| **LLM Observability**       | LangSmith        | 0.5 days   | GPT-5.2 prompt/response tracing (free tier)    |
+### Team Collaboration Workflow
 
-**Total Time Saved: ~6-8 weeks**
+**Problem:** 4 team members need access to same synthetic employee database
 
-### Development Templates & Accelerators
+**Solution:** Git-based SQL dump sharing (branch strategy)
 
-| Component                | Solution                               | Time Saved | Notes                                         |
-| ------------------------ | -------------------------------------- | ---------- | --------------------------------------------- |
-| **FastAPI Boilerplate**  | `tiangolo/full-stack-fastapi-template` | 1-2 days   | FastAPI + React starter, project structure    |
-| **React Admin Template** | `shadcn/ui-admin` or `refine.dev`      | 2-3 days   | Admin dashboard boilerplate, saves UI setup   |
-| **LangChain Examples**   | LangChain docs + OpenAI cookbook       | 0.5-1 day  | Prompt engineering patterns, skill extraction |
-| **React Flow Examples**  | `reactflow/examples` (official)        | 1 day      | Career path visualization setup patterns      |
+**Setup:**
 
-**Total Time Saved: ~4-7 days** (development setup acceleration)
+```bash
+# 1. Create dedicated branch for data dumps (do this once)
+git checkout -b data-dumps
+git push -u origin data-dumps
 
-**Note:** These templates accelerate setup and provide patterns, but core business logic (aggregate matching algorithm, dual LLM validation, success pattern analysis, two-sided matching) must be custom-built as they are unique differentiators.
+# This branch is ONLY for SQL dumps, never merged to main
+# Prevents merge conflicts with application code
+```
+
+**Workflow for data generator (one person):**
+
+```bash
+# 1. Generate synthetic data
+python scripts/generate_synthetic_data.py
+
+# 2. Dump database to SQL file
+pg_dump -h localhost -U postgres springais > data/synthetic_employees.sql
+
+# 3. Commit to data-dumps branch
+git checkout data-dumps
+git add data/synthetic_employees.sql
+git commit -m "Generate 900 synthetic employees - $(date +%Y-%m-%d)"
+git push origin data-dumps
+
+# 4. Back to your working branch
+git checkout main
+```
+
+**Workflow for teammates (load data):**
+
+```bash
+# 1. Pull latest data dump
+git fetch origin
+git checkout data-dumps
+git pull origin data-dumps
+
+# 2. Load data into local database
+psql -h localhost -U postgres springais < data/synthetic_employees.sql
+
+# 3. Back to your working branch
+git checkout main
+
+# You now have the same data as the rest of the team!
+```
+
+**Benefits:**
+- ✅ Single source of truth (one person generates data)
+- ✅ Version controlled (can revert to previous data versions)
+- ✅ No merge conflicts (separate branch)
+- ✅ Works offline (everyone has local copy)
+- ✅ Simple (just SQL dump/restore)
+
+**Notes:**
+- SQL dump size: ~10-50MB for 900 employees (acceptable for git)
+- Private repo recommended (synthetic data stays internal)
+- Regenerate data as needed (update SQL dump on data-dumps branch)
+
+---
+
+## What We DON'T Build (Use Services/Libraries Instead)
+
+| Component | Solution | Time Saved | Cost |
+|-----------|----------|------------|------|
+| **Skills Taxonomy** | O\*NET API | 2-3 weeks | $0 |
+| **Vector Storage + Search** | pgvector | 1-2 weeks | $0 |
+| **PDF Parsing** | pdfplumber | 2-3 days | $0 |
+| **Graph Visualization** | React Flow | 3-4 days | $0 |
+| **Token Counting** | tiktoken | 0.5 days | $0 |
+| **Auth (optional)** | Supabase Auth | 1-2 weeks | $0 |
+
+**Total Time Saved: ~4-6 weeks**
 
 ---
 
@@ -647,50 +663,38 @@ docker-compose up
 
 ### Backend Components
 
-| Component                     | Description                                        | Complexity | Est. Time |
-| ----------------------------- | -------------------------------------------------- | ---------- | --------- |
-| **API Routes**                | REST endpoints for all features                    | Medium     | 3-4 days  |
-| **Database Models**           | SQLAlchemy/SQLModel schemas                        | Low        | 1 day     |
-| **Skill Extraction Pipeline** | LLM prompts + O\*NET mapping + validation          | Medium     | 3-4 days  |
-| **Dual LLM Validation**       | Extract skills → validate with evidence quotes     | Medium     | 1-2 days  |
-| **Matching Algorithm**        | pgvector queries + scoring logic + discovery modes | Medium     | 3-4 days  |
-| **Success Pattern Analysis**  | Query historical data, calculate metrics           | Medium     | 2-3 days  |
-| **Gap Analysis**              | Compare user skills vs target role requirements    | Low        | 1 day     |
-| **Two-Sided Matching Logic**  | Anonymous tokens, mutual opt-in reveal             | Medium     | 2 days    |
-| **Notification Service**      | WebSocket or polling for alerts                    | Low        | 1 day     |
-| **Admin Audit Queries**       | Fairness metrics, bias detection SQL               | Medium     | 1-2 days  |
+| Component | Description | Complexity | Est. Time |
+|-----------|-------------|------------|-----------|
+| **API Routes** | REST endpoints for all features | Medium | 3-4 days |
+| **Database Models** | SQLAlchemy/SQLModel schemas | Low | 1 day |
+| **Skill Extraction Pipeline** | LLM prompts + O\*NET mapping + validation | Medium | 3-4 days |
+| **Matching Algorithm** | pgvector queries + scoring logic | Medium | 3-4 days |
+| **Success Pattern Analysis** | Query synthetic employees, calculate metrics | Medium | 2-3 days |
+| **Gap Analysis** | Compare user skills vs target role | Low | 1 day |
+| **Job Posting Scraper** | BeautifulSoup scraper for EY careers | Low | 1-2 days |
+| **Data Generation Script** | Hybrid LLM + hard-coded approach | Medium | 2-3 days |
 
 ### Frontend Components
 
-| Component                      | Description                                      | Complexity | Est. Time |
-| ------------------------------ | ------------------------------------------------ | ---------- | --------- |
-| **Auth Flow UI**               | Login/logout, SSO redirect                       | Low        | 0.5 days  |
-| **Profile Upload/Display**     | Resume upload, extracted skills view             | Medium     | 1-2 days  |
-| **Skill Confidence UI**        | Show skills with evidence, confidence scores     | Medium     | 1 day     |
-| **Opportunity Search**         | Filters, discovery modes (Best Fit/Stretch/etc)  | Medium     | 2 days    |
-| **Match Results Display**      | Cards with match scores, skill gaps              | Medium     | 1-2 days  |
-| **Career Journey Map**         | React Flow integration, skill tree visualization | Medium     | 3-4 days  |
-| **Success Patterns Overlay**   | Charts showing what drives advancement           | Medium     | 1-2 days  |
-| **Hiring Manager Dashboard**   | Candidate pool, anonymous tokens, reveal flow    | Medium     | 2 days    |
-| **Admin Dashboard**            | Fairness metrics, audit logs, system health      | Medium     | 2 days    |
-| **Upskilling Recommendations** | Gap display, resource suggestions                | Low        | 1 day     |
+| Component | Description | Complexity | Est. Time |
+|-----------|-------------|------------|-----------|
+| **Auth Flow UI** | Login/logout | Low | 0.5 days |
+| **Profile Upload/Display** | Resume upload, extracted skills view | Medium | 1-2 days |
+| **Skill Confidence UI** | Show skills with evidence, confidence | Medium | 1 day |
+| **Opportunity Search** | Filters, search interface | Medium | 2 days |
+| **Match Results Display** | Cards with match scores, skill gaps | Medium | 1-2 days |
+| **Career Journey Map** | React Flow integration | Medium | 3-4 days |
+| **Success Patterns Overlay** | Charts showing advancement patterns | Medium | 1-2 days |
+| **Gap Analysis View** | What skills are missing, how to get them | Low | 1 day |
 
 ### Integration Code
 
-| Component             | Description                                          | Complexity | Est. Time |
-| --------------------- | ---------------------------------------------------- | ---------- | --------- |
-| **O\*NET Client**     | API wrapper for skills/occupations                   | Low        | 0.5 days  |
-| **LLM Service**       | Abstraction for skill extraction calls               | Low        | 0.5 days  |
-| **Embedding Service** | Generate + cache embeddings                          | Low        | 0.5 days  |
-| **Azure Blob Client** | Upload/download resume files                         | Low        | 0.5 days  |
-| **Auth Middleware**   | Azure AD B2C token validation                        | Low        | 0.5 days  |
-| **Monitoring Setup**  | Application Insights + Sentry + tiktoken integration | Low        | 0.5 days  |
-| **LangSmith Setup**   | LLM observability for GPT-5.2 calls                  | Low        | 0.5 days  |
-| **Key Vault Client**  | Secrets management integration                       | Low        | 0.5 days  |
-| **CI/CD Pipeline**    | GitHub Actions deployment setup                      | Low        | 0.5 days  |
-| **Retry Logic**       | tenacity integration for OpenAI API                  | Low        | 0.5 days  |
-
-**Note:** Development templates (FastAPI boilerplate, React admin template, LangChain examples, React Flow examples) save ~4-7 days on setup and common patterns, but core business logic (matching algorithm, dual LLM validation, success patterns) must be custom-built.
+| Component | Description | Complexity | Est. Time |
+|-----------|-------------|------------|-----------|
+| **O\*NET Client** | API wrapper for skills/occupations | Low | 0.5 days |
+| **LLM Service** | Abstraction for skill extraction calls | Low | 0.5 days |
+| **Embedding Service** | Generate + cache embeddings | Low | 0.5 days |
+| **Vector Search Service** | pgvector similarity queries | Low | 1 day |
 
 ---
 
@@ -698,103 +702,122 @@ docker-compose up
 
 ### Response Times (Per PRD)
 
-| Operation                 | Target | Notes                      |
-| ------------------------- | ------ | -------------------------- |
-| Uncached skill inference  | <15s   | Full dual LLM pipeline     |
-| Cached skill inference    | <3s    | Semantic cache hit         |
-| Role matching queries     | <2s    | pgvector similarity search |
-| Career Journey Map render | <3s    | React Flow visualization   |
-| Real-time notifications   | <1s    | WebSocket delivery         |
+| Operation | Target | Notes |
+|-----------|--------|-------|
+| Uncached skill inference | <15s | Full GPT-5.2 Instant extraction pipeline |
+| Cached skill inference | <3s | Semantic cache hit |
+| Role matching queries | <2s | pgvector similarity search |
+| Career Journey Map render | <3s | React Flow visualization |
 
 ### Caching Targets
 
-| Metric                    | Target | Notes                      |
-| ------------------------- | ------ | -------------------------- |
-| Semantic cache hit rate   | >60%   | LangChain semantic caching |
-| Embedding cache hit rate  | >80%   | Pre-cached common skills   |
-| O\*NET API cache hit rate | >90%   | Aggressive caching         |
+| Metric | Target | Notes |
+|--------|--------|-------|
+| Semantic cache hit rate | >60% | LangChain semantic caching |
+| Embedding cache hit rate | >80% | Pre-cached common skills |
+| O\*NET API cache hit rate | >90% | Aggressive caching (24h TTL) |
 
 ---
 
 ## Cost Breakdown
 
-### Monthly Costs (Student Tier)
+### One-Time Setup Costs
 
-| Service                    | Cost     | Notes                         |
-| -------------------------- | -------- | ----------------------------- |
-| Azure PostgreSQL           | $0       | Student Tier covers           |
-| Azure Redis Cache          | $0       | Student Tier covers           |
-| Azure Blob Storage         | $0       | Student Tier covers           |
-| Azure AD B2C               | $0       | Student Tier covers           |
-| Azure App Service          | $0       | Student Tier covers           |
-| Azure Functions            | $0       | Student Tier covers           |
-| Azure Application Insights | $0       | Student Tier covers           |
-| Azure Key Vault            | $0       | Student Tier covers           |
-| O\*NET API                 | $0       | Free public API               |
-| LlamaIndex OSS             | $0       | Open source                   |
-| React Flow                 | $0       | Open source                   |
-| Sentry                     | $0       | Free tier: 5K events/month    |
-| GitHub Actions             | $0       | Free for private repos        |
-| OpenAI API                 | Variable | Pay-per-use (you have access) |
+| Task | Model | Cost |
+|------|-------|------|
+| **Generate 900 synthetic employees (metrics)** | GPT-5 Nano | ~$0.04 |
+| **Generate 900 synthetic employees (feedback text)** | GPT-5.2 Instant | ~$1.50 |
+| **Embed all unique skills** | text-embedding-3-large | ~$0.003 |
+| **Role requirement inference (if needed)** | GPT-5.2 Instant | ~$0.05 |
+| **TOTAL ONE-TIME SETUP** | | **~$2** |
 
-**Total Infrastructure Cost: $0/month**
+### Runtime Costs (Per Demo)
 
-**Variable Costs:**
+| Task | Model | Cost Per Use |
+|------|-------|--------------|
+| **Extract skills from resume** | GPT-5.2 Instant | ~$0.02 |
+| **Generate embeddings for new skills** | text-embedding-3-large | ~$0.0001 |
+| **Match explanations (optional)** | GPT-5.2 Instant | ~$0.01 |
 
-- OpenAI API calls (GPT-5.2 Instant, text-embedding-3-large)
-- Estimated: $50-200/month for MVP demo scale
+**Demo scenario:**
+- 50 test resumes during judging
+- 50 × $0.02 = **$1 total runtime cost**
+
+### Total Project Cost
+
+**8-Week Competition:**
+- Setup: ~$2
+- Demo runtime: ~$1
+- **TOTAL: ~$3**
+
+**Monthly Infrastructure:**
+- PostgreSQL: $0 (Docker local)
+- Redis: $0 (Docker local)
+- Hosting: $0 (runs on laptop)
+- **TOTAL: $0/month**
 
 ---
 
 ## Development Timeline
 
 ### Phase 1: Foundation (Week 1)
-
 - Docker Compose setup
 - FastAPI skeleton + PostgreSQL schema
 - React app + shadcn/ui
-- Azure AD B2C integration (or local bypass)
+- Basic auth (JWT or skip for demo)
 - **Deliverable:** `docker-compose up` works
 
-### Phase 2: Core AI Pipeline (Weeks 2-3)
+### Phase 2: Data Generation (Week 2)
+- Role template definitions (3 service lines)
+- Hybrid data generation script (hard-coded + LLM)
+- O\*NET API integration
+- Generate 900 synthetic employees
+- Database validation and SQL dump
+- **Deliverable:** Realistic employee database ready
 
-- OpenAI API integration + LangChain
-- Dual LLM skill inference
-- O\*NET API client + caching
-- Confidence scoring
-- Vector embeddings generation (pgvector)
+### Phase 3: Skill Extraction Pipeline (Week 3)
+- OpenAI API integration
+- Resume upload and parsing
+- Skill extraction with GPT-5.2 Instant
+- Embedding generation
+- Caching layer (Redis)
 - **Deliverable:** Upload resume → extracted skills
 
-### Phase 3: Matching Engine (Week 4)
-
+### Phase 4: Matching Engine (Week 4)
 - pgvector similarity queries
-- Semantic matching algorithm
-- Match scoring with confidence intervals
-- Discovery modes (Best Fit, Stretch, Exploratory, Trending)
+- Vector search against role types
+- Vector search against job postings
+- Match scoring and ranking
+- Success pattern aggregation from synthetic employees
 - **Deliverable:** Top 10 role matches
 
-### Phase 4: Career Visualization (Week 5)
+### Phase 5: Success Pattern Analysis (Week 5)
+- Query synthetic employees by role
+- Calculate aggregate metrics (skills, performance, timelines)
+- Gap analysis (user vs. success patterns)
+- Career path progression analysis
+- **Deliverable:** "What do successful Senior Analysts look like?"
 
-- React Flow skill tree
-- Success Pattern overlay (6 metric categories)
-- Career Competitiveness Dashboard
-- Progress path visualization
-- **Deliverable:** Visual career journey map
+### Phase 6: Visualization (Week 6)
+- React Flow career path map
+- Success pattern charts (Recharts)
+- Match results cards
+- Skill gap visualization
+- **Deliverable:** Visual career journey and insights
 
-### Phase 5: User Flows (Weeks 6-7)
+### Phase 7: Job Posting Integration (Week 7)
+- EY careers page scraper
+- Job posting parser and storage
+- Priority display logic (posting > success patterns)
+- Weekly scraping automation
+- **Deliverable:** Real job postings integrated with success patterns
 
-- Employee workflow (upload, explore, opt-in)
-- Hiring manager workflow (post role, see matches, invite)
-- Admin workflow (audit logs, fairness dashboard)
-- Anonymous matching with mutual opt-in
-- **Deliverable:** Complete user journeys functional
-
-### Phase 6: Polish & Testing (Week 8)
-
-- UI polish, animations
+### Phase 8: Polish & Testing (Week 8)
+- UI polish and animations
 - Edge case handling
-- Integration testing
-- Demo data generation
+- Demo data preparation
+- Performance optimization
+- Practice demo presentations
 - **Deliverable:** Competition-ready demo
 
 **Total: 8 weeks**
@@ -803,225 +826,92 @@ docker-compose up
 
 ## Key Architectural Decisions
 
-### 1. pgvector over Chroma
+### 1. Local-First, No Cloud Hosting
 
-**Decision:** Use pgvector (PostgreSQL extension) instead of separate Chroma vector database
+**Decision:** Run demo locally on laptops during judging
 
 **Rationale:**
+- Zero infrastructure costs
+- More impressive (real-time execution)
+- No reliability concerns ("server down" during demo)
+- Faster iteration (no deployment delays)
+- Easy team collaboration (git-based data sharing)
 
-- Unified database for all data (structured + vectors)
-- Better production performance
+### 2. pgvector for Vector Search
+
+**Decision:** Use PostgreSQL pgvector extension (not separate vector DB)
+
+**Rationale:**
+- Unified database for all data
+- Excellent performance for <10K roles
 - Easier to maintain (one database)
-- PRD mentions pgvector as option
-- Azure PostgreSQL supports pgvector extension
+- Industry standard, well-documented
+- Free, open-source
 
-**Trade-offs:**
+### 3. Hybrid Data Generation (Hard-coded + LLM)
 
-- May need performance tuning at scale
-- Monitor query times (target: <50ms p95 for production)
-
-### 2. LangChain + LlamaIndex Together
-
-**Decision:** Use both frameworks (not just one)
+**Decision:** Hard-code deterministic data, use LLM for variation
 
 **Rationale:**
+- 80% cost reduction vs. full LLM generation
+- Guaranteed correctness of core requirements
+- Realistic variation where it matters
+- Faster generation (less API calls)
+- Better control over data quality
 
-- **LangChain:** LLM orchestration, semantic caching, prompt management
-- **LlamaIndex:** Document parsing, RAG pipeline structure
-- Complementary, not redundant
+### 4. No ML Ranking for MVP
 
-**Boundaries:**
-
-- LlamaIndex: Document loading, chunking, retrieval patterns
-- LangChain: LLM calls, caching, prompt chains
-
-### 3. Azure AD B2C for Auth
-
-**Decision:** Use Azure AD B2C instead of building custom auth, connect to real Azure in dev
+**Decision:** Use vector cosine similarity only (no trained ML model)
 
 **Rationale:**
+- Only ~25 role types to rank (too few for ML benefit)
+- Vector similarity performs well at this scale
+- Saves 3-5 days development time
+- Can add ML later when job posting DB grows to 100+
 
-- Handles SAML/OIDC for EY SSO integration
-- Enterprise-ready security
-- Free on Student Tier
-- Saves 1-2 weeks of development
+### 5. Three Service Lines (Multi-Track)
 
-**Development Strategy:**
-
-- **Connect to real Azure AD B2C** (not local bypass)
-- Auth flow differences (redirects, OIDC/SAML, tokens) need real testing
-- Catch SSO integration issues early
-- Validate token format and validation logic
-- **Why not local bypass:** Auth is fundamentally different - need real Azure to test properly
-
-### 4. Dual Caching Strategy
-
-**Decision:** Use both LangChain semantic cache AND Redis exact cache
+**Decision:** Model Assurance, Tax, and Consulting separately
 
 **Rationale:**
+- Shows cross-functional mobility (differentiator)
+- Reflects EY's actual structure
+- More impressive demo scenarios
+- Better represents talent mobility problem
+- Same cost as single track
 
-- **LangChain:** Handles similar prompts (semantic similarity)
-- **Redis:** Fast exact matches
-- Maximum cost savings (68.8% API reduction)
-- Matches PRD requirements
+### 6. Job Postings as Primary (When Available)
 
-### 5. O\*NET API Integration
-
-**Decision:** Use O\*NET API instead of building skills taxonomy
+**Decision:** Job posting requirements override success patterns when both exist
 
 **Rationale:**
-
-- 39K+ skills, hierarchies, occupation mappings
-- Free public API
-- Saves 2-3 weeks of development
-- Aggressive caching strategy (24h TTL)
-
----
-
-## Security Considerations
-
-### Authentication & Authorization
-
-- Azure AD B2C handles user authentication
-- JWT tokens for API authorization
-- RBAC middleware for role-based access
-- Token refresh mechanism
-
-### Data Privacy
-
-- PII tokenization (EMP-XXXXXX format)
-- Anonymous matching until mutual opt-in
-- Audit logging for all sensitive operations
-- GDPR/CCPA compliance considerations
-
-### API Security
-
-- HTTPS/TLS for all communications
-- API rate limiting
-- Input validation (Pydantic)
-- SQL injection prevention (SQLAlchemy ORM)
-
----
-
-## Monitoring & Observability
-
-### Logging
-
-- **structlog** - Structured JSON logging
-- Azure App Insights compatible format
-- Log levels: DEBUG, INFO, WARNING, ERROR
-- Request/response logging
-
-### Error Tracking
-
-- **Sentry** (recommended) - Error tracking and alerting
-- Free tier: 5K events/month (covers MVP needs)
-- Automatic error grouping
-- Stack trace capture
-- Real-time alerts for critical errors
-- **Why use it:** Better than building custom error tracking (saves 1-2 days)
-
-### Performance Monitoring
-
-**Split Observability Strategy:**
-
-- **LangSmith** - GPT-5.2 call observability
-
-  - Full prompt/response tracing for skill extraction and validation
-  - Token usage per call
-  - Cost attribution per feature
-  - Prompt versioning and debugging
-  - Free tier: 5K traces/month (covers MVP GPT-5.2 usage)
-  - **Why separate:** Purpose-built for LLM debugging, not needed for simple embedding metrics
-
-- **Azure Application Insights** - Embedding calls and general metrics
-  - Automatic instrumentation (no code changes needed)
-  - Custom metrics for:
-    - Embedding call counts (text-embedding-3-large)
-    - Embedding costs (aggregate)
-    - Embedding latency
-    - Cache hit rates (per PRD: >60% semantic cache target)
-    - Response times (per PRD: <15s uncached, <3s cached)
-    - Error rates
-  - **tiktoken** integration:
-    - Counts tokens before/after OpenAI API calls
-    - Sends token counts to Application Insights
-    - Enables accurate cost tracking (vs. character-count approximations)
-  - **Why use it:** Free on Student Tier, automatic setup (saves 2-3 days)
-  - **Why separate:** Simple metrics tracking, no need for full LLM debugging features
-
-**Rationale for Split:**
-
-- GPT-5.2 calls need full observability (prompts, responses, debugging) → LangSmith
-- Embedding calls are simple API calls → Application Insights metrics sufficient
-- Keeps LangSmith trace count low (only GPT-5.2, not bulk embeddings)
-- Right tool for the right job
-
-### Secrets Management
-
-- **Azure Key Vault** (recommended)
-- Secure storage for:
-  - OpenAI API keys
-  - Azure connection strings
-  - O\*NET API keys
-  - Database credentials
-- Automatic rotation support
-- **Why use it:** Better than environment variables, free on Student Tier (saves 1 day)
-
-### CI/CD Pipeline
-
-- **GitHub Actions** (recommended)
-- Free for private repos: 2,000 minutes/month (covers MVP needs)
-- Automated deployment to Azure App Service
-- Run tests, build, deploy on push
-- **Why use it:** Saves 2-3 days of manual deployment setup
-
----
-
-## Future Considerations (Post-MVP)
-
-### Scalability
-
-- **Qdrant** - Consider migrating from pgvector if performance degrades
-- **Azure Kubernetes Service** - If App Service limits reached
-- **CDN** - For static assets
-
-### Additional Integrations
-
-- **SuccessFactors API** - Real EY data integration
-- **Credly API** - Real badge data
-- **Qualtrics API** - Employee experience data (X-data)
-
-### Advanced Features
-
-- **LangSmith** - LLM observability and monitoring
-- **Multi-region deployment** - For global scale
-- **Mobile apps** - iOS/Android native apps
+- Job postings are ground truth
+- Success patterns add hidden insights
+- System gracefully degrades without postings
+- Supports growing posting database over time
 
 ---
 
 ## References
 
-- [PRD](./prd.md) - Product Requirements Document
-- [Azure Student Tier](https://azure.microsoft.com/en-us/free/students/) - Free Azure credits
-- [pgvector Documentation](https://github.com/pgvector/pgvector) - PostgreSQL vector extension
-- [LangChain Documentation](https://python.langchain.com/) - LLM orchestration framework
-- [LlamaIndex Documentation](https://docs.llamaindex.ai/) - RAG framework
+- [PostgreSQL](https://www.postgresql.org/) - Open-source relational database
+- [pgvector](https://github.com/pgvector/pgvector) - PostgreSQL vector extension
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
+- [React](https://react.dev/) - Frontend JavaScript library
+- [OpenAI API](https://platform.openai.com/) - LLM and embedding APIs
 - [O\*NET API](https://www.onetcenter.org/web-services.html) - Skills taxonomy API
 - [React Flow](https://reactflow.dev/) - Node graph visualization
 - [shadcn/ui](https://ui.shadcn.com/) - React component library
-- [tiktoken](https://github.com/openai/tiktoken) - Token counting for cost estimation
-- [tenacity](https://github.com/jd/tenacity) - Retry logic with exponential backoff
-- [pdfplumber](https://github.com/jsvine/pdfplumber) - PDF text extraction (optional backup)
-- [LangSmith](https://www.langchain.com/langsmith) - LLM observability for GPT-5.2 calls
-- [FastAPI Full Stack Template](https://github.com/tiangolo/full-stack-fastapi-template) - FastAPI + React boilerplate
-- [React Flow Examples](https://reactflow.dev/examples) - Career path visualization patterns
-- [LangChain Examples](https://python.langchain.com/docs/get_started/introduction) - LLM integration patterns
+- [LangChain](https://python.langchain.com/) - LLM orchestration framework
+- [tiktoken](https://github.com/openai/tiktoken) - Token counting library
+- [Supabase](https://supabase.com/) - Optional: PostgreSQL hosting (free tier)
+- [Upstash](https://upstash.com/) - Optional: Redis hosting (free tier)
 
 ---
 
 ## Document History
 
-| Date       | Version | Changes                          | Author |
-| ---------- | ------- | -------------------------------- | ------ |
-| 2025-12-23 | 1.0     | Initial tech stack documentation | Clays  |
+| Date | Version | Changes | Author |
+|------|---------|---------|--------|
+| 2025-12-23 | 1.0 | Initial tech stack documentation | Clays |
+| 2026-01-02 | 2.0 | Complete architecture overhaul: local-first, multi-track service lines, hybrid data generation, vector-only matching | Clays |
