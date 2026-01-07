@@ -322,8 +322,14 @@ Once all checks pass:
 1. ✅ Mark all tasks complete in `TASKS.md`
 2. ✅ Update `PROJECT-STATUS.md`:
    - Block O: ✅ Completed | [Your Name] | 9/9 tasks
-3. ✅ Demo to team: Show full matching flow
-4. ✅ Prepare for Block P (Visualization Integration)
+3. ✅ Commit and push changes:
+   ```bash
+   git add .
+   git commit -m "✅ Complete BLOCK-O: Matching integration - Job recommendations connected"
+   git push
+   ```
+4. ✅ Demo to team: Show full matching flow
+5. ✅ Prepare for Block P (Visualization Integration)
 
 ---
 

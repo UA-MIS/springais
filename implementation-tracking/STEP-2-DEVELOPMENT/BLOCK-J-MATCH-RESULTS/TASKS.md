@@ -6,6 +6,26 @@
 
 ---
 
+## ⚠️ IMPORTANT: Update Instructions
+
+**When you complete a task:**
+1. Check the box: `- [x] Task name`
+2. Update the "Completed" count at the top
+3. Update `PROJECT-STATUS.md`:
+   - Find "Block J" row in Step 2 table
+   - Update Progress column (e.g., "3/12 tasks")
+
+**When ALL tasks complete:**
+1. ✅ Run all verification steps in `VERIFICATION.md`
+2. ✅ Change status in `PROJECT-STATUS.md` from ⏸️ to ✅
+3. ✅ Update Progress to "12/12 tasks (100%)"
+4. ✅ Update "Overall Progress" section
+5. ✅ After verification passes, commit changes (do NOT commit until verification is complete)
+
+See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
+
+---
+
 ## Progress Tracker
 
 ### 1. Project Setup & Mock Data (2 tasks)
