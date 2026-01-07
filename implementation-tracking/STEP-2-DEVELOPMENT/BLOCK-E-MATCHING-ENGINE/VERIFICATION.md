@@ -250,8 +250,14 @@ Once all checks pass:
 1. ✅ Mark all tasks complete in `TASKS.md`
 2. ✅ Update `PROJECT-STATUS.md`:
    - Block E: ✅ Completed | [Your Name] | 11/11 tasks
-3. ✅ Notify team that Block E is ready
-4. ✅ Update Step 3 Block O (Matching Integration) CONTEXT.md with integration notes
+3. ✅ Commit and push changes:
+   ```bash
+   git add .
+   git commit -m "✅ Complete BLOCK-E: Matching engine core - Similarity search and scoring"
+   git push
+   ```
+4. ✅ Notify team that Block E is ready
+5. ✅ Update Step 3 Block O (Matching Integration) CONTEXT.md with integration notes
 
 ---
 

@@ -6,6 +6,26 @@
 
 ---
 
+## ⚠️ IMPORTANT: Update Instructions
+
+**When you complete a task:**
+1. Check the box: `- [x] Task name`
+2. Update the "Completed" count at the top
+3. Update `PROJECT-STATUS.md`:
+   - Find "Block M" row in Step 3 table
+   - Update Progress column (e.g., "3/10 tasks")
+
+**When ALL tasks complete:**
+1. ✅ Run all verification steps in `VERIFICATION.md`
+2. ✅ Change status in `PROJECT-STATUS.md` from ⏸️ to ✅
+3. ✅ Update Progress to "10/10 tasks (100%)"
+4. ✅ Update "Overall Progress" section
+5. ✅ After verification passes, commit changes (do NOT commit until verification is complete)
+
+See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
+
+---
+
 ## Progress Tracker
 
 ### Phase 1: Backend Auth Implementation (Tasks 1-3)
@@ -106,24 +126,6 @@
   - [ ] Update Block P CONTEXT.md: add auth requirement
   - [ ] Document token management (storage, refresh, expiration)
   - [ ] Create troubleshooting guide for common auth issues
-
----
-
-## Update Instructions
-
-**When you complete a task:**
-1. Check the box: `- [x] Task name`
-2. Update the "Completed" count at the top
-3. Update `PROJECT-STATUS.md`:
-   - Find "Block M" row in Step 3 table
-   - Update Progress column (e.g., "3/10 tasks")
-
-**When ALL tasks complete:**
-1. Change status in `PROJECT-STATUS.md` from ⏸️ to ✅
-2. Update Progress to "10/10 tasks (100%)"
-3. Update "Overall Progress" section
-4. Commit: `git add . && git commit -m "Complete BLOCK-M: Core integration - Auth connected"`
-5. Notify team: "Block M complete - Blocks N, O, P are now unblocked!"
 
 ---
 

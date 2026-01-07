@@ -3,7 +3,8 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:www.getzep.com)",
-      "WebFetch(domain:weaviate.io)"
+      "WebFetch(domain:weaviate.io)",
+      "Bash(docker exec:*)"
     ]
   }
 }
