@@ -376,9 +376,15 @@ Once all checks pass:
 1. ✅ Mark all tasks complete in `TASKS.md`
 2. ✅ Update `PROJECT-STATUS.md`:
    - Block G: ✅ Completed | [Your Name] | 15/15 tasks
-3. ✅ Run batch extraction for 900 synthetic employees (if not done in Block A)
-4. ✅ Share skill taxonomy with frontend team (Block I - autocomplete)
-5. ✅ Update Step 3 Block N (Skills Dashboard Integration) with API endpoints
+3. ✅ Commit and push changes:
+   ```bash
+   git add .
+   git commit -m "✅ Complete BLOCK-G: Skill extraction pipeline - Resume parsing and LLM extraction"
+   git push
+   ```
+4. ✅ Run batch extraction for 900 synthetic employees (if not done in Block A)
+5. ✅ Share skill taxonomy with frontend team (Block I - autocomplete)
+6. ✅ Update Step 3 Block N (Skills Dashboard Integration) with API endpoints
 
 ---
 

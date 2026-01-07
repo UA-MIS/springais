@@ -307,9 +307,15 @@ Once all checks pass:
 1. ✅ Mark all tasks complete in `TASKS.md`
 2. ✅ Update `PROJECT-STATUS.md`:
    - Block H: ✅ Completed | [Your Name] | 13/13 tasks
-3. ✅ Create placeholder pages for Blocks I, J, K, L (can render "Coming soon")
-4. ✅ Share layout components with team (other frontend blocks will use MainLayout)
-5. ✅ Prepare for Step 3 Block M (Core Integration) - connect auth to real backend
+3. ✅ Commit and push changes:
+   ```bash
+   git add .
+   git commit -m "✅ Complete BLOCK-H: Auth & layout structure - Navigation and protected routes"
+   git push
+   ```
+4. ✅ Create placeholder pages for Blocks I, J, K, L (can render "Coming soon")
+5. ✅ Share layout components with team (other frontend blocks will use MainLayout)
+6. ✅ Prepare for Step 3 Block M (Core Integration) - connect auth to real backend
 
 ---
 

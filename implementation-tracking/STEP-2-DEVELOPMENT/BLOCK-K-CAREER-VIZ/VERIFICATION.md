@@ -526,13 +526,19 @@ Once all checks pass:
 1. ✅ Mark all tasks complete in `TASKS.md` (14/14)
 2. ✅ Update `PROJECT-STATUS.md`:
    - Block K: ✅ Completed | [Your Name] | 14/14 tasks
-3. ✅ Document any deviations from original plan
-4. ✅ Share screenshots/demo with team
-5. ✅ Update `STEP-3-INTEGRATION/BLOCK-P-*/CONTEXT.md` with integration notes:
+3. ✅ Commit and push changes:
+   ```bash
+   git add .
+   git commit -m "✅ Complete BLOCK-K: Career visualization - React Flow graph with transitions"
+   git push
+   ```
+4. ✅ Document any deviations from original plan
+5. ✅ Share screenshots/demo with team
+6. ✅ Update `STEP-3-INTEGRATION/BLOCK-P-*/CONTEXT.md` with integration notes:
    - API endpoint structure required from Block F
    - Data transformation logic used
    - Any gotchas or edge cases discovered
-6. ✅ Prepare for Step 3 Block P (Visualization Integration):
+7. ✅ Prepare for Step 3 Block P (Visualization Integration):
    - Replace mock `patternService` with real API calls
    - Test with real employee data from Block F
    - Handle dynamic employee's current role (from auth context)
