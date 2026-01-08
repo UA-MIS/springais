@@ -1,8 +1,8 @@
 # BLOCK D: Vector Embeddings - TASKS
 
 **Block:** BLOCK-D-VECTOR-EMBEDDINGS
-**Total Tasks:** 13
-**Completed:** 0/13 (0%)
+**Total Tasks:** 16
+**Completed:** 0/16 (0%)
 
 ---
 
@@ -83,9 +83,47 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
   - [ ] Add rate limiting (respect 5,000 req/min limit)
   - [ ] Test with mock skills, verify 3072 dimensions
 
-### Phase 3: Core Embedding Methods (Tasks 6-7)
+### Phase 3: PCA Dimensionality Reduction (Tasks 6-8)
 
-- [ ] **Task 6:** Implement embed_skill() with full caching pipeline
+- [ ] **Task 6:** Set up PCA model storage and infrastructure
+  - [ ] Create `backend/models/pca/` directory
+  - [ ] Add scikit-learn dependency to requirements.txt (already in Step 1)
+  - [ ] Create PCA model loader utility: `backend/utils/pca_loader.py`
+  - [ ] Implement `load_pca_model(version="v1")` function
+  - [ ] Implement `save_pca_model(pca, metadata, version)` function
+  - [ ] Create PCA metadata schema (JSON with n_components, variance_ratio, etc.)
+
+- [ ] **Task 7:** Train initial PCA model on diverse skill embeddings
+  - [ ] Create `scripts/train_pca_model.py` script
+  - [ ] Collect 5000+ diverse skill embeddings:
+    - [ ] Mix of technical skills (Python, AWS, React, etc.)
+    - [ ] Soft skills (Leadership, Communication)
+    - [ ] Domain skills (Finance, Healthcare, etc.)
+  - [ ] Call OpenAI to get 3072-dim embeddings for training set
+  - [ ] Train PCA model: `PCA(n_components=1536, random_state=42)`
+  - [ ] Validate variance preservation: assert explained_variance_ratio > 0.95
+  - [ ] Save PCA model to `backend/models/pca/pca_model_v1.pkl` (using joblib)
+  - [ ] Save metadata to `backend/models/pca/pca_metadata_v1.json`
+  - [ ] Print training stats: variance preserved, components used, etc.
+  - [ ] Test: load model and transform test embedding (3072 → 1536)
+
+- [ ] **Task 8:** Integrate PCA into EmbeddingService pipeline
+  - [ ] Load PCA model in `EmbeddingService.__init__()`
+  - [ ] Update `_call_openai()` to return full 3072-dim embedding
+  - [ ] Add `_apply_pca(embedding)` method to reduce 3072 → 1536
+  - [ ] Update `embed_skill()` to apply PCA before returning:
+    - [ ] Get 3072-dim from OpenAI
+    - [ ] Apply PCA reduction to 1536-dim
+    - [ ] Cache reduced embedding (1536-dim)
+    - [ ] Return reduced embedding
+  - [ ] Update cache to store 1536-dim embeddings (not 3072)
+  - [ ] Update database saves to use 1536-dim embeddings
+  - [ ] Test full pipeline: input skill → 3072 OpenAI → 1536 PCA → cache/DB
+  - [ ] Verify reduced embeddings maintain similarity relationships
+
+### Phase 4: Core Embedding Methods (Tasks 9-10)
+
+- [ ] **Task 9:** Implement embed_skill() with full caching pipeline
   - [ ] Call Layer 1: `cached = await self._get_exact_match_cache(skill_text)`
   - [ ] If cache hit, return cached embedding
   - [ ] Call Layer 2: `similar = await self._get_semantic_cache(skill_text)`
@@ -96,7 +134,7 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
   - [ ] Return embedding
   - [ ] Test full pipeline with cache hits and misses
 
-- [ ] **Task 7:** Implement embed_skills_batch() for bulk processing
+- [ ] **Task 10:** Implement embed_skills_batch() for bulk processing
   - [ ] Accept list of skill texts
   - [ ] Check cache for each skill (exact + semantic)
   - [ ] Collect uncached skills
@@ -106,19 +144,20 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
   - [ ] Add progress bar using tqdm
   - [ ] Test with 300 mock skills, verify <30 seconds
 
-### Phase 4: Database Integration (Tasks 8-9)
+### Phase 5: Database Integration (Tasks 11-12)
 
-- [ ] **Task 8:** Implement save_to_database() for SkillEmbedding records
+- [ ] **Task 11:** Implement save_to_database() for SkillEmbedding records
   - [ ] Create `SkillEmbedding` record with all fields:
     - [ ] skill_text, normalized_text, embedding (convert to pgvector format)
     - [ ] source_type, source_id (if provided)
-    - [ ] embedding_model = "text-embedding-3-large"
+    - [ ] embedding_model = "text-embedding-3-large-pca"
+    - [ ] pca_version = "v1"
     - [ ] token_count (from OpenAI response)
   - [ ] Use `db.add()` and `db.commit()`
   - [ ] Handle duplicates: upsert if normalized_text already exists
-  - [ ] Test insertion, verify pgvector VECTOR(3072) type works
+  - [ ] Test insertion, verify pgvector VECTOR(1536) type works
 
-- [ ] **Task 9:** Implement find_similar_skills() using pgvector
+- [ ] **Task 12:** Implement find_similar_skills() using pgvector
   - [ ] Accept query text and top_n parameter
   - [ ] Embed query: `query_embedding = await self.embed_skill(query)`
   - [ ] Query database using pgvector <=> operator:
@@ -133,9 +172,9 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
   - [ ] Test query returns sensible results
   - [ ] Verify HNSW index used (EXPLAIN ANALYZE)
 
-### Phase 5: Batch Processing Scripts (Tasks 10-11)
+### Phase 6: Batch Processing Scripts (Tasks 13-14)
 
-- [ ] **Task 10:** Create script to embed all employee skills
+- [ ] **Task 13:** Create script to embed all employee skills
   - [ ] Create `scripts/embed_employee_skills.py`
   - [ ] Load all employees from database (or synthetic data SQL dump)
   - [ ] Extract all unique skills: `set(skill for emp in employees for skill in emp.skills)`
@@ -144,7 +183,7 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
   - [ ] Print stats: total skills, cache hits, API calls, cost, duration
   - [ ] Test with Block A synthetic data (900 employees)
 
-- [ ] **Task 11:** Create script to embed all job posting skills
+- [ ] **Task 14:** Create script to embed all job posting skills
   - [ ] Create `scripts/embed_job_skills.py`
   - [ ] Load all job postings from database (or Block B scraped data)
   - [ ] Extract all unique skills from required_skills + preferred_skills
@@ -153,9 +192,9 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
   - [ ] Print stats: total skills, cache hits, API calls, cost, duration
   - [ ] Test with Block B job posting data (300 jobs)
 
-### Phase 6: Testing & Validation (Tasks 12-13)
+### Phase 7: Testing & Validation (Tasks 15-16)
 
-- [ ] **Task 12:** Create comprehensive pytest tests
+- [ ] **Task 15:** Create comprehensive pytest tests
   - [ ] Create `tests/services/` directory
   - [ ] Create `tests/services/conftest.py` with fixtures:
     - [ ] `mock_openai_client` (returns fake embeddings)
@@ -174,9 +213,13 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
     - [ ] test_find_similar_skills_returns_top_n
     - [ ] test_similarity_scores_descending
     - [ ] test_hnsw_index_used (check query plan)
+  - [ ] Create `tests/services/test_pca.py`:
+    - [ ] test_pca_model_loads
+    - [ ] test_pca_reduces_dimensions (3072 → 1536)
+    - [ ] test_pca_preserves_similarity (compare before/after)
   - [ ] Run all tests: `pytest tests/services/ -v`
 
-- [ ] **Task 13:** Validate embedding quality manually
+- [ ] **Task 16:** Validate embedding quality manually
   - [ ] Embed test skills: ["Python", "Java", "Tax Law", "AWS"]
   - [ ] Calculate similarity matrix (all pairs)
   - [ ] Verify expected similarities:
@@ -195,15 +238,20 @@ All tasks must be complete AND:
 - [ ] EmbeddingService class implemented: `from backend.services import EmbeddingService`
 - [ ] Two-layer cache working: exact match + semantic similarity
 - [ ] Redis cache hit rate >90% (track in logs)
-- [ ] OpenAI API integration works: returns 3072-dim vectors
+- [ ] OpenAI API integration works: returns 3072-dim vectors from API
+- [ ] PCA model trained and stored: `backend/models/pca/pca_model_v1.pkl` exists
+- [ ] PCA reduces embeddings: 3072 → 1536 dimensions
+- [ ] PCA preserves >95% variance (check metadata.json)
 - [ ] Batch processing: 100 skills per API call
 - [ ] All employee skills embedded: `SELECT COUNT(*) FROM skill_embeddings WHERE source_type = 'employee'` returns ~3,000
 - [ ] All job posting skills embedded: `SELECT COUNT(*) FROM skill_embeddings WHERE source_type = 'job_posting'` returns ~1,000
+- [ ] Database stores 1536-dim vectors: `SELECT vector_dims(embedding) FROM skill_embeddings LIMIT 1` returns 1536
 - [ ] Similarity search returns results in <100ms
 - [ ] HNSW index used: `EXPLAIN` shows "Index Scan using idx_skill_embedding_vector"
 - [ ] Total OpenAI cost <$1 (check OpenAI dashboard)
 - [ ] All pytest tests pass: `pytest tests/services/ -v`
 - [ ] Embedding quality validated: similar skills have high similarity scores
+- [ ] PCA-reduced embeddings maintain similarity rankings (validate in tests)
 
 ---
 
@@ -298,12 +346,14 @@ All tasks must be complete AND:
 
 ### Issue: Embeddings have wrong dimensions
 
-**Symptom:** Database error "expected 3072 dimensions, got 1536"
+**Symptom:** Database error "expected 1536 dimensions, got 3072" or "expected 1536 dimensions, got X"
 
 **Solution:**
-- Verify model: Must use "text-embedding-3-large" (not "text-embedding-3-small")
-- Check API response: `len(response.data[0].embedding)` should be 3072
-- Recreate embeddings with correct model
+- Verify PCA model is loaded: Check `self.pca` in EmbeddingService
+- Verify PCA is applied: embeddings should be reduced before saving
+- Check `len(embedding)` should be 1536 after PCA reduction
+- If storing unreduced embeddings, apply PCA: `self.pca.transform([embedding])[0]`
+- Recreate embeddings with PCA pipeline
 
 ---
 

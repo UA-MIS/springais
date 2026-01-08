@@ -59,15 +59,27 @@ CREATE INDEX idx_job_postings_posted_date ON job_postings(posted_date);
 CREATE INDEX idx_job_postings_active ON job_postings(closed_date) WHERE closed_date IS NULL;
 CREATE INDEX idx_job_postings_search ON job_postings USING GIN(search_vector);
 
--- Skill embeddings table (cached vectors)
+-- Skill embeddings table (cached vectors with PCA reduction)
 CREATE TABLE IF NOT EXISTS skill_embeddings (
     skill_name VARCHAR(255) PRIMARY KEY,
-    embedding vector(3072),  -- text-embedding-3-large dimension
+    normalized_text VARCHAR(255) NOT NULL,
+    embedding vector(1536),  -- PCA-reduced from 3072 to 1536 dimensions
+    source_type VARCHAR(50),  -- "employee", "job_posting", "user_profile"
+    source_id VARCHAR(255),
+    embedding_model VARCHAR(100) DEFAULT 'text-embedding-3-large-pca',
+    pca_version VARCHAR(50) DEFAULT 'v1',
+    token_count INTEGER,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Note: pgvector indexes support max 2000 dimensions
--- For 3072-dim vectors, we'll use sequential scan or consider dimensionality reduction
+-- Indexes for skill embeddings
+CREATE INDEX idx_skill_embeddings_normalized ON skill_embeddings(normalized_text);
+CREATE INDEX idx_skill_embeddings_source ON skill_embeddings(source_type, source_id);
+
+-- HNSW index for fast similarity search (NOW POSSIBLE with 1536 dims!)
+CREATE INDEX idx_skill_embeddings_vector ON skill_embeddings
+USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
 
 -- User profiles table (demo users)
 CREATE TABLE IF NOT EXISTS users (
