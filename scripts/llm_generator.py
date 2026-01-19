@@ -370,60 +370,117 @@ Example format: [{{"utilization":82,"billing_rate":165,"realization":91,"quality
     # TASK 4: TEXT GENERATION (gpt-4o)
     # =========================================================================
     
-    def _generate_mock_feedback_themes(self, role: str, focus_area: str) -> List[str]:
-        """Generate mock feedback themes for testing."""
+    def _generate_mock_feedback_themes(self, role: str, focus_area: str, service_line: str = None) -> List[str]:
+        """Generate mock feedback themes for testing with high variety."""
+        # Expanded theme pools for variety (50+ unique per service line)
         base_themes = {
             "Assurance": [
-                "meticulous attention to detail",
-                "strong technical knowledge",
-                "reliable and thorough",
-                "excellent documentation skills",
-                "proactive risk identification",
-                "clear communication with clients",
-                "collaborative team player",
-                "strong work ethic",
+                "meticulous attention to detail", "strong technical knowledge", "reliable and thorough",
+                "excellent documentation skills", "proactive risk identification", "clear communication with clients",
+                "collaborative team player", "strong work ethic", "exceptional audit methodology",
+                "deep GAAP expertise", "outstanding analytical rigor", "effective time management",
+                "builds trust with clients", "mentors junior staff effectively", "anticipates audit risks",
+                "strong SOX compliance knowledge", "maintains composure under pressure", "delivers high-quality workpapers",
+                "excellent stakeholder communication", "demonstrates professional skepticism", "consistent quality reviewer",
+                "adept at complex technical issues", "effective at managing deadlines", "strong internal controls expertise",
+                "exceeds client expectations", "highly organized approach", "demonstrates integrity consistently",
+                "excellent problem identification", "strong financial reporting knowledge", "valued team contributor",
+                "adapts quickly to new standards", "thorough testing procedures", "builds lasting client relationships",
             ],
             "Tax": [
-                "deep tax code expertise",
-                "thorough research skills",
-                "client-focused approach",
-                "stays current on regulations",
-                "creative problem solver",
-                "reliable and responsive",
-                "excellent technical writing",
-                "strong analytical abilities",
+                "deep tax code expertise", "thorough research skills", "client-focused approach",
+                "stays current on regulations", "creative problem solver", "reliable and responsive",
+                "excellent technical writing", "strong analytical abilities", "exceptional tax planning skills",
+                "navigates complex tax issues", "proactive compliance approach", "builds client confidence",
+                "strong IRS representation skills", "effective multistate tax knowledge", "trusted tax advisor",
+                "excellent at tax controversy", "innovative structuring ideas", "strong transfer pricing expertise",
+                "keeps clients well-informed", "anticipates regulatory changes", "detailed tax provision work",
+                "strong M&A tax experience", "effective at credits and incentives", "builds strong team rapport",
+                "exceptional research abilities", "communicates complex issues clearly", "strong international tax knowledge",
+                "reliable tax compliance delivery", "creative yet compliant solutions", "valued for technical depth",
+                "consistent high-quality work", "strong ethics and integrity", "effective time management",
             ],
             "Consulting": [
-                "strategic thinker",
-                "excellent presentation skills",
-                "drives results effectively",
-                "builds strong client relationships",
-                "adaptable to change",
-                "collaborative leadership",
-                "innovative problem solver",
-                "strong project management",
+                "strategic thinker", "excellent presentation skills", "drives results effectively",
+                "builds strong client relationships", "adaptable to change", "collaborative leadership",
+                "innovative problem solver", "strong project management", "exceptional stakeholder management",
+                "delivers complex transformations", "builds high-performing teams", "thought leader in specialty",
+                "navigates ambiguity well", "drives sustainable change", "outstanding executive presence",
+                "effective change management", "strong business development", "mentors emerging talent",
+                "balances multiple priorities", "client-centric approach", "delivers on commitments",
+                "excellent workshop facilitation", "translates strategy to action", "builds lasting partnerships",
+                "strong data-driven insights", "effective at rapid prototyping", "outstanding technical depth",
+                "creates innovative solutions", "manages risk effectively", "strong vendor management",
+                "exceptional communication skills", "delivers measurable outcomes", "trusted advisor to clients",
             ],
         }
         
-        service_line = "Consulting" if "Cloud" in focus_area or "Data" in focus_area or "Cyber" in focus_area or "AI" in focus_area else (
-            "Assurance" if "Audit" in focus_area or "Financial" in focus_area else "Tax"
+        # Determine service line from focus_area if not provided
+        if not service_line:
+            service_line = "Consulting" if any(x in focus_area for x in ["Cloud", "Data", "Cyber", "AI", "Strategy", "Operations"]) else (
+                "Assurance" if any(x in focus_area for x in ["Audit", "Financial", "Risk", "SEC"]) else "Tax"
         )
         
         themes = base_themes.get(service_line, base_themes["Consulting"])
+        # Random sample 3-5 themes for variety
         return random.sample(themes, min(random.randint(3, 5), len(themes)))
     
-    def _generate_mock_achievement(self, role: str, skills: List[str]) -> str:
-        """Generate mock notable achievement for testing."""
-        achievements = [
-            f"Led successful implementation of {skills[0] if skills else 'key initiative'} for Fortune 500 client",
-            f"Recognized for exceptional client delivery and promoted ahead of cycle",
+    def _generate_mock_achievement(self, role: str, skills: List[str], service_line: str = "Consulting", level: int = 3) -> str:
+        """Generate mock notable achievement for testing with high variety."""
+        skill = skills[0] if skills else "key initiative"
+        
+        # Level-appropriate achievements (entry=1-3, mid=4-6, senior=7-9)
+        entry_achievements = [
+            f"Received outstanding feedback from client engagement team for {skill} deliverables",
+            f"Completed professional certification in {skill} ahead of schedule",
+            f"Recognized by manager for exceptional work quality on first major engagement",
+            f"Contributed key analysis that identified $500K in client cost savings",
+            f"Selected for accelerated development program based on first-year performance",
+            f"Received highest peer feedback scores among new hires in service line",
+            f"Successfully completed complex testing procedures with zero rework required",
+            f"Praised by partner for proactive communication and attention to detail",
+            f"Developed reusable template that improved team efficiency by 15%",
+            f"Received client commendation letter for professional conduct and responsiveness",
+        ]
+        
+        mid_achievements = [
+            f"Led successful implementation of {skill} for Fortune 500 client with zero defects",
             f"Developed innovative approach that reduced project timeline by 25%",
             f"Mentored 5 junior team members, 3 promoted within 18 months",
             f"Won internal excellence award for outstanding client feedback scores",
-            f"Secured $2M in additional project revenue through relationship building",
-            f"Pioneered new methodology adopted across the practice",
-            f"Successfully delivered complex engagement under aggressive timeline",
+            f"Pioneered new methodology in {skill} now adopted across the practice",
+            f"Successfully delivered complex engagement under aggressive timeline and budget",
+            f"Identified and resolved critical risk that saved client $1.2M in potential issues",
+            f"Built reusable framework for {skill} that became practice standard",
+            f"Received perfect client satisfaction scores across all engagements this year",
+            f"Led cross-functional team to deliver award-winning client solution",
+            f"Authored thought leadership piece on {skill} published in industry journal",
+            f"Spearheaded process improvement initiative that increased team utilization by 8%",
         ]
+        
+        senior_achievements = [
+            f"Secured $2M in additional project revenue through strategic relationship building",
+            f"Recognized for exceptional client delivery and promoted ahead of standard cycle",
+            f"Led firm-wide initiative in {skill} that generated $5M in new business",
+            f"Developed strategic partnership with key industry player worth $3M annually",
+            f"Served as executive sponsor for firm's largest client transformation program",
+            f"Built and led high-performing team that achieved 95%+ client satisfaction",
+            f"Authored firm's definitive guidance on {skill} best practices",
+            f"Led successful proposal that won $8M multi-year engagement",
+            f"Recognized as firm subject matter expert and speaks at industry conferences",
+            f"Achieved highest revenue generation in practice area for consecutive years",
+            f"Led acquisition integration that retained 100% of key client relationships",
+            f"Developed innovative service offering that created new revenue stream of $4M",
+        ]
+        
+        # Select based on level
+        if level <= 3:
+            achievements = entry_achievements
+        elif level <= 6:
+            achievements = mid_achievements
+        else:
+            achievements = senior_achievements
+        
         return random.choice(achievements)
     
     @lru_cache(maxsize=100)
@@ -453,7 +510,7 @@ Example format: [{{"utilization":82,"billing_rate":165,"realization":91,"quality
             List of 3-5 feedback theme phrases
         """
         if self.use_mock:
-            return self._generate_mock_feedback_themes(role, focus_area)
+            return self._generate_mock_feedback_themes(role, focus_area, service_line)
         
         # Check cache
         cache_key = f"{service_line}:{role}:{focus_area}"
@@ -492,7 +549,7 @@ Return ONLY a JSON array of 8 strings:
             except json.JSONDecodeError as e:
                 logger.warning(f"Failed to parse feedback themes: {e}")
         
-        return self._generate_mock_feedback_themes(role, focus_area)
+        return self._generate_mock_feedback_themes(role, focus_area, service_line)
     
     def generate_notable_achievement(
         self,
@@ -516,7 +573,7 @@ Return ONLY a JSON array of 8 strings:
             Single sentence describing a notable achievement
         """
         if self.use_mock:
-            return self._generate_mock_achievement(role, skills)
+            return self._generate_mock_achievement(role, skills, service_line, level)
         
         # Check cache for similar role
         cache_key = f"{service_line}:{role}:{focus_area}"
@@ -561,7 +618,7 @@ Return ONLY the achievement sentence, no quotes or explanation."""
                 self._achievement_cache[cache_key] = self._achievement_cache[cache_key][-10:]
             return achievement
         
-        return self._generate_mock_achievement(role, skills)
+        return self._generate_mock_achievement(role, skills, service_line, level)
     
     def generate_text_batch(
         self,

@@ -84,13 +84,13 @@ class SQLExporter:
         Format a single employee as SQL VALUES tuple.
         
         Expected fields:
-        - id, service_line, current_role, role_level, years_experience
+        - id, service_line, job_title, role_level, years_experience
         - skills (list), performance_metrics (dict)
         - career_history (dict, optional), feedback_themes (list), notable_achievement (str)
         """
         emp_id = self.escape_string(employee.get('id', ''))
         service_line = self.escape_string(employee.get('service_line', ''))
-        current_role = self.escape_string(employee.get('current_role', ''))
+        job_title = self.escape_string(employee.get('job_title', employee.get('current_role', '')))
         role_level = int(employee.get('role_level', 1))
         years_exp = float(employee.get('years_experience', 0))
         
@@ -115,7 +115,7 @@ class SQLExporter:
         achievement = self.escape_string(employee.get('notable_achievement', ''))
         
         return (
-            f"('{emp_id}', '{service_line}', '{current_role}', "
+            f"('{emp_id}', '{service_line}', '{job_title}', "
             f"{role_level}, {years_exp:.2f}, "
             f"{skills_jsonb}, {metrics_jsonb}, "
             f"{career_jsonb}, {themes_array}, '{achievement}')"
@@ -177,7 +177,7 @@ class SQLExporter:
         
         insert_columns = (
             'INSERT INTO employees '
-            '(id, service_line, "current_role", role_level, years_experience, '
+            '(id, service_line, job_title, role_level, years_experience, '
             'skills, performance_metrics, career_history, feedback_themes, notable_achievement)'
         )
         
@@ -221,9 +221,9 @@ class SQLExporter:
             'SELECT service_line, COUNT(*) as count FROM employees GROUP BY service_line ORDER BY service_line;',
             "",
             "-- Distribution by role",
-            'SELECT service_line, "current_role", COUNT(*) as count',
+            'SELECT service_line, job_title, COUNT(*) as count',
             'FROM employees',
-            'GROUP BY service_line, "current_role"',
+            'GROUP BY service_line, job_title',
             'ORDER BY service_line, COUNT(*) DESC;',
             "",
             "-- Average metrics by role level",
