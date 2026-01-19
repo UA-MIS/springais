@@ -1,7 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-export default function LogoutButton() {
+type LogoutButtonVariant = 'default' | 'dark';
+
+interface LogoutButtonProps {
+  variant?: LogoutButtonVariant;
+}
+
+export default function LogoutButton({ variant = 'default' }: LogoutButtonProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -13,7 +19,11 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 rounded-md transition-colors"
+      className={
+        variant === 'dark'
+          ? 'px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10 rounded-md transition-colors border border-white/10'
+          : 'px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 rounded-md transition-colors'
+      }
     >
       Logout
     </button>

@@ -100,7 +100,7 @@ export interface FilterOptions {
 }
 
 // Simulate async API call
-export const getSuccessPatterns = async (filters: FilterOptions = {}): Promise<SuccessPatternsData> => {
+export const getSuccessPatterns = async (_filters: FilterOptions = {}): Promise<SuccessPatternsData> => {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -109,7 +109,7 @@ export const getSuccessPatterns = async (filters: FilterOptions = {}): Promise<S
   return mockSuccessPatterns;
 };
 
-export const getMetrics = async (filters: FilterOptions = {}): Promise<SuccessPatternMetrics> => {
+export const getMetrics = async (_filters: FilterOptions = {}): Promise<SuccessPatternMetrics> => {
   await new Promise((resolve) => setTimeout(resolve, 500));
   return mockSuccessPatterns.metrics;
 };
