@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Tailwind v4: ensure these sources are scanned for class candidates */
+@source "../index.html";
+@source "./**/*.{js,ts,jsx,tsx}";
 
 body {
   margin: 0;
@@ -14,4 +16,15 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Keep login inputs transparent even when browser autofills them (Chrome/Edge) */
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.95);
+  caret-color: rgba(255, 255, 255, 0.95);
+  transition: background-color 999999s ease-in-out 0s;
+  box-shadow: 0 0 0px 1000px transparent inset;
 }

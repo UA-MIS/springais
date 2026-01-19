@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   BarChart,
   Bar,
@@ -19,9 +18,9 @@ interface SuccessRateChartProps {
 export default function SuccessRateChart({ data }: SuccessRateChartProps) {
   // Custom color based on success rate
   const getBarColor = (successRate: number): string => {
-    if (successRate >= 70) return '#22c55e'; // Green
-    if (successRate >= 50) return '#FFE600'; // Yellow
-    return '#dc2626'; // Red
+    if (successRate >= 70) return '#FFE600'; // Accent yellow
+    if (successRate >= 50) return '#C4C4CD'; // Light gray
+    return '#52525B'; // Dark gray
   };
 
   const sortedData = [...data].sort((a, b) => b.successRate - a.successRate);
@@ -30,12 +29,12 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload as TransitionData;
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-          <p className="font-semibold text-[#2E2E38]">{label}</p>
-          <p className="text-sm text-gray-600">
+        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
+          <p className="font-semibold text-white">{label}</p>
+          <p className="text-sm text-white/60">
             Success Rate: <span className="font-bold">{data.successRate}%</span>
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-white/60">
             Sample Size: <span className="font-bold">{data.sampleSize} employees</span>
           </p>
         </div>
@@ -45,33 +44,34 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-4 text-[#2E2E38]">
+    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md">
+      <h3 className="text-lg font-semibold mb-4 text-white">
         Success Rate by Transition
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={sortedData} margin={{ top: 5, right: 30, left: 20, bottom: 80 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" />
           <XAxis
             dataKey="transition"
             angle={-45}
             textAnchor="end"
             height={100}
-            tick={{ fontSize: 12, fill: '#2E2E38' }}
+            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
           />
           <YAxis
-            label={{ value: 'Success Rate (%)', angle: -90, position: 'insideLeft' }}
-            tick={{ fontSize: 12, fill: '#2E2E38' }}
+            label={{
+              value: 'Success Rate (%)',
+              angle: -90,
+              position: 'insideLeft',
+              fill: 'rgba(255,255,255,0.60)',
+            }}
+            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
             domain={[0, 100]}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
             wrapperStyle={{ paddingTop: '20px' }}
-            payload={[
-              { value: 'High (≥70%)', type: 'square', color: '#22c55e' },
-              { value: 'Medium (50-69%)', type: 'square', color: '#FFE600' },
-              { value: 'Low (<50%)', type: 'square', color: '#dc2626' },
-            ]}
+            formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
           />
           <Bar dataKey="successRate" radius={[4, 4, 0, 0]}>
             {sortedData.map((entry, index) => (

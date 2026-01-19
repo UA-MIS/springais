@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   BarChart,
   Bar,
@@ -25,9 +24,9 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
     if (active && payload && payload.length) {
       const skill = payload[0].payload as SkillFrequency;
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-          <p className="font-semibold text-[#2E2E38]">{skill.skill}</p>
-          <p className="text-sm text-gray-600">
+        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
+          <p className="font-semibold text-white">{skill.skill}</p>
+          <p className="text-sm text-white/60">
             Required for <span className="font-bold">{skill.frequency}%</span> of successful
             transitions
           </p>
@@ -38,8 +37,8 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-4 text-[#2E2E38]">
+    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md">
+      <h3 className="text-lg font-semibold mb-4 text-white">
         Top Skills for Successful Transitions
       </h3>
       <ResponsiveContainer width="100%" height={300}>
@@ -48,22 +47,27 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
           layout="vertical"
           margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" />
           <XAxis
             type="number"
             domain={[0, 100]}
-            tick={{ fontSize: 12, fill: '#2E2E38' }}
-            label={{ value: 'Frequency (%)', position: 'insideBottom', offset: -5 }}
+            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+            label={{
+              value: 'Frequency (%)',
+              position: 'insideBottom',
+              offset: -5,
+              fill: 'rgba(255,255,255,0.60)',
+            }}
           />
           <YAxis
             type="category"
             dataKey="skill"
-            tick={{ fontSize: 12, fill: '#2E2E38' }}
+            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
             width={90}
           />
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="frequency" radius={[0, 4, 4, 0]}>
-            {topSkills.map((entry, index) => (
+            {topSkills.map((_, index) => (
               <Cell key={`cell-${index}`} fill="#FFE600" />
             ))}
           </Bar>

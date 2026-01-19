@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getSuccessPatterns, SuccessPatternsData, FilterOptions } from '../../services/successPatternService';
 import MetricCards from './MetricCards';
 import SuccessRateChart from './SuccessRateChart';
@@ -51,14 +51,12 @@ export default function SuccessPatternPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F6F6FA]">
-        <div className="container mx-auto p-8">
-        <div className="flex items-center justify-center min-h-[400px]">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="flex items-center justify-center min-h-[420px]">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFE600] mb-4"></div>
-            <p className="text-gray-600">Loading success pattern data...</p>
+            <p className="text-white/60">Loading success pattern data...</p>
           </div>
-        </div>
         </div>
       </div>
     );
@@ -66,11 +64,10 @@ export default function SuccessPatternPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F6F6FA]">
-        <div className="container mx-auto p-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-800 font-semibold mb-2">Error loading data</p>
-          <p className="text-red-600 mb-4">{error}</p>
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="rounded-sm border border-white/15 bg-white/7 p-6 text-center shadow-2xl backdrop-blur-md">
+          <p className="text-white font-semibold mb-2">Error loading data</p>
+          <p className="text-white/60 mb-5">{error}</p>
           <button
             onClick={() => fetchData(filters)}
             className="px-6 py-2 bg-[#FFE600] text-[#2E2E38] font-semibold rounded-lg hover:bg-[#FFD700] transition-colors"
@@ -78,32 +75,28 @@ export default function SuccessPatternPage() {
             Retry
           </button>
         </div>
-        </div>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-[#F6F6FA]">
-        <div className="container mx-auto p-8">
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-          <p className="text-gray-600">No data available</p>
-        </div>
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="rounded-sm border border-white/15 bg-white/7 p-6 text-center shadow-2xl backdrop-blur-md">
+          <p className="text-white/60">No data available</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F6FA]">
-      <div className="container mx-auto p-8">
+    <div className="mx-auto w-full max-w-6xl">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-[#2E2E38] mb-2">
+        <h1 className="text-4xl font-bold text-white mb-2">
           Success Patterns & Career Insights
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-white/60">
           Data-driven insights from successful career transitions at EY
         </p>
       </div>
@@ -126,7 +119,6 @@ export default function SuccessPatternPage() {
           data={data.departmentDistribution}
           onDepartmentClick={handleDepartmentClick}
         />
-      </div>
       </div>
     </div>
   );

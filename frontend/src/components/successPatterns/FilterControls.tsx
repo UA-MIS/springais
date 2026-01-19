@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export interface FilterOptions {
@@ -59,17 +59,17 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
   if (filters.timePeriod !== 'All time') activeFiltersList.push(filters.timePeriod);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow mb-6">
+    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md mb-6">
       <div className="flex flex-col md:flex-row gap-4 items-end">
         {/* Department Filter */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-[#2E2E38] mb-2">
+          <label className="block text-sm font-medium text-white/75 mb-2">
             Department
           </label>
           <select
             value={filters.department}
             onChange={(e) => handleFilterChange('department', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-transparent text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
           >
             <option value="All">All</option>
             <option value="Advisory">Advisory</option>
@@ -81,13 +81,13 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
 
         {/* Role Level Filter */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-[#2E2E38] mb-2">
+          <label className="block text-sm font-medium text-white/75 mb-2">
             Role Level
           </label>
           <select
             value={filters.roleLevel}
             onChange={(e) => handleFilterChange('roleLevel', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-transparent text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
           >
             <option value="All">All</option>
             <option value="Analyst">Analyst</option>
@@ -99,13 +99,13 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
 
         {/* Time Period Filter */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-[#2E2E38] mb-2">
+          <label className="block text-sm font-medium text-white/75 mb-2">
             Time Period
           </label>
           <select
             value={filters.timePeriod}
             onChange={(e) => handleFilterChange('timePeriod', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-transparent text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
           >
             <option value="All time">All time</option>
             <option value="Last 5 years">Last 5 years</option>
@@ -125,7 +125,7 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
         {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
-            className="px-6 py-2 bg-gray-200 text-[#2E2E38] font-semibold rounded-lg hover:bg-gray-300 transition-colors"
+            className="px-6 py-2 bg-white/10 text-white/85 font-semibold rounded-lg hover:bg-white/15 transition-colors border border-white/10"
           >
             Clear Filters
           </button>
@@ -134,9 +134,9 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
 
       {/* Active Filters Indicator */}
       {hasActiveFilters && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            Filtered by: <span className="font-semibold text-[#2E2E38]">{activeFiltersList.join(', ')}</span>
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <p className="text-sm text-white/60">
+            Filtered by: <span className="font-semibold text-white/85">{activeFiltersList.join(', ')}</span>
           </p>
         </div>
       )}

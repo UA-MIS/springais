@@ -1,4 +1,3 @@
-import React from 'react';
 import { SuccessPatternMetrics } from '../../services/successPatternService';
 
 interface MetricCardsProps {
@@ -9,9 +8,9 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {/* Average Time to Promotion */}
-      <div className="bg-white p-6 rounded-lg shadow hover:border-2 hover:border-[#FFE600] transition-all border-2 border-transparent">
+      <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:border-[#FFE600]/60 transition-all">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#FFE600] bg-opacity-20 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 bg-[#FFE600]/15 rounded-lg flex items-center justify-center">
             <svg
               className="w-6 h-6 text-[#FFE600]"
               fill="none"
@@ -27,16 +26,16 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
             </svg>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Average Time to Promotion</p>
-            <p className="text-2xl font-bold text-[#2E2E38]">{metrics.avgTimeToPromotion} years</p>
+            <p className="text-sm text-white/60">Average Time to Promotion</p>
+            <p className="text-2xl font-bold text-white">{metrics.avgTimeToPromotion} years</p>
           </div>
         </div>
       </div>
 
       {/* Overall Success Rate */}
-      <div className="bg-white p-6 rounded-lg shadow hover:border-2 hover:border-[#FFE600] transition-all border-2 border-transparent">
+      <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:border-[#FFE600]/60 transition-all">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#FFE600] bg-opacity-20 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 bg-[#FFE600]/15 rounded-lg flex items-center justify-center">
             <svg
               className="w-6 h-6 text-[#FFE600]"
               fill="none"
@@ -52,8 +51,8 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
             </svg>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Overall Success Rate</p>
-            <p className="text-2xl font-bold text-[#2E2E38]">
+            <p className="text-sm text-white/60">Overall Success Rate</p>
+            <p className="text-2xl font-bold text-white">
               {(metrics.overallSuccessRate * 100).toFixed(0)}%
             </p>
           </div>
@@ -61,9 +60,9 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
       </div>
 
       {/* Sample Size */}
-      <div className="bg-white p-6 rounded-lg shadow hover:border-2 hover:border-[#FFE600] transition-all border-2 border-transparent">
+      <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:border-[#FFE600]/60 transition-all">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-[#FFE600] bg-opacity-20 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 bg-[#FFE600]/15 rounded-lg flex items-center justify-center">
             <svg
               className="w-6 h-6 text-[#FFE600]"
               fill="none"
@@ -79,8 +78,8 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
             </svg>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Sample Size</p>
-            <p className="text-2xl font-bold text-[#2E2E38]">{metrics.totalSampleSize} transitions</p>
+            <p className="text-sm text-white/60">Sample Size</p>
+            <p className="text-2xl font-bold text-white">{metrics.totalSampleSize} transitions</p>
           </div>
         </div>
       </div>
