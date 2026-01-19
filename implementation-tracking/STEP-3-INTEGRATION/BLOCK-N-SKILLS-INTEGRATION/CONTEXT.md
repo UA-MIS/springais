@@ -53,10 +53,10 @@ Connect the skills dashboard frontend to the AI-powered skill extraction backend
 ### From Block D: Vector Embeddings
 
 **What's already built:**
-- Sentence-BERT embeddings for skills
-- Vector similarity search (cosine similarity)
-- Skill clustering algorithms
-- Embedding storage in database
+- OpenAI `text-embedding-3-large` embeddings for skills (3072 dims)
+- PCA dimensionality reduction (3072 → 1536) for pgvector compatibility
+- Two-layer Redis caching (exact match + semantic text-proxy layer)
+- Database persistence + pgvector similarity search are completed in Step 3 (Block R)
 
 **What this block does:**
 - Call `/api/embeddings/similarity` to find related skills
@@ -67,13 +67,15 @@ Connect the skills dashboard frontend to the AI-powered skill extraction backend
 ### From Block G: Skill Extraction
 
 **What's already built:**
-- GPT-4 skill extraction from resumes (PDF, DOCX, TXT)
+- GPT-5 nano skill extraction from resumes (PDF, DOCX, TXT)
 - Skill categorization (technical, soft, domain)
 - Proficiency level inference
 - Years of experience extraction
 
 **What this block does:**
-- Connect upload UI to `/api/skills/extract` endpoint
+- Connect UI to:
+  - `POST /api/skills/upload` (file upload: PDF/DOCX/TXT)
+  - `POST /api/skills/extract` (raw text input)
 - Display extracted skills in dashboard cards
 - Show skill categories (Technical, Soft, Domain)
 - Display proficiency levels and experience
@@ -108,6 +110,11 @@ Connect the skills dashboard frontend to the AI-powered skill extraction backend
 ### API Endpoints
 
 **File:** `backend/app/routes/skills.py`
+
+> Note: The code blocks below are illustrative. The implemented Step 2 API already includes:
+> - `POST /api/skills/extract` (raw text input)
+> - `POST /api/skills/upload` (file upload)
+> See the actual implementation in `backend/app/routes/skills.py`.
 
 ```python
 from fastapi import APIRouter, Depends, UploadFile, File
@@ -262,8 +269,8 @@ Frontend (Skills Dashboard):
 Backend:
 1. Receives file upload
 2. Parses resume (PDF/DOCX → text)
-3. Calls GPT-4: "Extract skills from this resume: {text}"
-4. GPT-4 returns structured JSON: { technical: [...], soft: [...], domain: [...] }
+3. Calls GPT-5 nano: "Extract skills from this resume: {text}"
+4. GPT-5 nano returns structured JSON skills list (validated + normalized)
 5. Stores in UserSkills table
 6. Returns extracted skills
 
@@ -659,7 +666,7 @@ def test_find_similar_skills(client, auth_token):
 **This block is complete when:**
 
 1. ✅ Users can upload resume (PDF/DOCX/TXT) via dashboard
-2. ✅ Skills extracted using GPT-4 (Block G) and displayed
+2. ✅ Skills extracted using GPT-5 nano (Block G) and displayed
 3. ✅ Skills categorized into Technical, Soft, Domain
 4. ✅ User skills persisted in database (UserSkills table)
 5. ✅ Skill gap analysis works for job postings
@@ -684,7 +691,7 @@ def test_find_similar_skills(client, auth_token):
 
 **Related Step 2 Blocks:**
 - `BLOCK-D-VECTOR-EMBEDDINGS/CONTEXT.md` - Similarity search
-- `BLOCK-G-SKILL-EXTRACTION/CONTEXT.md` - GPT-4 extraction
+- `BLOCK-G-SKILL-EXTRACTION/CONTEXT.md` - GPT-5 nano extraction
 - `BLOCK-I-SKILLS-DASHBOARD/CONTEXT.md` - Frontend UI
 
 **Related Step 3 Blocks:**
@@ -692,7 +699,7 @@ def test_find_similar_skills(client, auth_token):
 
 **Technology Docs:**
 - FastAPI File Uploads: https://fastapi.tiangolo.com/tutorial/request-files/
-- Sentence-BERT: https://www.sbert.net/
+- OpenAI embeddings: https://platform.openai.com/docs/guides/embeddings
 - React File Upload: https://developer.mozilla.org/en-US/docs/Web/API/File_API
 
 ---

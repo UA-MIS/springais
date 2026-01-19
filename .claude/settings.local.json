@@ -4,7 +4,9 @@
       "WebSearch",
       "WebFetch(domain:www.getzep.com)",
       "WebFetch(domain:weaviate.io)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(ls:*)",
+      "Bash(python:*)"
     ]
   }
 }

@@ -29,7 +29,7 @@ cd backend && pytest tests/test_matches_integration.py -v
 
 **Steps:**
 1. Start backend and frontend servers
-2. Navigate to `http://localhost:5173`
+2. Navigate to `http://localhost:3000`
 3. Login with credentials
 4. Click "Match Results" in sidebar
 
@@ -196,6 +196,9 @@ curl http://localhost:8000/api/matches/employee/2 \
 ---
 
 ## Redis Cache Verification
+
+> Note: Redis caching for match results is not implemented in the current Block E mock-data API.
+> Treat this section as a Step 3 enhancement (Block M/O integration) once auth + persistence are wired.
 
 ```bash
 # Connect to Redis
