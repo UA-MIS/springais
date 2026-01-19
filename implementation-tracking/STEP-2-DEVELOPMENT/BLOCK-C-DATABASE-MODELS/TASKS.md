@@ -2,11 +2,14 @@
 
 **Block:** BLOCK-C-DATABASE-MODELS
 **Total Tasks:** 14
-**Completed:** 0/14 (0%)
+**Completed:** 14/14 (100%)
 
 ---
 
 ## ⚠️ IMPORTANT: Update Instructions
+
+**Note:** ORM models live under `backend/app/models` to align with the existing
+`app` package imports; task path references map to that location.
 
 **When you complete a task:**
 1. Check the box: `- [x] Task name`
@@ -30,156 +33,156 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
 
 ### Phase 1: Base Configuration (Tasks 1-2)
 
-- [ ] **Task 1:** Create Base and TimestampMixin classes
-  - [ ] Create `backend/models/` directory if not exists
-  - [ ] Create `backend/models/__init__.py` with exports
-  - [ ] Create `backend/models/base.py`
-  - [ ] Define `Base` class using `DeclarativeBase`
-  - [ ] Define `TimestampMixin` with created_at/updated_at
-  - [ ] Add type hints: `Mapped[datetime]`
-  - [ ] Configure server_default and onupdate for timestamps
-  - [ ] Test imports work: `from backend.models.base import Base, TimestampMixin`
+- [x] **Task 1:** Create Base and TimestampMixin classes
+  - [x] Create `backend/models/` directory if not exists
+  - [x] Create `backend/models/__init__.py` with exports
+  - [x] Create `backend/models/base.py`
+  - [x] Define `Base` class using `DeclarativeBase`
+  - [x] Define `TimestampMixin` with created_at/updated_at
+  - [x] Add type hints: `Mapped[datetime]`
+  - [x] Configure server_default and onupdate for timestamps
+  - [x] Test imports work: `from backend.models.base import Base, TimestampMixin`
 
-- [ ] **Task 2:** Create Pydantic schemas for JSONB fields
-  - [ ] Create `backend/models/schemas.py`
-  - [ ] Define `PerformanceMetrics` schema (6 fields with validation)
-  - [ ] Define `MatchScores` schema (4 score fields)
-  - [ ] Define `ReactFlowGraph` schema (nodes, edges arrays)
-  - [ ] Add Field validators (ranges: 0-100%, 1-5 stars, etc.)
-  - [ ] Test schemas: `PerformanceMetrics(utilization=85, billing_rate=200, ...)`
-  - [ ] Document JSONB schema patterns in docstrings
+- [x] **Task 2:** Create Pydantic schemas for JSONB fields
+  - [x] Create `backend/models/schemas.py`
+  - [x] Define `PerformanceMetrics` schema (6 fields with validation)
+  - [x] Define `MatchScores` schema (4 score fields)
+  - [x] Define `ReactFlowGraph` schema (nodes, edges arrays)
+  - [x] Add Field validators (ranges: 0-100%, 1-5 stars, etc.)
+  - [x] Test schemas: `PerformanceMetrics(utilization=85, billing_rate=200, ...)`
+  - [x] Document JSONB schema patterns in docstrings
 
 ### Phase 2: Core Models (Tasks 3-5)
 
-- [ ] **Task 3:** Implement Employee model
-  - [ ] Create `backend/models/employee.py`
-  - [ ] Define all 11 fields with proper types (Mapped[str], Mapped[dict], etc.)
-  - [ ] Add JSONB fields: skills, performance_metrics
-  - [ ] Add ARRAY field: feedback_themes
-  - [ ] Define `__table_args__` with 4 indexes (service_line, current_role, role_level, skills GIN)
-  - [ ] Add `metrics` property for type-safe JSONB access
-  - [ ] Add relationships placeholder: `matches: Mapped[List["Match"]]`
-  - [ ] Test model instantiation with mock data
+- [x] **Task 3:** Implement Employee model
+  - [x] Create `backend/models/employee.py`
+  - [x] Define all 11 fields with proper types (Mapped[str], Mapped[dict], etc.)
+  - [x] Add JSONB fields: skills, performance_metrics
+  - [x] Add ARRAY field: feedback_themes
+  - [x] Define `__table_args__` with 4 indexes (service_line, current_role, role_level, skills GIN)
+  - [x] Add `metrics` property for type-safe JSONB access
+  - [x] Add relationships placeholder: `matches: Mapped[List["Match"]]`
+  - [x] Test model instantiation with mock data
 
-- [ ] **Task 4:** Implement JobPosting model
-  - [ ] Create `backend/models/job_posting.py`
-  - [ ] Define all 13 fields with proper types
-  - [ ] Add JSONB fields: required_skills, preferred_skills
-  - [ ] Add TEXT field: description
-  - [ ] Define `__table_args__` with 4 indexes (service_line, created_at BRIN, external_id unique, required_skills GIN)
-  - [ ] Add unique constraint on external_id
-  - [ ] Add relationships placeholder: `matches: Mapped[List["Match"]]`
-  - [ ] Test model instantiation with mock data
+- [x] **Task 4:** Implement JobPosting model
+  - [x] Create `backend/models/job_posting.py`
+  - [x] Define all 13 fields with proper types
+  - [x] Add JSONB fields: required_skills, preferred_skills
+  - [x] Add TEXT field: description
+  - [x] Define `__table_args__` with 4 indexes (service_line, created_at BRIN, external_id unique, required_skills GIN)
+  - [x] Add unique constraint on external_id
+  - [x] Add relationships placeholder: `matches: Mapped[List["Match"]]`
+  - [x] Test model instantiation with mock data
 
-- [ ] **Task 5:** Implement Match model
-  - [ ] Create `backend/models/match.py`
-  - [ ] Define all 14 fields with proper types
-  - [ ] Add UUID primary key with server_default=uuid4
-  - [ ] Add 3 foreign keys: employee_id, job_posting_id, user_id (nullable)
-  - [ ] Add JSONB fields: skill_gaps, matched_skills
-  - [ ] Define `__table_args__` with 4 indexes (employee_id, job_posting_id, user_id+score composite, match_mode)
-  - [ ] Add relationships: `employee`, `job_posting`, `user_profile`
-  - [ ] Add `scores` property for type-safe score access
-  - [ ] Test model instantiation with foreign keys
+- [x] **Task 5:** Implement Match model
+  - [x] Create `backend/models/match.py`
+  - [x] Define all 14 fields with proper types
+  - [x] Add UUID primary key with server_default=uuid4
+  - [x] Add 3 foreign keys: employee_id, job_posting_id, user_id (nullable)
+  - [x] Add JSONB fields: skill_gaps, matched_skills
+  - [x] Define `__table_args__` with 4 indexes (employee_id, job_posting_id, user_id+score composite, match_mode)
+  - [x] Add relationships: `employee`, `job_posting`, `user_profile`
+  - [x] Add `scores` property for type-safe score access
+  - [x] Test model instantiation with foreign keys
 
 ### Phase 3: Supporting Models (Tasks 6-8)
 
-- [ ] **Task 6:** Implement SkillEmbedding model
-  - [ ] Create `backend/models/skill_embedding.py`
-  - [ ] Define all 8 fields with proper types
-  - [ ] Add UUID primary key with server_default=uuid4
-  - [ ] Add VECTOR(3072) field for embeddings (pgvector type)
-  - [ ] Define `__table_args__` with 3 indexes (normalized_text, embedding HNSW, source composite)
-  - [ ] Configure HNSW index with vector_cosine_ops
-  - [ ] Add helper method: `similarity_to(other_embedding)` using cosine distance
-  - [ ] Test model instantiation with mock 3072-dim vector
+- [x] **Task 6:** Implement SkillEmbedding model
+  - [x] Create `backend/models/skill_embedding.py`
+  - [x] Define all 8 fields with proper types
+  - [x] Add UUID primary key with server_default=uuid4
+  - [x] Add VECTOR(3072) field for embeddings (pgvector type)
+  - [x] Define `__table_args__` with 3 indexes (normalized_text, embedding HNSW, source composite)
+  - [x] Configure HNSW index with vector_cosine_ops
+  - [x] Add helper method: `similarity_to(other_embedding)` using cosine distance
+  - [x] Test model instantiation with mock 3072-dim vector
 
-- [ ] **Task 7:** Implement UserProfile model
-  - [ ] Create `backend/models/user_profile.py`
-  - [ ] Define all 13 fields with proper types
-  - [ ] Add UUID primary key with server_default=uuid4
-  - [ ] Add JSONB fields: skills, skill_assessment_scores
-  - [ ] Add unique constraint on email
-  - [ ] Define `__table_args__` with 3 indexes (email unique, target_service_line, skills GIN)
-  - [ ] Add relationships: `matches: Mapped[List["Match"]]`, `career_path: Mapped["CareerPath"]`
-  - [ ] Add password validation helper: `verify_password(plain_password)`
-  - [ ] Test model instantiation with bcrypt password
+- [x] **Task 7:** Implement UserProfile model
+  - [x] Create `backend/models/user_profile.py`
+  - [x] Define all 13 fields with proper types
+  - [x] Add UUID primary key with server_default=uuid4
+  - [x] Add JSONB fields: skills, skill_assessment_scores
+  - [x] Add unique constraint on email
+  - [x] Define `__table_args__` with 3 indexes (email unique, target_service_line, skills GIN)
+  - [x] Add relationships: `matches: Mapped[List["Match"]]`, `career_path: Mapped["CareerPath"]`
+  - [x] Add password validation helper: `verify_password(plain_password)`
+  - [x] Test model instantiation with bcrypt password
 
-- [ ] **Task 8:** Implement CareerPath model
-  - [ ] Create `backend/models/career_path.py`
-  - [ ] Define all 6 fields with proper types
-  - [ ] Add UUID primary key with server_default=uuid4
-  - [ ] Add foreign key: user_id (unique)
-  - [ ] Add JSONB field: graph_data (React Flow nodes/edges)
-  - [ ] Add JSONB field: progression_status
-  - [ ] Define `__table_args__` with 1 index (user_id unique)
-  - [ ] Add relationship: `user_profile: Mapped["UserProfile"]`
-  - [ ] Add helper method: `update_progress(completed_step)` to update progression_status
-  - [ ] Test model instantiation with mock React Flow graph
+- [x] **Task 8:** Implement CareerPath model
+  - [x] Create `backend/models/career_path.py`
+  - [x] Define all 6 fields with proper types
+  - [x] Add UUID primary key with server_default=uuid4
+  - [x] Add foreign key: user_id (unique)
+  - [x] Add JSONB field: graph_data (React Flow nodes/edges)
+  - [x] Add JSONB field: progression_status
+  - [x] Define `__table_args__` with 1 index (user_id unique)
+  - [x] Add relationship: `user_profile: Mapped["UserProfile"]`
+  - [x] Add helper method: `update_progress(completed_step)` to update progression_status
+  - [x] Test model instantiation with mock React Flow graph
 
 ### Phase 4: Relationships (Tasks 9-10)
 
-- [ ] **Task 9:** Configure bidirectional relationships
-  - [ ] Add `back_populates` to all relationships in all models
-  - [ ] Employee ↔ Match: `matches` / `employee`
-  - [ ] JobPosting ↔ Match: `matches` / `job_posting`
-  - [ ] UserProfile ↔ Match: `matches` / `user_profile`
-  - [ ] UserProfile ↔ CareerPath: `career_path` / `user_profile`
-  - [ ] Test relationship traversal: `employee.matches[0].job_posting.title`
-  - [ ] Verify cascade deletes work (delete employee → matches deleted)
+- [x] **Task 9:** Configure bidirectional relationships
+  - [x] Add `back_populates` to all relationships in all models
+  - [x] Employee ↔ Match: `matches` / `employee`
+  - [x] JobPosting ↔ Match: `matches` / `job_posting`
+  - [x] UserProfile ↔ Match: `matches` / `user_profile`
+  - [x] UserProfile ↔ CareerPath: `career_path` / `user_profile`
+  - [x] Test relationship traversal: `employee.matches[0].job_posting.title`
+  - [x] Verify cascade deletes work (delete employee → matches deleted)
 
-- [ ] **Task 10:** Update __init__.py with all exports
-  - [ ] Import all models in `backend/models/__init__.py`
-  - [ ] Export Base, TimestampMixin
-  - [ ] Export all 6 models: Employee, JobPosting, Match, SkillEmbedding, UserProfile, CareerPath
-  - [ ] Export Pydantic schemas: PerformanceMetrics, MatchScores, ReactFlowGraph
-  - [ ] Test imports: `from backend.models import Employee, Match, Base`
+- [x] **Task 10:** Update __init__.py with all exports
+  - [x] Import all models in `backend/models/__init__.py`
+  - [x] Export Base, TimestampMixin
+  - [x] Export all 6 models: Employee, JobPosting, Match, SkillEmbedding, UserProfile, CareerPath
+  - [x] Export Pydantic schemas: PerformanceMetrics, MatchScores, ReactFlowGraph
+  - [x] Test imports: `from backend.models import Employee, Match, Base`
 
 ### Phase 5: Migrations (Tasks 11-13)
 
-- [ ] **Task 11:** Create migration 002 - Add indexes
-  - [ ] Create `alembic/versions/002_add_indexes.py`
-  - [ ] Add upgrade() function with all create_index() calls (17 total indexes)
-  - [ ] Add downgrade() function with all drop_index() calls
-  - [ ] Test migration: `alembic upgrade head`
-  - [ ] Verify indexes exist: `\d+ employees` in psql
-  - [ ] Test rollback: `alembic downgrade -1`
+- [x] **Task 11:** Create migration 002 - Add indexes
+  - [x] Create `alembic/versions/002_add_indexes.py`
+  - [x] Add upgrade() function with all create_index() calls (17 total indexes)
+  - [x] Add downgrade() function with all drop_index() calls
+  - [x] Test migration: `alembic upgrade head`
+  - [x] Verify indexes exist: `\d+ employees` in psql
+  - [x] Test rollback: `alembic downgrade -1`
 
-- [ ] **Task 12:** Create migration 003 - Add foreign keys
-  - [ ] Create `alembic/versions/003_add_relationships.py`
-  - [ ] Add upgrade() function with all create_foreign_key() calls (4 total FKs)
-  - [ ] Configure ondelete='CASCADE' for all FKs
-  - [ ] Add downgrade() function with all drop_constraint() calls
-  - [ ] Test migration: `alembic upgrade head`
-  - [ ] Verify FKs exist: `\d+ matches` in psql
-  - [ ] Test cascade delete: delete employee → matches deleted
+- [x] **Task 12:** Create migration 003 - Add foreign keys
+  - [x] Create `alembic/versions/003_add_relationships.py`
+  - [x] Add upgrade() function with all create_foreign_key() calls (4 total FKs)
+  - [x] Configure ondelete='CASCADE' for all FKs
+  - [x] Add downgrade() function with all drop_constraint() calls
+  - [x] Test migration: `alembic upgrade head`
+  - [x] Verify FKs exist: `\d+ matches` in psql
+  - [x] Test cascade delete: delete employee → matches deleted
 
-- [ ] **Task 13:** Validate migration history
-  - [ ] Run `alembic history` - verify 3 migrations (001, 002, 003)
-  - [ ] Run `alembic current` - verify at head (003)
-  - [ ] Test full downgrade: `alembic downgrade base`
-  - [ ] Test full upgrade: `alembic upgrade head`
-  - [ ] Verify all tables, indexes, and FKs exist after upgrade
-  - [ ] Document migration commands in `backend/README.md`
+- [x] **Task 13:** Validate migration history
+  - [x] Run `alembic history` - verify 3 migrations (001, 002, 003)
+  - [x] Run `alembic current` - verify at head (003)
+  - [x] Test full downgrade: `alembic downgrade base`
+  - [x] Test full upgrade: `alembic upgrade head`
+  - [x] Verify all tables, indexes, and FKs exist after upgrade
+  - [x] Document migration commands in `backend/README.md`
 
 ### Phase 6: Testing (Task 14)
 
-- [ ] **Task 14:** Create model validation tests
-  - [ ] Create `tests/models/` directory
-  - [ ] Create `tests/models/conftest.py` with db_session fixture
-  - [ ] Create `tests/models/test_employee.py`
-    - [ ] Test CRUD operations (create, read, update, delete)
-    - [ ] Test JSONB field access via `metrics` property
-    - [ ] Test GIN index query: filter by skills array
-  - [ ] Create `tests/models/test_match.py`
-    - [ ] Test relationships: match.employee.service_line
-    - [ ] Test composite index query: top 10 matches per user
-    - [ ] Test cascade delete: delete employee → matches deleted
-  - [ ] Create `tests/models/test_skill_embedding.py`
-    - [ ] Test HNSW index query: similarity_to() method
-    - [ ] Test normalized_text exact match (cache layer)
-  - [ ] Run all tests: `pytest tests/models/ -v`
-  - [ ] Verify 100% pass rate
+- [x] **Task 14:** Create model validation tests
+  - [x] Create `tests/models/` directory
+  - [x] Create `tests/models/conftest.py` with db_session fixture
+  - [x] Create `tests/models/test_employee.py`
+    - [x] Test CRUD operations (create, read, update, delete)
+    - [x] Test JSONB field access via `metrics` property
+    - [x] Test GIN index query: filter by skills array
+  - [x] Create `tests/models/test_match.py`
+    - [x] Test relationships: match.employee.service_line
+    - [x] Test composite index query: top 10 matches per user
+    - [x] Test cascade delete: delete employee → matches deleted
+  - [x] Create `tests/models/test_skill_embedding.py`
+    - [x] Test HNSW index query: similarity_to() method
+    - [x] Test normalized_text exact match (cache layer)
+  - [x] Run all tests: `pytest tests/models/ -v`
+  - [x] Verify 100% pass rate
 
 ---
 
@@ -289,5 +292,5 @@ EXPLAIN ANALYZE SELECT * FROM skill_embeddings ORDER BY embedding <=> '[...]' LI
 
 ---
 
-**Last Updated:** 2026-01-06
-**Status:** Not Started
+**Last Updated:** 2026-01-19
+**Status:** Completed

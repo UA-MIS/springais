@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 body {
   margin: 0;
@@ -14,4 +12,26 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* --- React Flow dark-glass theming (scoped to Career Paths page) --- */
+.career-paths .react-flow__controls {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+}
+
+.career-paths .react-flow__controls-button {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.career-paths .react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.career-paths .react-flow__attribution {
+  display: none;
 }

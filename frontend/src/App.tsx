@@ -1,11 +1,15 @@
 import { Routes, Route } from 'react-router-dom'
+import { CareerPathPage } from '@/pages/CareerPathPage'
+import { RoleRequirementPage } from '@/pages/RoleRequirementPage'
 
 function App() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/career-paths" element={<CareerPathPage />} />
+        <Route path="/career-paths/:roleId" element={<RoleRequirementPage />} />
       </Routes>
     </div>
   )
