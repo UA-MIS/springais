@@ -1,8 +1,8 @@
+import { useState } from 'react';
 import {
   PieChart,
   Pie,
   Cell,
-  Tooltip,
   Legend,
   ResponsiveContainer,
 } from 'recharts';
@@ -18,6 +18,8 @@ export default function DepartmentDistributionChart({
   onDepartmentClick,
 }: DepartmentDistributionChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
+  const sliceStroke = 'rgba(255,255,255,0.70)';
+  const [hovered, setHovered] = useState<DepartmentData | null>(null);
 
   const defaultColors = ['#FFE600', '#A1A1AA', '#71717A', '#52525B', '#3F3F46'];
 
@@ -26,44 +28,32 @@ export default function DepartmentDistributionChart({
     color: item.color || defaultColors[index % defaultColors.length],
   }));
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload as DepartmentData;
-      const percentage = ((data.value / total) * 100).toFixed(1);
-      return (
-        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
-          <p className="font-semibold text-white">{data.name}</p>
-          <p className="text-sm text-white/60">
-            Count: <span className="font-bold">{data.value}</span>
-          </p>
-          <p className="text-sm text-white/60">
-            Percentage: <span className="font-bold">{percentage}%</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
     if (percent < 0.05) return null; // Don't show label for very small slices
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const label = `${(percent * 100).toFixed(0)}%`;
 
     return (
-      <text
-        x={x}
-        y={y}
-        fill="white"
-        textAnchor={x > cx ? 'start' : 'end'}
-        dominantBaseline="central"
-        fontSize={12}
-        fontWeight="bold"
-      >
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
+      <>
+        {/* outline for contrast against bright slices */}
+        <text
+          x={x}
+          y={y}
+          fill="white"
+          stroke="rgba(0,0,0,0.65)"
+          strokeWidth={3}
+          paintOrder="stroke"
+          textAnchor={x > cx ? 'start' : 'end'}
+          dominantBaseline="central"
+          fontSize={12}
+          fontWeight={700}
+        >
+          {label}
+        </text>
+      </>
     );
   };
 
@@ -72,39 +62,69 @@ export default function DepartmentDistributionChart({
       <h3 className="text-lg font-semibold mb-4 text-white">
         Transitions by Department
       </h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={renderCustomLabel}
-            outerRadius={100}
-            innerRadius={60}
-            fill="#8884d8"
-            dataKey="value"
-            onClick={(data) => {
-              if (onDepartmentClick && data.name) {
-                onDepartmentClick(data.name);
-              }
-            }}
-            style={{ cursor: onDepartmentClick ? 'pointer' : 'default' }}
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ paddingTop: '20px' }}
-            formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="flex justify-center">
+        <div className="w-full max-w-[860px]">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_180px] md:gap-6 items-start">
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={renderCustomLabel}
+                    outerRadius={100}
+                    innerRadius={60}
+                    fill="#8884d8"
+                    dataKey="value"
+                    stroke={sliceStroke}
+                    strokeWidth={1.6}
+                    onMouseEnter={(slice: any) => {
+                      if (slice?.name) setHovered(slice as DepartmentData);
+                    }}
+                    onMouseLeave={() => setHovered(null)}
+                    onClick={(data) => {
+                      if (onDepartmentClick && data.name) {
+                        onDepartmentClick(data.name);
+                      }
+                    }}
+                    style={{ cursor: onDepartmentClick ? 'pointer' : 'default' }}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Legend
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Fixed tooltip area (no overlap) */}
+            <div className="hidden md:block">
+              {hovered ? (
+                <div className="pointer-events-none w-[180px] border border-white/15 bg-white/7 p-2.5 rounded-sm shadow-2xl backdrop-blur-md">
+                  <p className="text-sm font-semibold text-white">{hovered.name}</p>
+                  <p className="mt-1 text-xs text-white/60">
+                    Count: <span className="text-white/85">{hovered.value}</span>
+                  </p>
+                  <p className="text-xs text-white/60">
+                    %: <span className="text-white/85">{((hovered.value / total) * 100).toFixed(1)}%</span>
+                  </p>
+                </div>
+              ) : (
+                <div className="w-[180px]" />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="text-center mt-4">
         <p className="text-sm text-white/60">
-          Total: <span className="font-bold text-white/85">{total} transitions</span>
+          Total: <span className="text-white/60">{total} transitions</span>
         </p>
       </div>
     </div>

@@ -19,6 +19,11 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
     timePeriod: searchParams.get('period') || 'All time',
   });
 
+  const optionStyle: React.CSSProperties = {
+    backgroundColor: '#09090b',
+    color: 'rgba(255,255,255,0.92)',
+  };
+
   const hasActiveFilters =
     filters.department !== 'All' ||
     filters.roleLevel !== 'All' ||
@@ -69,13 +74,13 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
           <select
             value={filters.department}
             onChange={(e) => handleFilterChange('department', e.target.value)}
-            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-transparent text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-zinc-950/60 text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
           >
-            <option value="All">All</option>
-            <option value="Advisory">Advisory</option>
-            <option value="Tax">Tax</option>
-            <option value="Consulting">Consulting</option>
-            <option value="Audit">Audit</option>
+            <option value="All" style={optionStyle}>All</option>
+            <option value="Advisory" style={optionStyle}>Advisory</option>
+            <option value="Tax" style={optionStyle}>Tax</option>
+            <option value="Consulting" style={optionStyle}>Consulting</option>
+            <option value="Audit" style={optionStyle}>Audit</option>
           </select>
         </div>
 
@@ -87,13 +92,13 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
           <select
             value={filters.roleLevel}
             onChange={(e) => handleFilterChange('roleLevel', e.target.value)}
-            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-transparent text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-zinc-950/60 text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
           >
-            <option value="All">All</option>
-            <option value="Analyst">Analyst</option>
-            <option value="Consultant">Consultant</option>
-            <option value="Manager">Manager</option>
-            <option value="Director">Director</option>
+            <option value="All" style={optionStyle}>All</option>
+            <option value="Analyst" style={optionStyle}>Analyst</option>
+            <option value="Consultant" style={optionStyle}>Consultant</option>
+            <option value="Manager" style={optionStyle}>Manager</option>
+            <option value="Director" style={optionStyle}>Director</option>
           </select>
         </div>
 
@@ -105,11 +110,11 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
           <select
             value={filters.timePeriod}
             onChange={(e) => handleFilterChange('timePeriod', e.target.value)}
-            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-transparent text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-zinc-950/60 text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
           >
-            <option value="All time">All time</option>
-            <option value="Last 5 years">Last 5 years</option>
-            <option value="Last 10 years">Last 10 years</option>
+            <option value="All time" style={optionStyle}>All time</option>
+            <option value="Last 5 years" style={optionStyle}>Last 5 years</option>
+            <option value="Last 10 years" style={optionStyle}>Last 10 years</option>
           </select>
         </div>
 
