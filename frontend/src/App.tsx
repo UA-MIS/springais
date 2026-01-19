@@ -4,6 +4,7 @@ import LoginPage from './components/auth/LoginPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import SuccessPatternPage from './components/successPatterns/SuccessPatternPage';
+import MatchResultsPage from './components/matches/MatchResultsPage';
 
 // Placeholder components for other routes (to be implemented in later blocks)
 function SkillsDashboard() {
@@ -11,15 +12,6 @@ function SkillsDashboard() {
     <div>
       <h1 className="text-3xl font-bold mb-4">Skills Dashboard</h1>
       <p className="text-gray-600">Skills dashboard content will be implemented in Block I</p>
-    </div>
-  );
-}
-
-function MatchResults() {
-  return (
-    <div>
-      <h1 className="text-3xl font-bold mb-4">Match Results</h1>
-      <p className="text-gray-600">Match results content will be implemented in Block J</p>
     </div>
   );
 }
@@ -49,7 +41,7 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<SkillsDashboard />} />
-        <Route path="/matches" element={<MatchResults />} />
+        <Route path="/matches" element={<MatchResultsPage />} />
         <Route path="/career-path" element={<CareerVisualization />} />
         <Route path="/success-patterns" element={<SuccessPatternPage />} />
       </Route>

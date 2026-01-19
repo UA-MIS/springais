@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 
 export default function MainLayout() {
   const location = useLocation();
-  const variant = location.pathname.startsWith('/success-patterns') ? 'dark' : 'default';
+  const variant = location.pathname.startsWith('/success-patterns') || location.pathname.startsWith('/matches') ? 'dark' : 'default';
 
   return (
     <div className="relative min-h-screen">
