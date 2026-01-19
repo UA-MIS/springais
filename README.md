@@ -49,12 +49,12 @@ SpringAIS is an AI-powered talent mobility platform designed for EY to help empl
 
 3. **Start all services**
    ```bash
-   docker-compose up -d
+   docker compose up -d --build
    ```
 
 4. **Verify services are running**
    ```bash
-   docker-compose ps
+   docker compose ps
    ```
 
    All services should show as "Up" and healthy:
@@ -170,11 +170,11 @@ Additional endpoints will be added by implementation blocks.
 ### Services won't start
 ```bash
 # Stop all services
-docker-compose down
+docker compose down
 
 # Remove volumes and restart
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d --build
 ```
 
 ### Port conflicts
@@ -187,10 +187,18 @@ If you see "port already allocated" errors, edit `docker-compose.yml` to use dif
 ### Database connection errors
 ```bash
 # Check if postgres is healthy
-docker-compose ps
+docker compose ps
 
 # View logs
-docker-compose logs postgres
+docker compose logs postgres
+```
+
+### Missing Postgres extensions (pgvector / pgcrypto)
+If you upgraded an existing Postgres volume (so init scripts didn’t run), ensure required extensions exist:
+
+```bash
+docker exec springais-postgres psql -U postgres -d springais -c "CREATE EXTENSION IF NOT EXISTS vector;"
+docker exec springais-postgres psql -U postgres -d springais -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 ```
 
 ### Frontend build errors

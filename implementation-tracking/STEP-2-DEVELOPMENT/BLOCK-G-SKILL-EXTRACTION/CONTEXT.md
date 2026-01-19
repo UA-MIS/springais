@@ -10,7 +10,7 @@
 
 ## Purpose
 
-Build an AI-powered pipeline that extracts structured skills from unstructured text (resumes, job descriptions, project summaries). Uses OpenAI GPT-4.5 to:
+Build an AI-powered pipeline that extracts structured skills from unstructured text (resumes, job descriptions, project summaries). Uses OpenAI GPT-5 nano to:
 - Parse uploaded resumes/profiles and extract skills
 - Categorize skills (technical, soft, domain-specific)
 - Validate and normalize skill names
@@ -18,16 +18,19 @@ Build an AI-powered pipeline that extracts structured skills from unstructured t
 
 This is the "brain" that converts messy text → clean, structured skills data.
 
+**Model Choice:** GPT-5 nano is ideal for this task because skill extraction is a classification/extraction task, not complex reasoning. It provides excellent accuracy at minimal cost ($0.05/1M input, $0.40/1M output).
+
 ---
 
 ## What This Block Delivers
 
 1. **Resume Parser** - Extract text from PDF/DOCX files
-2. **LLM Skill Extractor** - GPT-4.5-powered skill extraction
+2. **LLM Skill Extractor** - GPT-5 nano-powered skill extraction
 3. **Skill Taxonomy** - Categorize skills into types and proficiency levels
 4. **Validation & Normalization** - Deduplicate and standardize skill names
-5. **Batch Processing** - Handle bulk skill extraction for synthetic data
-6. **API Endpoints** - Upload resume, extract skills, update employee profile
+5. **API Endpoints** - Upload resume, extract skills, update employee profile
+
+> **Note:** Batch processing for synthetic employee data is handled in Step 3 (Block R: Embeddings Persistence Integration) where database and matching engine are connected.
 
 ---
 
@@ -62,7 +65,7 @@ Convert variations to canonical form:
 - Clean text: Remove formatting, headers, footers
 
 ### 2. LLM Skill Extraction
-**Prompt to GPT-4.5:**
+**Prompt to GPT-5 nano:**
 ```
 Extract all skills from the following resume. Categorize each skill as:
 - technical (programming languages, tools, frameworks)
@@ -88,11 +91,6 @@ Resume text:
 - Normalize variations (e.g., "Javascript" → "JavaScript")
 - Flag unknown skills for manual review
 
-### 4. Batch Processing
-- For synthetic data (Block A), extract skills from generated profiles
-- Queue-based processing with Celery or background tasks
-- Track progress: processed/total
-
 ---
 
 ## Architecture
@@ -115,7 +113,7 @@ Resume text:
                 │
                 v
        ┌────────────────────────────┐
-       │  GPT-4.5 Skill Extractor   │
+       │  GPT-5 nano Skill Extractor│
        │  (OpenAI API)              │
        └────────┬───────────────────┘
                 │
@@ -257,14 +255,21 @@ Certifications:
 ```python
 # .env
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4.5-turbo  # Or gpt-4o
+OPENAI_MODEL=gpt-5-nano  # Fast, cheap, ideal for extraction tasks
 
 # backend/app/config/settings.py
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.5-turbo")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5-nano")
 MAX_TOKENS = 1000
 TEMPERATURE = 0.3  # Lower for more consistent extractions
 ```
+
+**Model Options:**
+| Model | Input (per 1M) | Output (per 1M) | Use Case |
+|-------|---------------|-----------------|----------|
+| **gpt-5-nano** | $0.05 | $0.40 | Recommended - fast, cheap, great for extraction |
+| gpt-5-mini | $0.25 | $2.00 | If nano quality insufficient |
+| gpt-5 | $1.25 | $10.00 | Overkill for this task |
 
 ---
 
@@ -272,30 +277,33 @@ TEMPERATURE = 0.3  # Lower for more consistent extractions
 
 ✅ Block G is complete when:
 1. Can parse PDF and DOCX resumes to extract text
-2. GPT-4.5 extracts skills with category and proficiency
+2. GPT-5 nano extracts skills with category and proficiency
 3. Skill normalizer deduplicates and standardizes skill names
 4. API endpoint accepts resume upload and returns structured skills
-5. Batch processing can extract skills for 900 synthetic employees
-6. Skill taxonomy database has 200+ common skills with aliases
-7. Unit tests verify extraction logic with mock resumes
-8. Error handling for OpenAI API failures (retry logic)
+5. Skill taxonomy database has 200+ common skills with aliases
+6. Unit tests verify extraction logic with mock resumes
+7. Error handling for OpenAI API failures (retry logic)
+
+> **Note:** Batch processing for 900 synthetic employees is handled in Step 3 (Block R) during integration.
 
 ---
 
 ## Cost Estimation (OpenAI API)
 
-**Assumptions:**
-- Average resume: ~1000 tokens
-- GPT-4.5 cost: $0.01 per 1K input tokens, $0.03 per 1K output tokens
-- Average output: ~200 tokens
+**Using GPT-5 nano:**
+- Average resume: ~1000 tokens input
+- Average output: ~200 tokens (skill JSON)
+- GPT-5 nano: $0.05/1M input, $0.40/1M output
 
 **Cost per Resume:**
-- Input: $0.01
-- Output: $0.006
-- **Total: ~$0.016 per resume**
+- Input: 1000 tokens × $0.05/1M = $0.00005
+- Output: 200 tokens × $0.40/1M = $0.00008
+- **Total: ~$0.00013 per resume**
 
-**For 900 employees:**
-- Total cost: ~$14.40
+**For 900 employees (if batch needed in Step 3):**
+- Total cost: ~$0.12
+
+This is **100x cheaper** than the old GPT-4.5 estimate ($14.40 → $0.12).
 
 ---
 
@@ -318,9 +326,10 @@ TEMPERATURE = 0.3  # Lower for more consistent extractions
 - Start with simple keyword extraction, then use LLM for better accuracy
 - Consider caching LLM responses to avoid duplicate API calls
 - Add retry logic for OpenAI API (rate limits, timeouts)
-- For demo, pre-extract skills for synthetic employees (don't run live)
 - Skill proficiency can be inferred from years of experience mentioned
+- GPT-5 nano has 400K context window - more than enough for any resume
 
 ---
 
+**Last Updated:** 2026-01-19
 **Next Steps:** See `TASKS.md` for implementation tasks
