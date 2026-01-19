@@ -1,0 +1,209 @@
+======================================================================
+SPRINGAIS SYNTHETIC DATA VALIDATION REPORT
+======================================================================
+Generated: 2026-01-19T16:47:21.887098
+Total Employees: 900
+Overall Status: ✅ ALL LAYERS PASSED
+Checks Passed: 46/46
+
+======================================================================
+LAYER SUMMARY
+======================================================================
+Layer 1: Distribution Validation - ✅ PASS (23/23 checks passed)
+Layer 2: Correlation Validation - ✅ PASS (7/7 checks passed)
+Layer 3: Progression Validation - ✅ PASS (4/4 checks passed)
+Layer 4: Boundary Validation - ✅ PASS (7/7 checks passed)
+Layer 5: Semantic Validation - ✅ PASS (5/5 checks passed)
+
+======================================================================
+LAYER 1: DISTRIBUTION VALIDATION
+======================================================================
+  ✅ Total Employee Count
+     Expected 900, got 900
+  ✅ Assurance Count
+     Expected ~300 (±15), got 300
+  ✅ Tax Count
+     Expected ~300 (±15), got 300
+  ✅ Consulting Count
+     Expected ~300 (±15), got 300
+  ✅ Assurance Staff Count
+     Expected ~90 (±9), got 90
+  ✅ Assurance Senior Count
+     Expected ~75 (±7), got 75
+  ✅ Assurance Manager Count
+     Expected ~60 (±6), got 60
+  ✅ Assurance Senior Manager Count
+     Expected ~45 (±4), got 45
+  ✅ Assurance Partner Count
+     Expected ~30 (±3), got 30
+  ✅ Tax Staff Count
+     Expected ~90 (±9), got 90
+  ✅ Tax Senior Count
+     Expected ~75 (±7), got 75
+  ✅ Tax Manager Count
+     Expected ~60 (±6), got 60
+  ✅ Tax Senior Manager Count
+     Expected ~45 (±4), got 45
+  ✅ Tax Partner Count
+     Expected ~30 (±3), got 30
+  ✅ Consulting Analyst Count
+     Expected ~45 (±4), got 45
+  ✅ Consulting Associate Count
+     Expected ~42 (±4), got 42
+  ✅ Consulting Senior Associate Count
+     Expected ~39 (±3), got 39
+  ✅ Consulting Consultant Count
+     Expected ~36 (±3), got 36
+  ✅ Consulting Senior Consultant Count
+     Expected ~33 (±3), got 33
+  ✅ Consulting Manager Count
+     Expected ~30 (±3), got 30
+  ✅ Consulting Senior Manager Count
+     Expected ~27 (±2), got 27
+  ✅ Consulting Director Count
+     Expected ~24 (±2), got 24
+  ✅ Consulting Partner Count
+     Expected ~24 (±2), got 24
+
+======================================================================
+LAYER 2: CORRELATION VALIDATION
+======================================================================
+  ✅ Assurance Billing Rate Correlation
+     Billing increases with level
+  ✅ Assurance Quality Score Correlation
+     Quality increases with level
+  ✅ Consulting Billing Rate Correlation
+     Billing increases with level
+  ✅ Consulting Quality Score Correlation
+     Quality increases with level
+  ✅ Tax Billing Rate Correlation
+     Billing increases with level
+  ✅ Tax Quality Score Correlation
+     Quality increases with level
+  ✅ Utilization Pattern (Entry vs Senior)
+     Entry levels avg: 79.0%, Senior levels avg: 72.5%
+
+======================================================================
+LAYER 3: PROGRESSION VALIDATION
+======================================================================
+  ✅ Experience-Role Alignment
+     All employees have realistic experience for their role
+  ✅ Assurance Experience Progression
+     Experience increases with level
+  ✅ Tax Experience Progression
+     Experience increases with level
+  ✅ Consulting Experience Progression
+     Experience increases with level
+
+======================================================================
+LAYER 4: BOUNDARY VALIDATION
+======================================================================
+  ✅ Utilization Bounds
+     All values in range [45, 100]
+  ✅ Billing Rate Bounds
+     All values in range [80, 800]
+  ✅ Realization Bounds
+     All values in range [75, 100]
+  ✅ Quality Score Bounds
+     All values in range [1.0, 5.0]
+  ✅ Training Hours Bounds
+     All values in range [5, 120]
+  ✅ Client Feedback Bounds
+     All values in range [1.0, 5.0]
+  ✅ Core Skills Present
+     All employees have required core skills
+
+======================================================================
+LAYER 5: SEMANTIC VALIDATION
+======================================================================
+  ✅ Assurance Relevant Skills
+     All Assurance employees have relevant skills
+  ✅ Tax Relevant Skills
+     All Tax employees have relevant skills
+  ✅ Consulting Relevant Skills
+     All Consulting employees have relevant skills
+  ✅ Assurance No Forbidden Skills
+     No Assurance employees have forbidden skills
+  ✅ Focus Area Skills
+     Specialized employees have focus area skills
+
+======================================================================
+DISTRIBUTION TABLES
+======================================================================
+
+Service Line Distribution:
+  Assurance: 300 (33.3%)
+  Consulting: 300 (33.3%)
+  Tax: 300 (33.3%)
+
+Role Distribution:
+  Ass Manager: 60
+  Ass Partner: 30
+  Ass Senior: 75
+  Ass Senior Manager: 45
+  Ass Staff: 90
+  Con Analyst: 45
+  Con Associate: 42
+  Con Consultant: 36
+  Con Director: 24
+  Con Manager: 30
+  Con Partner: 24
+  Con Senior Associate: 39
+  Con Senior Consultant: 33
+  Con Senior Manager: 27
+  Tax Manager: 60
+  Tax Partner: 30
+  Tax Senior: 75
+  Tax Senior Manager: 45
+  Tax Staff: 90
+
+======================================================================
+CORRELATION TABLES (Avg Metrics by Role Level)
+======================================================================
+
+Level   Count   Billing     Quality   Utilization Experience
+------------------------------------------------------------
+1       225     $99         3.67      77.5        1.0       
+2       192     $143        3.97      80.7        2.8       
+3       159     $192        4.20      79.4        5.1       
+4       126     $253        4.34      76.7        8.3       
+5       93      $359        4.52      70.9        14.5      
+6       30      $301        4.38      77.0        9.4       
+7       27      $384        4.49      72.9        12.8      
+8       24      $462        4.61      66.8        17.2      
+9       24      $618        4.69      55.9        23.3      
+
+======================================================================
+OUTLIERS (>2 std devs from mean)
+======================================================================
+  EMP-ASR-0274: utilization = 57.0 (z-score: -2.88)
+  EMP-ASR-0277: utilization = 55.0 (z-score: -3.17)
+  EMP-ASR-0279: utilization = 58.0 (z-score: -2.74)
+  EMP-ASR-0280: utilization = 58.0 (z-score: -2.74)
+  EMP-ASR-0281: utilization = 59.0 (z-score: -2.59)
+  EMP-ASR-0290: utilization = 56.0 (z-score: -3.03)
+  EMP-TAX-0271: utilization = 63.0 (z-score: -2.0)
+  EMP-TAX-0273: utilization = 57.0 (z-score: -2.88)
+  EMP-TAX-0278: utilization = 58.0 (z-score: -2.74)
+  EMP-TAX-0279: utilization = 62.0 (z-score: -2.15)
+  EMP-TAX-0283: utilization = 62.0 (z-score: -2.15)
+  EMP-TAX-0298: utilization = 62.0 (z-score: -2.15)
+  EMP-TAX-0300: utilization = 60.0 (z-score: -2.44)
+  EMP-CON-0257: utilization = 59.0 (z-score: -2.59)
+  EMP-CON-0262: utilization = 55.0 (z-score: -3.17)
+  EMP-CON-0263: utilization = 57.0 (z-score: -2.88)
+  EMP-CON-0265: utilization = 57.0 (z-score: -2.88)
+  EMP-CON-0267: utilization = 59.0 (z-score: -2.59)
+  EMP-CON-0274: utilization = 59.0 (z-score: -2.59)
+  EMP-CON-0277: utilization = 62.0 (z-score: -2.15)
+
+======================================================================
+FINAL SUMMARY
+======================================================================
+Total Checks: 46
+Passed: 46
+Failed: 0
+Outliers Detected: 193
+
+✅ DATA VALIDATION PASSED
+======================================================================
