@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   PieChart,
   Pie,
@@ -20,7 +19,7 @@ export default function DepartmentDistributionChart({
 }: DepartmentDistributionChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
-  const defaultColors = ['#FFE600', '#2E2E38', '#747480', '#C4C4CD', '#F6F6FA'];
+  const defaultColors = ['#FFE600', '#A1A1AA', '#71717A', '#52525B', '#3F3F46'];
 
   const chartData = data.map((item, index) => ({
     ...item,
@@ -32,12 +31,12 @@ export default function DepartmentDistributionChart({
       const data = payload[0].payload as DepartmentData;
       const percentage = ((data.value / total) * 100).toFixed(1);
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded shadow-lg">
-          <p className="font-semibold text-[#2E2E38]">{data.name}</p>
-          <p className="text-sm text-gray-600">
+        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
+          <p className="font-semibold text-white">{data.name}</p>
+          <p className="text-sm text-white/60">
             Count: <span className="font-bold">{data.value}</span>
           </p>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-white/60">
             Percentage: <span className="font-bold">{percentage}%</span>
           </p>
         </div>
@@ -69,8 +68,8 @@ export default function DepartmentDistributionChart({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-4 text-[#2E2E38]">
+    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md">
+      <h3 className="text-lg font-semibold mb-4 text-white">
         Transitions by Department
       </h3>
       <ResponsiveContainer width="100%" height={300}>
@@ -99,13 +98,13 @@ export default function DepartmentDistributionChart({
           <Tooltip content={<CustomTooltip />} />
           <Legend
             wrapperStyle={{ paddingTop: '20px' }}
-            formatter={(value) => <span style={{ color: '#2E2E38' }}>{value}</span>}
+            formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
           />
         </PieChart>
       </ResponsiveContainer>
       <div className="text-center mt-4">
-        <p className="text-sm text-gray-600">
-          Total: <span className="font-bold text-[#2E2E38]">{total} transitions</span>
+        <p className="text-sm text-white/60">
+          Total: <span className="font-bold text-white/85">{total} transitions</span>
         </p>
       </div>
     </div>

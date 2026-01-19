@@ -1,5 +1,3 @@
-import api from './api';
-
 export interface User {
   id: number;
   email: string;
@@ -52,7 +50,7 @@ export const authService = {
     localStorage.removeItem('token');
   },
 
-  async getCurrentUser(token: string): Promise<User> {
+  async getCurrentUser(_token: string): Promise<User> {
     try {
       // TODO: Replace with real API call when backend is ready
       // const response = await api.get('/auth/me');
