@@ -112,7 +112,7 @@ class Employee:
     """Represents a synthetic employee."""
     id: str
     service_line: str
-    current_role: str
+    job_title: str  # Renamed from current_role to avoid PostgreSQL reserved function
     role_level: int
     years_experience: float
     skills: List[str]
@@ -140,7 +140,7 @@ class Employee:
         themes_array = "ARRAY[" + ", ".join(f"'{t}'" for t in themes) + "]" if themes else "NULL"
         
         return (
-            f"('{self.id}', '{self.service_line}', '{self.current_role}', "
+            f"('{self.id}', '{self.service_line}', '{self.job_title}', "
             f"{self.role_level}, {self.years_experience:.2f}, "
             f"'{skills_json}'::jsonb, '{metrics_json}'::jsonb, "
             f"{career_sql}, "
@@ -152,7 +152,7 @@ class Employee:
         return {
             "id": self.id,
             "service_line": self.service_line,
-            "current_role": self.current_role,
+            "job_title": self.job_title,
             "role_level": self.role_level,
             "years_experience": self.years_experience,
             "skills": self.skills,
@@ -220,6 +220,7 @@ def build_skills_list(
     2. Include 2-4 common_skills (60-80% probability each)
     3. If has_specialization, add focus_area_skills
     4. Add 1-2 soft skills for variety
+    5. Ensure service-line specific required skills are present
     """
     skills = []
     
@@ -255,6 +256,17 @@ def build_skills_list(
     if available_soft:
         soft_selected = random.sample(available_soft, min(num_soft, len(available_soft)))
         skills.extend(soft_selected)
+    
+    # 5. CRITICAL: Ensure service-line required skills are present
+    # This fixes the Tax Partner skills validation issue
+    if template.service_line == "Assurance":
+        required = ["Accounting", "Audit"]
+        if not any(r in skills for r in required):
+            skills.insert(0, random.choice(required))
+    elif template.service_line == "Tax":
+        required = ["Tax Law", "Tax Planning", "Tax Compliance", "Tax Strategy"]
+        if not any(r in skills for r in required):
+            skills.insert(0, random.choice(["Tax Law", "Tax Planning"]))
     
     return skills
 
@@ -387,7 +399,7 @@ def generate_employees(
             employee = Employee(
                 id=emp_id,
                 service_line=service_line,
-                current_role=template.role_name,
+                job_title=template.role_name,
                 role_level=template.level,
                 years_experience=years_exp,
                 skills=skills,
@@ -436,7 +448,7 @@ def export_to_sql(employees: List[Employee], output_path: str) -> str:
         "TRUNCATE TABLE employees CASCADE;",
         "",
         "-- Insert employees",
-        'INSERT INTO employees (id, service_line, "current_role", role_level, years_experience, skills, performance_metrics, career_history, feedback_themes, notable_achievement)',
+        'INSERT INTO employees (id, service_line, job_title, role_level, years_experience, skills, performance_metrics, career_history, feedback_themes, notable_achievement)',
         "VALUES"
     ]
     
@@ -488,7 +500,7 @@ def validate_basic(employees: List[Employee]) -> Dict[str, Any]:
         results["service_line_counts"][emp.service_line] = \
             results["service_line_counts"].get(emp.service_line, 0) + 1
         
-        key = f"{emp.service_line}:{emp.current_role}"
+        key = f"{emp.service_line}:{emp.job_title}"
         results["role_counts"][key] = results["role_counts"].get(key, 0) + 1
     
     # Specialization rate
