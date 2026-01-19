@@ -41,8 +41,8 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
   - [x] Set performance_ranges (6 metrics per role)
 
 - [x] **Task 2:** Set up O*NET API integration ✅
-  - [ ] Register for O*NET API key at onetcenter.org (⏳ awaiting approval)
-  - [ ] Add `ONET_API_KEY` to `.env` (⏳ awaiting key)
+  - [x] Register for O*NET API key at onetcenter.org
+  - [x] Add `ONET_API_KEY` to `.env`
   - [x] Create `onet_client.py` module
   - [x] Write `get_skills(occupation_code)` function
   - [x] Map EY service lines to O*NET occupation codes
