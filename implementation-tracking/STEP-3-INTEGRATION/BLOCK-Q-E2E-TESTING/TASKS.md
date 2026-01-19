@@ -144,6 +144,9 @@ See `CONTEXT.md` section "Update Instructions (For AI)" for full details.
 ### Phase 5: Demo Preparation (Tasks 10-11)
 
 - [ ] **Task 10:** Seed demo data and prepare demo script
+  - [ ] (Optional) Regenerate synthetic employees with real LLM APIs for natural text:
+        `docker exec springais-backend python /app/scripts/generate_synthetic_data.py --output /app/data/synthetic_employees.sql --count 900 --seed 42 --json`
+        (Cost: ~$1.30, Time: ~54min. Requires OPENAI_API_KEY and ONET_API_KEY in .env)
   - [ ] Create seed script: `backend/scripts/seed_demo_data.py`
   - [ ] Seed 3-5 demo user accounts (demo@springais.com, etc.)
   - [ ] Seed 50-100 realistic employee profiles

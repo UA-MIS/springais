@@ -1,0 +1,749 @@
+[
+  {
+    "id": "EMP-ASR-0001",
+    "service_line": "Assurance",
+    "current_role": "Staff",
+    "role_level": 1,
+    "years_experience": 0.77,
+    "skills": [
+      "Accounting",
+      "Audit",
+      "GAAP",
+      "Excel",
+      "Attention to Detail",
+      "Teamwork",
+      "Time Management",
+      "Organization",
+      "Client Relations"
+    ],
+    "performance_metrics": {
+      "utilization": 73,
+      "billing_rate": 81,
+      "realization": 86,
+      "quality_score": 3.55,
+      "training_hours": 44,
+      "client_feedback": 4.02
+    },
+    "focus_area": "Audit",
+    "has_specialization": false,
+    "feedback_themes": [
+      "strong work ethic",
+      "meticulous attention to detail",
+      "clear communication with clients"
+    ],
+    "notable_achievement": "Successfully assisted in the audit of a mid-sized manufacturing client, identifying a 5% discrepancy using Excel, adhering to GAAP standards.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-ASR-0002",
+    "service_line": "Assurance",
+    "current_role": "Senior",
+    "role_level": 2,
+    "years_experience": 3.62,
+    "skills": [
+      "Accounting",
+      "Audit",
+      "GAAP",
+      "Financial Reporting",
+      "Internal Controls",
+      "Excel",
+      "Analytical Skills",
+      "Supervision",
+      "Client Relations",
+      "SOX Compliance",
+      "SEC Comment Letters",
+      "XBRL",
+      "Disclosure Controls",
+      "Regulatory Filings",
+      "Communication",
+      "Adaptability"
+    ],
+    "performance_metrics": {
+      "utilization": 85,
+      "billing_rate": 167,
+      "realization": 93,
+      "quality_score": 3.75,
+      "training_hours": 48,
+      "client_feedback": 3.82
+    },
+    "focus_area": "SEC Reporting",
+    "has_specialization": true,
+    "feedback_themes": [
+      "builds collaborative teams",
+      "deep SEC expertise",
+      "proactive problem solver",
+      "clear and concise communication"
+    ],
+    "notable_achievement": "Led a team to successfully improve SEC reporting compliance, reducing reporting errors by 20% over three consecutive quarters.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-ASR-0003",
+    "service_line": "Assurance",
+    "current_role": "Manager",
+    "role_level": 3,
+    "years_experience": 5.01,
+    "skills": [
+      "Accounting",
+      "Audit",
+      "GAAP",
+      "Financial Reporting",
+      "Internal Controls",
+      "Risk Assessment",
+      "Client Management",
+      "Project Management",
+      "Strategic Thinking",
+      "Staff Development",
+      "Presentation Skills",
+      "Business Development",
+      "MD&A Analysis",
+      "Disclosure Controls",
+      "Regulatory Filings",
+      "Adaptability",
+      "Analytical Skills"
+    ],
+    "performance_metrics": {
+      "utilization": 73,
+      "billing_rate": 183,
+      "realization": 91,
+      "quality_score": 4.25,
+      "training_hours": 30,
+      "client_feedback": 4.34
+    },
+    "focus_area": "SEC Reporting",
+    "has_specialization": true,
+    "feedback_themes": [
+      "deep tax code expertise",
+      "creative problem solver",
+      "excellent technical writing",
+      "thorough research skills"
+    ],
+    "notable_achievement": "Successfully led a team to improve client SEC filings accuracy, resulting in a 30% reduction in audit adjustments year-over-year.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-ASR-0004",
+    "service_line": "Assurance",
+    "current_role": "Senior Manager",
+    "role_level": 4,
+    "years_experience": 9.1,
+    "skills": [
+      "Accounting",
+      "Audit",
+      "GAAP",
+      "Financial Reporting",
+      "Internal Controls",
+      "Risk Assessment",
+      "Client Management",
+      "Project Management",
+      "Business Development",
+      "Quality Review",
+      "Regulatory Relations",
+      "Industry Expertise",
+      "Strategic Planning",
+      "Financial Statement Analysis",
+      "10-K/10-Q Preparation",
+      "SEC Reporting",
+      "Organization"
+    ],
+    "performance_metrics": {
+      "utilization": 79,
+      "billing_rate": 313,
+      "realization": 96,
+      "quality_score": 4.31,
+      "training_hours": 43,
+      "client_feedback": 4.37
+    },
+    "focus_area": "Financial Reporting",
+    "has_specialization": true,
+    "feedback_themes": [
+      "strong work ethic",
+      "collaborative team player",
+      "clear communication with clients",
+      "meticulous attention to detail"
+    ],
+    "notable_achievement": "Increased departmental efficiency by 30% by implementing cutting-edge audit technologies, enhancing compliance with GAAP standards for major clients.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-ASR-0005",
+    "service_line": "Assurance",
+    "current_role": "Partner",
+    "role_level": 5,
+    "years_experience": 19.58,
+    "skills": [
+      "Accounting",
+      "Audit",
+      "GAAP",
+      "Financial Reporting",
+      "Risk Assessment",
+      "Client Management",
+      "Business Development",
+      "Strategic Leadership",
+      "Executive Presence",
+      "Board Relations",
+      "Firm Leadership",
+      "Attention to Detail"
+    ],
+    "performance_metrics": {
+      "utilization": 55,
+      "billing_rate": 390,
+      "realization": 98,
+      "quality_score": 4.57,
+      "training_hours": 24,
+      "client_feedback": 4.51
+    },
+    "focus_area": "Risk & Compliance",
+    "has_specialization": false,
+    "feedback_themes": [
+      "deep tax code expertise",
+      "strong analytical abilities",
+      "thorough research skills",
+      "reliable and responsive",
+      "stays current on regulations"
+    ],
+    "notable_achievement": "Led a risk assessment initiative that identified compliance gaps, reducing potential financial losses by 15% for a major client.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-TAX-0001",
+    "service_line": "Tax",
+    "current_role": "Staff",
+    "role_level": 1,
+    "years_experience": 0.77,
+    "skills": [
+      "Tax Law",
+      "Tax Compliance",
+      "Tax Research",
+      "Attention to Detail",
+      "Time Management",
+      "Technical Writing",
+      "Research Skills",
+      "Teamwork"
+    ],
+    "performance_metrics": {
+      "utilization": 80,
+      "billing_rate": 86,
+      "realization": 83,
+      "quality_score": 3.63,
+      "training_hours": 51,
+      "client_feedback": 4.09
+    },
+    "focus_area": "International Tax",
+    "has_specialization": false,
+    "feedback_themes": [
+      "strong analytical skills",
+      "team collaboration mindset",
+      "excellent client rapport"
+    ],
+    "notable_achievement": "Successfully collaborated on a complex tax compliance project, ensuring accuracy and timeliness, which improved client satisfaction by 15% over previous year.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-TAX-0002",
+    "service_line": "Tax",
+    "current_role": "Senior",
+    "role_level": 2,
+    "years_experience": 3.1,
+    "skills": [
+      "Tax Law",
+      "Tax Planning",
+      "Tax Compliance",
+      "IRC Knowledge",
+      "Excel",
+      "Client Communication",
+      "Technical Writing",
+      "Problem Solving",
+      "Tax Software",
+      "Presentation Skills"
+    ],
+    "performance_metrics": {
+      "utilization": 84,
+      "billing_rate": 136,
+      "realization": 85,
+      "quality_score": 4.14,
+      "training_hours": 52,
+      "client_feedback": 3.89
+    },
+    "focus_area": "Corporate Tax",
+    "has_specialization": false,
+    "feedback_themes": [
+      "thorough research skills",
+      "stays current on regulations",
+      "reliable and responsive",
+      "creative problem solver",
+      "client-focused approach"
+    ],
+    "notable_achievement": "Successfully led a team in optimizing tax strategies, resulting in a 10% reduction in corporate tax liability for a key client.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-TAX-0003",
+    "service_line": "Tax",
+    "current_role": "Manager",
+    "role_level": 3,
+    "years_experience": 6.27,
+    "skills": [
+      "Tax Law",
+      "Tax Planning",
+      "Tax Compliance",
+      "Tax Research",
+      "IRC Knowledge",
+      "Client Management",
+      "Project Management",
+      "Tax Strategy",
+      "Strategic Thinking",
+      "Regulatory Relations",
+      "Business Development",
+      "Property Tax",
+      "Apportionment",
+      "Client Relations",
+      "Collaboration"
+    ],
+    "performance_metrics": {
+      "utilization": 78,
+      "billing_rate": 175,
+      "realization": 96,
+      "quality_score": 4.15,
+      "training_hours": 50,
+      "client_feedback": 4.37
+    },
+    "focus_area": "State & Local Tax",
+    "has_specialization": true,
+    "feedback_themes": [
+      "reliable and responsive",
+      "client-focused approach",
+      "thorough research skills"
+    ],
+    "notable_achievement": "Successfully led a project that identified $500,000 in state tax savings for a mid-sized company through strategic tax compliance and planning.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-TAX-0004",
+    "service_line": "Tax",
+    "current_role": "Senior Manager",
+    "role_level": 4,
+    "years_experience": 8.39,
+    "skills": [
+      "Tax Law",
+      "Tax Strategy",
+      "Client Management",
+      "Business Development",
+      "Project Management",
+      "Team Leadership",
+      "IRC Expertise",
+      "Thought Leadership",
+      "Executive Communication",
+      "Decision Making"
+    ],
+    "performance_metrics": {
+      "utilization": 81,
+      "billing_rate": 276,
+      "realization": 93,
+      "quality_score": 4.55,
+      "training_hours": 26,
+      "client_feedback": 4.6
+    },
+    "focus_area": "International Tax",
+    "has_specialization": false,
+    "feedback_themes": [
+      "stays current on regulations",
+      "reliable and responsive",
+      "client-focused approach",
+      "thorough research skills"
+    ],
+    "notable_achievement": "Successfully led a cross-border tax restructuring project, resulting in $3M annual savings for a major multinational client.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-TAX-0005",
+    "service_line": "Tax",
+    "current_role": "Partner",
+    "role_level": 5,
+    "years_experience": 18.85,
+    "skills": [
+      "Tax Law",
+      "Tax Strategy",
+      "Client Management",
+      "Business Development",
+      "Strategic Leadership",
+      "Executive Presence",
+      "Industry Leadership",
+      "Tax Policy",
+      "Regulatory Relations",
+      "M&A Leadership",
+      "Creativity"
+    ],
+    "performance_metrics": {
+      "utilization": 64,
+      "billing_rate": 370,
+      "realization": 95,
+      "quality_score": 4.83,
+      "training_hours": 32,
+      "client_feedback": 4.54
+    },
+    "focus_area": "M&A Tax",
+    "has_specialization": false,
+    "feedback_themes": [
+      "deep tax code expertise",
+      "strong analytical abilities",
+      "excellent technical writing",
+      "thorough research skills"
+    ],
+    "notable_achievement": "Successfully led a cross-functional team to secure a $200 million tax savings for a major client through innovative M&A tax strategies.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0001",
+    "service_line": "Consulting",
+    "current_role": "Analyst",
+    "role_level": 1,
+    "years_experience": 0.63,
+    "skills": [
+      "Research",
+      "Analysis",
+      "PowerPoint",
+      "Excel",
+      "Communication",
+      "Attention to Detail",
+      "Data Analysis",
+      "Time Management"
+    ],
+    "performance_metrics": {
+      "utilization": 81,
+      "billing_rate": 85,
+      "realization": 85,
+      "quality_score": 3.51,
+      "training_hours": 71,
+      "client_feedback": 3.56
+    },
+    "focus_area": "Strategy",
+    "has_specialization": false,
+    "feedback_themes": [
+      "excellent technical writing",
+      "creative problem solver",
+      "reliable and responsive",
+      "thorough research skills",
+      "strong analytical abilities"
+    ],
+    "notable_achievement": "Developed a strategic analysis tool that optimized client data processing efficiency by 20%, enhancing decision-making capabilities for senior consultants.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0002",
+    "service_line": "Consulting",
+    "current_role": "Associate",
+    "role_level": 2,
+    "years_experience": 2.62,
+    "skills": [
+      "Research",
+      "Analysis",
+      "PowerPoint",
+      "Excel",
+      "Communication",
+      "Problem Solving",
+      "Facilitation",
+      "Client Communication",
+      "Project Coordination",
+      "Data Analysis",
+      "Creativity"
+    ],
+    "performance_metrics": {
+      "utilization": 74,
+      "billing_rate": 120,
+      "realization": 90,
+      "quality_score": 3.94,
+      "training_hours": 50,
+      "client_feedback": 3.88
+    },
+    "focus_area": "Finance Transformation",
+    "has_specialization": false,
+    "feedback_themes": [
+      "stays current on regulations",
+      "thorough research skills",
+      "strong analytical abilities",
+      "client-focused approach"
+    ],
+    "notable_achievement": "Assisted in streamlining a client's budgeting process, reducing forecasting errors by 15% through detailed data analysis and improved reporting.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0003",
+    "service_line": "Consulting",
+    "current_role": "Senior Associate",
+    "role_level": 3,
+    "years_experience": 3.45,
+    "skills": [
+      "Analysis",
+      "PowerPoint",
+      "Excel",
+      "Communication",
+      "Problem Solving",
+      "Client Relations",
+      "Workshop Facilitation",
+      "Stakeholder Management",
+      "Data Analysis",
+      "Business Analysis",
+      "Collaboration"
+    ],
+    "performance_metrics": {
+      "utilization": 78,
+      "billing_rate": 180,
+      "realization": 87,
+      "quality_score": 4.11,
+      "training_hours": 64,
+      "client_feedback": 4.27
+    },
+    "focus_area": "Cybersecurity",
+    "has_specialization": false,
+    "feedback_themes": [
+      "strategic thinker",
+      "strong project management",
+      "adaptable to change",
+      "builds strong client relationships"
+    ],
+    "notable_achievement": "Developed a cybersecurity risk assessment model that increased client data protection efficiency by 30%, presented through comprehensive analysis and reports.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0004",
+    "service_line": "Consulting",
+    "current_role": "Consultant",
+    "role_level": 4,
+    "years_experience": 5.35,
+    "skills": [
+      "Strategy",
+      "Client Management",
+      "Project Management",
+      "Communication",
+      "Problem Solving",
+      "Stakeholder Management",
+      "Change Management",
+      "Team Leadership",
+      "Subject Matter Expertise",
+      "Executive Communication",
+      "Initiative"
+    ],
+    "performance_metrics": {
+      "utilization": 76,
+      "billing_rate": 182,
+      "realization": 91,
+      "quality_score": 4.1,
+      "training_hours": 37,
+      "client_feedback": 4.11
+    },
+    "focus_area": "Cybersecurity",
+    "has_specialization": false,
+    "feedback_themes": [
+      "excellent presentation skills",
+      "collaborative leadership",
+      "drives results effectively",
+      "adaptable to change",
+      "innovative problem solver"
+    ],
+    "notable_achievement": "Successfully led a $1 million cybersecurity strategy project for a major client, enhancing their threat response capabilities by 40%.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0005",
+    "service_line": "Consulting",
+    "current_role": "Senior Consultant",
+    "role_level": 5,
+    "years_experience": 6.94,
+    "skills": [
+      "Strategy",
+      "Client Management",
+      "Project Management",
+      "Team Leadership",
+      "Stakeholder Management",
+      "Business Development",
+      "Subject Matter Expertise",
+      "Industry Expertise",
+      "Proposal Development",
+      "Executive Communication",
+      "Change Management",
+      "Lean Six Sigma",
+      "Operational Excellence",
+      "Supply Chain",
+      "Creativity",
+      "Presentation Skills"
+    ],
+    "performance_metrics": {
+      "utilization": 81,
+      "billing_rate": 265,
+      "realization": 93,
+      "quality_score": 4.19,
+      "training_hours": 45,
+      "client_feedback": 4.3
+    },
+    "focus_area": "Operations",
+    "has_specialization": true,
+    "feedback_themes": [
+      "strong analytical abilities",
+      "excellent technical writing",
+      "reliable and responsive"
+    ],
+    "notable_achievement": "Led a cross-functional team to successfully streamline client operations, resulting in a 20% increase in efficiency within six months.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0006",
+    "service_line": "Consulting",
+    "current_role": "Manager",
+    "role_level": 6,
+    "years_experience": 9.37,
+    "skills": [
+      "Strategy",
+      "Client Management",
+      "Project Management",
+      "Team Leadership",
+      "Business Development",
+      "Stakeholder Management",
+      "P&L Management",
+      "Industry Thought Leadership",
+      "Executive Presence",
+      "Power BI",
+      "Snowflake",
+      "Creativity"
+    ],
+    "performance_metrics": {
+      "utilization": 80,
+      "billing_rate": 328,
+      "realization": 91,
+      "quality_score": 4.31,
+      "training_hours": 32,
+      "client_feedback": 4.57
+    },
+    "focus_area": "Data & Analytics",
+    "has_specialization": true,
+    "feedback_themes": [
+      "builds strong client relationships",
+      "collaborative leadership",
+      "innovative problem solver",
+      "strong project management",
+      "adaptable to change"
+    ],
+    "notable_achievement": "Successfully led a cross-functional team to deliver a $2 million data analytics project, enhancing client decision-making efficiency by 30%.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0007",
+    "service_line": "Consulting",
+    "current_role": "Senior Manager",
+    "role_level": 7,
+    "years_experience": 13.2,
+    "skills": [
+      "Strategy",
+      "Client Management",
+      "Business Development",
+      "Team Leadership",
+      "P&L Management",
+      "Strategic Planning",
+      "Executive Presence",
+      "Industry Leadership",
+      "C-Suite Relationships",
+      "Partnership Development",
+      "Thought Leadership",
+      "Penetration Testing",
+      "NIST",
+      "Conflict Resolution",
+      "Decision Making"
+    ],
+    "performance_metrics": {
+      "utilization": 73,
+      "billing_rate": 414,
+      "realization": 94,
+      "quality_score": 4.66,
+      "training_hours": 32,
+      "client_feedback": 4.48
+    },
+    "focus_area": "Cybersecurity",
+    "has_specialization": true,
+    "feedback_themes": [
+      "innovative problem solver",
+      "strong project management",
+      "adaptable to change",
+      "builds strong client relationships"
+    ],
+    "notable_achievement": "Successfully led a $5 million cybersecurity strategy project, boosting client revenue by 20% and enhancing client retention by 30%.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0008",
+    "service_line": "Consulting",
+    "current_role": "Director",
+    "role_level": 8,
+    "years_experience": 17.05,
+    "skills": [
+      "Strategy",
+      "Client Management",
+      "Business Development",
+      "Strategic Leadership",
+      "P&L Management",
+      "Executive Presence",
+      "Industry Leadership",
+      "C-Suite Advisory",
+      "Market Development",
+      "Firm Strategy",
+      "Teamwork"
+    ],
+    "performance_metrics": {
+      "utilization": 59,
+      "billing_rate": 485,
+      "realization": 95,
+      "quality_score": 4.44,
+      "training_hours": 16,
+      "client_feedback": 4.74
+    },
+    "focus_area": "M&A Advisory",
+    "has_specialization": false,
+    "feedback_themes": [
+      "thorough research skills",
+      "strong analytical abilities",
+      "excellent technical writing",
+      "reliable and responsive",
+      "stays current on regulations"
+    ],
+    "notable_achievement": "Successfully led a cross-functional team in advising a $500 million merger, increasing client revenue by 20% within the first year.",
+    "career_history": null
+  },
+  {
+    "id": "EMP-CON-0009",
+    "service_line": "Consulting",
+    "current_role": "Partner",
+    "role_level": 9,
+    "years_experience": 22.64,
+    "skills": [
+      "Strategic Leadership",
+      "Client Management",
+      "Business Development",
+      "Executive Presence",
+      "Industry Leadership",
+      "C-Suite Advisory",
+      "Firm Leadership",
+      "Innovation Strategy",
+      "Board Advisory",
+      "Market Shaping",
+      "Thought Leadership",
+      "Collaboration"
+    ],
+    "performance_metrics": {
+      "utilization": 49,
+      "billing_rate": 660,
+      "realization": 94,
+      "quality_score": 4.82,
+      "training_hours": 23,
+      "client_feedback": 4.74
+    },
+    "focus_area": "Operations",
+    "has_specialization": false,
+    "feedback_themes": [
+      "excellent technical writing",
+      "creative problem solver",
+      "reliable and responsive",
+      "strong analytical abilities"
+    ],
+    "notable_achievement": "Led a strategic operations transformation for a Fortune 500 client, resulting in a 25% increase in operational efficiency and $30M in annual savings.",
+    "career_history": null
+  }
+]

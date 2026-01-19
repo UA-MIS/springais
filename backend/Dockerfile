@@ -3,8 +3,11 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
+# Note: Using --fix-missing to handle transient mirror issues
+# gcc removed - psycopg2-binary doesn't need compilation
+RUN apt-get clean && \
+    apt-get update && \
+    apt-get install -y --fix-missing \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
