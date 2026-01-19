@@ -15,6 +15,10 @@ interface SkillFrequencyChartProps {
 }
 
 export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) {
+  const gridStroke = 'rgba(255,255,255,0.14)';
+  const axisStroke = 'rgba(255,255,255,0.25)';
+  const tickStroke = 'rgba(255,255,255,0.22)';
+
   // Get top 10 skills, sorted by frequency
   const topSkills = [...data]
     .sort((a, b) => b.frequency - a.frequency)
@@ -41,38 +45,47 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
       <h3 className="text-lg font-semibold mb-4 text-white">
         Top Skills for Successful Transitions
       </h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart
-          data={topSkills}
-          layout="vertical"
-          margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" />
-          <XAxis
-            type="number"
-            domain={[0, 100]}
-            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
-            label={{
-              value: 'Frequency (%)',
-              position: 'insideBottom',
-              offset: -5,
-              fill: 'rgba(255,255,255,0.60)',
-            }}
-          />
-          <YAxis
-            type="category"
-            dataKey="skill"
-            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
-            width={90}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar dataKey="frequency" radius={[0, 4, 4, 0]}>
-            {topSkills.map((_, index) => (
-              <Cell key={`cell-${index}`} fill="#FFE600" />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="flex justify-center">
+        <div className="w-full max-w-[860px]">
+          <ResponsiveContainer width="100%" height={360}>
+            <BarChart
+              data={topSkills}
+              layout="vertical"
+              margin={{ top: 5, right: 20, left: 20, bottom: 26 }}
+              barCategoryGap={14}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} strokeWidth={1.5} />
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+                label={{
+                  value: 'Frequency (%)',
+                  position: 'bottom',
+                  offset: 10,
+                  fill: 'rgba(255,255,255,0.60)',
+                }}
+                axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
+                tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
+              />
+              <YAxis
+                type="category"
+                dataKey="skill"
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+                width={150}
+                axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
+                tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="frequency" barSize={14} radius={[0, 4, 4, 0]}>
+                {topSkills.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill="#FFE600" />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }

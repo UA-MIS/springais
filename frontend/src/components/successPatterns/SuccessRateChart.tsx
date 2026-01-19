@@ -16,6 +16,10 @@ interface SuccessRateChartProps {
 }
 
 export default function SuccessRateChart({ data }: SuccessRateChartProps) {
+  const gridStroke = 'rgba(255,255,255,0.14)';
+  const axisStroke = 'rgba(255,255,255,0.25)';
+  const tickStroke = 'rgba(255,255,255,0.22)';
+
   // Custom color based on success rate
   const getBarColor = (successRate: number): string => {
     if (successRate >= 70) return '#FFE600'; // Accent yellow
@@ -48,38 +52,46 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
       <h3 className="text-lg font-semibold mb-4 text-white">
         Success Rate by Transition
       </h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={sortedData} margin={{ top: 5, right: 30, left: 20, bottom: 80 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" />
-          <XAxis
-            dataKey="transition"
-            angle={-45}
-            textAnchor="end"
-            height={100}
-            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
-          />
-          <YAxis
-            label={{
-              value: 'Success Rate (%)',
-              angle: -90,
-              position: 'insideLeft',
-              fill: 'rgba(255,255,255,0.60)',
-            }}
-            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
-            domain={[0, 100]}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ paddingTop: '20px' }}
-            formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
-          />
-          <Bar dataKey="successRate" radius={[4, 4, 0, 0]}>
-            {sortedData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getBarColor(entry.successRate)} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="flex justify-center">
+        <div className="w-full max-w-[760px]">
+          <ResponsiveContainer width="100%" height={360}>
+            <BarChart data={sortedData} margin={{ top: 5, right: 30, left: 20, bottom: 80 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} strokeWidth={1.5} />
+              <XAxis
+                dataKey="transition"
+                angle={-45}
+                textAnchor="end"
+                height={100}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+                axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
+                tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
+              />
+              <YAxis
+                label={{
+                  value: 'Success Rate (%)',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: 'rgba(255,255,255,0.60)',
+                }}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+                domain={[0, 100]}
+                axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
+                tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                wrapperStyle={{ paddingTop: '20px' }}
+                formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
+              />
+              <Bar dataKey="successRate" name="Success Rate" radius={[4, 4, 0, 0]}>
+                {sortedData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getBarColor(entry.successRate)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }

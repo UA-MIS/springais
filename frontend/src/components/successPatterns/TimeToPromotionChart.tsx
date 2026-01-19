@@ -17,6 +17,10 @@ interface TimeToPromotionChartProps {
 }
 
 export default function TimeToPromotionChart({ data }: TimeToPromotionChartProps) {
+  const gridStroke = 'rgba(255,255,255,0.14)';
+  const axisStroke = 'rgba(255,255,255,0.25)';
+  const tickStroke = 'rgba(255,255,255,0.22)';
+
   // Transform data for multi-line chart
   const departments = Object.keys(data);
   if (departments.length === 0) return null;
@@ -59,37 +63,48 @@ export default function TimeToPromotionChart({ data }: TimeToPromotionChartProps
       <h3 className="text-lg font-semibold mb-4 text-white">
         Average Time to Promotion
       </h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" />
-          <XAxis dataKey="stage" tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }} />
-          <YAxis
-            label={{
-              value: 'Years',
-              angle: -90,
-              position: 'insideLeft',
-              fill: 'rgba(255,255,255,0.60)',
-            }}
-            tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend
-            wrapperStyle={{ paddingTop: '20px' }}
-            formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
-          />
-          {departments.map((dept) => (
-            <Line
-              key={dept}
-              type="monotone"
-              dataKey={dept}
-              stroke={departmentColors[dept] || '#71717A'}
-              strokeWidth={2}
-              dot={{ r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+      <div className="flex justify-center">
+        <div className="w-full max-w-[760px]">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} strokeWidth={1.5} />
+              <XAxis
+                dataKey="stage"
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+                axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
+                tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
+              />
+              <YAxis
+                label={{
+                  value: 'Years',
+                  angle: -90,
+                  position: 'insideLeft',
+                  fill: 'rgba(255,255,255,0.60)',
+                }}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+                axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
+                tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                wrapperStyle={{ paddingTop: '20px' }}
+                formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
+              />
+              {departments.map((dept) => (
+                <Line
+                  key={dept}
+                  type="monotone"
+                  dataKey={dept}
+                  stroke={departmentColors[dept] || '#71717A'}
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }
