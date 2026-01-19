@@ -211,32 +211,50 @@ export default function MatchDetailsModal({ match, onClose, onSave }: MatchDetai
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-white/15">
-            {match.job_posting_url && (
+          <div className="flex flex-col gap-3 pt-4 border-t border-white/15">
+            {/* Job Posting Link - Always visible at bottom */}
+            <div className="mb-2">
               <a
-                href={match.job_posting_url}
+                href={match.job_posting_url || `https://careers.ey.com/jobs/${match.job_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 px-6 py-3 bg-[#FFE600] text-[#2E2E38] rounded-sm hover:bg-[#FFD700] font-semibold transition-colors text-center"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-[#FFE600] text-[#2E2E38] rounded-sm hover:bg-[#FFD700] font-semibold transition-colors text-center"
               >
-                View Full Job Posting
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+                View Full Job Posting on EY Careers
               </a>
-            )}
-            <button
-              onClick={() => {
-                onSave(match.id);
-                onClose();
-              }}
-              className="px-6 py-3 bg-white/10 text-white/85 font-semibold rounded-sm hover:bg-white/15 transition-colors border border-white/10"
-            >
-              Save Match
-            </button>
-            <button
-              onClick={onClose}
-              className="px-6 py-3 bg-white/10 text-white/85 font-semibold rounded-sm hover:bg-white/15 transition-colors border border-white/10"
-            >
-              Close
-            </button>
+            </div>
+
+            {/* Secondary Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  onSave(match.id);
+                  onClose();
+                }}
+                className="flex-1 px-6 py-3 bg-white/10 text-white/85 font-semibold rounded-sm hover:bg-white/15 transition-colors border border-white/10"
+              >
+                Save Match
+              </button>
+              <button
+                onClick={onClose}
+                className="flex-1 px-6 py-3 bg-white/10 text-white/85 font-semibold rounded-sm hover:bg-white/15 transition-colors border border-white/10"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
