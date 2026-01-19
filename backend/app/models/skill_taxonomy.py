@@ -7,7 +7,7 @@ Stores canonical skill names with their aliases for normalization.
 from sqlalchemy import Column, Integer, String, JSON, DateTime, Index
 from sqlalchemy.sql import func
 
-from app.database import Base
+from app.models.base import Base
 
 
 class SkillTaxonomy(Base):
