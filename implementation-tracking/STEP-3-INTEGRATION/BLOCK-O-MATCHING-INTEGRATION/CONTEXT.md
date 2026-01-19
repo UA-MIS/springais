@@ -52,6 +52,158 @@ Connect the match results frontend to the AI-powered matching engine backend, en
 
 ---
 
+## Critical: Block E Mock Data Replacement
+
+**IMPORTANT:** Block E's matching service (`backend/app/services/matching_service.py`) currently uses **mock data** from `tests/fixtures/mock_data.py` for testing purposes. The core algorithms are fully implemented, but the data layer must be replaced with real database queries.
+
+### What's Implemented in Block E (Ready to Use)
+
+The following are fully implemented and tested:
+
+1. **MatchingService class** - Complete matching logic with three modes:
+   - `best_fit`: Conservative matches (90%+ skill match, weights: skill 60%, experience 30%, growth 10%)
+   - `stretch`: Ambitious matches (70-85% skill match, weights: skill 40%, experience 30%, growth 30%)
+   - `exploratory`: Career pivots (50-70% skill match, weights: skill 30%, experience 20%, growth 50%)
+
+2. **Scoring algorithms:**
+   - `_calculate_skill_match_score()` - Cosine similarity with exact match priority
+   - `_calculate_experience_score()` - Experience alignment scoring
+   - `_calculate_growth_potential_score()` - Career growth scoring
+   - Role transition validation (`is_valid_role_transition()`)
+
+3. **Skill gap analysis:**
+   - `analyze_skill_gaps()` - Returns overlapping, missing, and transferable skills
+
+4. **API endpoints** (using mock data):
+   - `GET /api/matches/employee/{employee_id}` - List matches
+   - `GET /api/matches/employee/{employee_id}/job/{job_id}` - Detailed match
+   - `GET /api/matches/employee/{employee_id}/skill-gaps/{job_id}` - Gap analysis
+
+### What Block O Must Implement (DB Integration)
+
+Replace mock data imports with real database queries from Block C models:
+
+**1. Replace employee lookup** (in `matching_service.py`):
+```python
+# CURRENT (mock):
+from tests.fixtures.mock_data import get_mock_employee, MOCK_EMPLOYEES
+
+# REPLACE WITH (real DB):
+from ..models import Employee, EmployeeSkill, EmployeeEmbedding
+from sqlalchemy.orm import Session
+
+def get_employee_with_skills(db: Session, employee_id: int):
+    employee = db.query(Employee).filter(Employee.id == employee_id).first()
+    if not employee:
+        return None
+
+    skills = db.query(EmployeeSkill).filter(EmployeeSkill.employee_id == employee_id).all()
+    embedding = db.query(EmployeeEmbedding).filter(EmployeeEmbedding.employee_id == employee_id).first()
+
+    return {
+        'id': employee.id,
+        'name': employee.name,
+        'current_role': employee.role.title,
+        'role_level': employee.role.level,
+        'service_line': employee.service_line,
+        'experience_years': employee.experience_years,
+        'skills': [s.skill_name for s in skills],
+        'skill_embeddings': {s.skill_name: embedding.embedding_vector for s in skills} if embedding else {}
+    }
+```
+
+**2. Replace job posting lookup** (in `matching_service.py`):
+```python
+# CURRENT (mock):
+from tests.fixtures.mock_data import MOCK_JOB_POSTINGS, get_mock_job_posting
+
+# REPLACE WITH (real DB):
+from ..models import JobPosting, JobPostingSkill, JobPostingEmbedding
+
+def get_job_postings(db: Session, department: str = None, location: str = None):
+    query = db.query(JobPosting).filter(JobPosting.is_active == True)
+
+    if department:
+        query = query.filter(JobPosting.department == department)
+    if location:
+        query = query.filter(JobPosting.location == location)
+
+    jobs = query.all()
+
+    result = []
+    for job in jobs:
+        skills = db.query(JobPostingSkill).filter(JobPostingSkill.job_posting_id == job.id).all()
+        embedding = db.query(JobPostingEmbedding).filter(JobPostingEmbedding.job_posting_id == job.id).first()
+
+        result.append({
+            'id': job.id,
+            'title': job.title,
+            'description': job.description,
+            'department': job.department,
+            'service_line': job.service_line,
+            'location': job.location,
+            'role_level': job.role.level,
+            'experience_years_min': job.experience_years_min,
+            'experience_years_max': job.experience_years_max,
+            'required_skills': [s.skill_name for s in skills if s.is_required],
+            'preferred_skills': [s.skill_name for s in skills if not s.is_required],
+            'salary_range': job.salary_range,
+            'skill_embeddings': {s.skill_name: embedding.embedding_vector for s in skills} if embedding else {}
+        })
+
+    return result
+```
+
+**3. Update MatchingService constructor** to accept db session:
+```python
+class MatchingService:
+    def __init__(
+        self,
+        db: Session,  # ADD THIS PARAMETER
+        mode: MatchMode = MatchMode.BEST_FIT,
+        top_k: int = 10,
+        min_overall_score: float = 0.5,
+    ):
+        self.db = db  # Store for database queries
+        self.config = get_matching_config(...)
+```
+
+**4. Update API routes** to inject database session:
+```python
+from fastapi import Depends
+from ..database import get_db
+
+@router.get("/employee/{employee_id}")
+async def get_employee_matches(
+    employee_id: int,
+    db: Session = Depends(get_db),  # ADD THIS
+    ...
+):
+    service = MatchingService(db=db, mode=match_mode, top_k=limit)
+    ...
+```
+
+### Files to Modify
+
+| File | Changes Required |
+|------|-----------------|
+| `backend/app/services/matching_service.py` | Replace mock imports with DB queries, add `db: Session` parameter |
+| `backend/app/routes/matches.py` | Add `Depends(get_db)`, pass db to MatchingService |
+
+### Testing After Integration
+
+After replacing mock data with real DB:
+```bash
+# Run integration tests
+pytest tests/services/test_matching_service.py -v
+
+# Test API endpoints manually
+curl -X GET "http://localhost:8000/api/matches/employee/1?mode=best_fit" \
+  -H "Authorization: Bearer {token}"
+```
+
+---
+
 ## What This Block Integrates
 
 ### From Block E: Matching Engine
@@ -64,7 +216,10 @@ Connect the match results frontend to the AI-powered matching engine backend, en
 - Recommendation explanation system
 
 **What this block does:**
-- Call `/api/matching/recommend` to get job matches
+- Current backend (Step 2) exposes match endpoints under `/api/matches/*` (mock-data backed).
+- Block O should either:
+  - keep `/api/matches/*` and replace the data layer with DB queries, or
+  - introduce `/api/matching/*` and migrate the frontend to it.
 - Display match scores (0-100%) for each job
 - Show match explanation ("You have 8/10 required skills")
 - Apply user filters (location, salary range, match threshold)

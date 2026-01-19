@@ -3,16 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import engine, Base
+from app.routes import matches_router, skills_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("🚀 Starting SpringAIS backend...")
+    print("Starting SpringAIS backend...")
     # Create tables (will be populated by migrations later)
     Base.metadata.create_all(bind=engine)
     yield
     # Shutdown
-    print("👋 Shutting down SpringAIS backend...")
+    print("Shutting down SpringAIS backend...")
 
 app = FastAPI(
     title="SpringAIS API",
@@ -41,3 +42,7 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+# Include routers
+app.include_router(matches_router, prefix="/api")
+app.include_router(skills_router, prefix="/api")
