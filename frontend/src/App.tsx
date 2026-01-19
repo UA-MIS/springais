@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import SkillsDashboard from './components/skills/SkillsDashboard'
 
 function App() {
   return (
@@ -6,6 +7,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<SkillsDashboard />} />
       </Routes>
     </div>
   )
