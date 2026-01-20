@@ -2,9 +2,21 @@ import { useState } from 'react';
 
 export type SortOption = 'score_desc' | 'score_asc' | 'date_desc' | 'date_asc';
 
+interface ThemeColors {
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  cardBg: string;
+  cardBorder: string;
+  border: string;
+  accent: string;
+}
+
 interface MatchSortDropdownProps {
   sortBy: SortOption;
   onSortChange: (sortBy: SortOption) => void;
+  isDark: boolean;
+  colors: ThemeColors;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -14,22 +26,33 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'date_asc', label: 'Date Posted (Oldest First)' }
 ];
 
-export default function MatchSortDropdown({ sortBy, onSortChange }: MatchSortDropdownProps) {
+export default function MatchSortDropdown({ sortBy, onSortChange, isDark, colors }: MatchSortDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = SORT_OPTIONS.find(opt => opt.value === sortBy);
 
+  const inputBgColor = isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg;
+  const dropdownBgColor = isDark ? 'rgba(30, 30, 40, 0.95)' : colors.cardBg;
+
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-white/60 mb-2">
+      <label
+        className="block text-sm font-medium mb-2"
+        style={{ color: colors.textMuted }}
+      >
         Sort By
       </label>
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full md:w-64 px-4 py-2 bg-white/10 border border-white/15 rounded-sm text-left flex justify-between items-center hover:bg-white/15 hover:border-[#FFE600] transition-colors"
+          className="w-full md:w-64 px-4 py-2 rounded-sm text-left flex justify-between items-center transition-colors"
+          style={{
+            backgroundColor: inputBgColor,
+            border: `1px solid ${colors.border}`,
+            color: colors.textPrimary,
+          }}
         >
-          <span className="text-sm text-white/85">{selectedOption?.label}</span>
-          <span className="text-white/60">▼</span>
+          <span className="text-sm">{selectedOption?.label}</span>
+          <span style={{ color: colors.textMuted }}>▼</span>
         </button>
         {isOpen && (
           <>
@@ -37,7 +60,13 @@ export default function MatchSortDropdown({ sortBy, onSortChange }: MatchSortDro
               className="fixed inset-0 z-10"
               onClick={() => setIsOpen(false)}
             />
-            <div className="absolute z-20 w-full mt-1 border border-white/15 bg-white/7 backdrop-blur-md rounded-sm shadow-2xl">
+            <div
+              className="absolute z-20 w-full mt-1 rounded-sm shadow-2xl"
+              style={{
+                backgroundColor: dropdownBgColor,
+                border: `1px solid ${colors.border}`,
+              }}
+            >
               {SORT_OPTIONS.map((option) => (
                 <button
                   key={option.value}
@@ -45,10 +74,14 @@ export default function MatchSortDropdown({ sortBy, onSortChange }: MatchSortDro
                     onSortChange(option.value);
                     setIsOpen(false);
                   }}
-                  className={`
-                    w-full px-4 py-2 text-left text-sm text-white/85 hover:bg-white/10
-                    ${sortBy === option.value ? 'bg-[#FFE600] bg-opacity-20 font-semibold' : ''}
-                  `}
+                  className="w-full px-4 py-2 text-left text-sm transition-colors"
+                  style={{
+                    color: colors.textPrimary,
+                    backgroundColor: sortBy === option.value
+                      ? `${colors.accent}33`
+                      : 'transparent',
+                    fontWeight: sortBy === option.value ? 600 : 400,
+                  }}
                 >
                   {option.label}
                 </button>

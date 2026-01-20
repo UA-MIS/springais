@@ -10,15 +10,21 @@ import {
   Cell,
 } from 'recharts';
 import { TransitionData } from '../../services/successPatternService';
+import { useTheme, themeColors } from '../../context/ThemeContext';
 
 interface SuccessRateChartProps {
   data: TransitionData[];
 }
 
 export default function SuccessRateChart({ data }: SuccessRateChartProps) {
-  const gridStroke = 'rgba(255,255,255,0.14)';
-  const axisStroke = 'rgba(255,255,255,0.25)';
-  const tickStroke = 'rgba(255,255,255,0.22)';
+  const { isDark } = useTheme();
+  const colors = isDark ? themeColors.dark : themeColors.light;
+
+  const gridStroke = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)';
+  const axisStroke = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+  const tickStroke = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.15)';
+  const tickFill = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)';
+  const labelFill = isDark ? 'rgba(255,255,255,0.60)' : 'rgba(0,0,0,0.5)';
 
   // Custom color based on success rate
   const getBarColor = (successRate: number): string => {
@@ -33,12 +39,19 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload as TransitionData;
       return (
-        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
-          <p className="font-semibold text-white">{label}</p>
-          <p className="text-sm text-white/60">
+        <div
+          className="p-3 rounded-sm shadow-2xl"
+          style={{
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            border: `1px solid ${colors.cardBorder}`,
+            backdropFilter: isDark ? 'blur(12px)' : 'none',
+          }}
+        >
+          <p className="font-semibold" style={{ color: colors.textPrimary }}>{label}</p>
+          <p className="text-sm" style={{ color: colors.textMuted }}>
             Success Rate: <span className="font-bold">{data.successRate}%</span>
           </p>
-          <p className="text-sm text-white/60">
+          <p className="text-sm" style={{ color: colors.textMuted }}>
             Sample Size: <span className="font-bold">{data.sampleSize} employees</span>
           </p>
         </div>
@@ -48,8 +61,15 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
   };
 
   return (
-    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md">
-      <h3 className="text-lg font-semibold mb-4 text-white">
+    <div
+      className="p-6 rounded-sm shadow-2xl transition-colors"
+      style={{
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+        border: `1px solid ${colors.cardBorder}`,
+        backdropFilter: isDark ? 'blur(12px)' : 'none',
+      }}
+    >
+      <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
         Success Rate by Transition
       </h3>
       <div className="flex justify-center">
@@ -62,7 +82,7 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
                 angle={-45}
                 textAnchor="end"
                 height={100}
-                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+                tick={{ fontSize: 12, fill: tickFill }}
                 axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
                 tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
               />
@@ -71,9 +91,9 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
                   value: 'Success Rate (%)',
                   angle: -90,
                   position: 'insideLeft',
-                  fill: 'rgba(255,255,255,0.60)',
+                  fill: labelFill,
                 }}
-                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
+                tick={{ fontSize: 12, fill: tickFill }}
                 domain={[0, 100]}
                 axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
                 tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
@@ -81,7 +101,7 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
               <Tooltip content={<CustomTooltip />} />
               <Legend
                 wrapperStyle={{ paddingTop: '20px' }}
-                formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
+                formatter={(value) => <span style={{ color: tickFill }}>{value}</span>}
               />
               <Bar dataKey="successRate" name="Success Rate" radius={[4, 4, 0, 0]}>
                 {sortedData.map((entry, index) => (

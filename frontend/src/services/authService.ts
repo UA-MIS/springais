@@ -1,8 +1,10 @@
+import axios from 'axios';
+
 export interface User {
-  id: number;
+  id: string;
   email: string;
   name: string;
-  role: string;
+  role?: string | null;
   department?: string;
 }
 
@@ -11,36 +13,15 @@ export interface LoginResponse {
   user: User;
 }
 
-// Mock login function (remove when backend is ready)
-const mockLogin = async (email: string, password: string): Promise<LoginResponse> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  // Hardcoded credentials for testing
-  if (email === 'admin@ey.com' && password === 'password') {
-    return {
-      token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.token',
-      user: {
-        id: 1,
-        email: 'admin@ey.com',
-        name: 'John Doe',
-        role: 'Senior Consultant',
-        department: 'Advisory'
-      }
-    };
-  }
-  
-  throw new Error('Invalid credentials');
-};
+const authApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+});
 
 export const authService = {
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      // TODO: Replace with real API call when backend is ready
-      // const response = await api.post('/auth/login', { email, password });
-      // return response.data;
-      
-      return await mockLogin(email, password);
+      const response = await authApi.post('/auth/login', { email, password });
+      return response.data;
     } catch (error: any) {
       throw new Error(error.message || 'Login failed');
     }
@@ -48,24 +29,26 @@ export const authService = {
 
   logout(): void {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
   },
 
   async getCurrentUser(_token: string): Promise<User> {
     try {
-      // TODO: Replace with real API call when backend is ready
-      // const response = await api.get('/auth/me');
-      // return response.data;
-      
-      // Mock response for now
-      return {
-        id: 1,
-        email: 'admin@ey.com',
-        name: 'John Doe',
-        role: 'Senior Consultant',
-        department: 'Advisory'
-      };
+      const response = await authApi.get('/auth/me', {
+        headers: { Authorization: `Bearer ${_token}` },
+      });
+      return response.data;
     } catch (error: any) {
       throw new Error(error.message || 'Failed to get current user');
+    }
+  },
+
+  async register(email: string, password: string, name: string): Promise<LoginResponse> {
+    try {
+      const response = await authApi.post('/auth/register', { email, password, name });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.message || 'Registration failed');
     }
   }
 };

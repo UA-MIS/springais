@@ -1,65 +1,74 @@
 import type { NodeProps } from 'reactflow'
 import { Handle, Position } from 'reactflow'
 import type { RoleNodeData } from './graphTransformUtils'
+import { useTheme, themeColors } from '../../context/ThemeContext'
 
 export function RoleNode({ data }: NodeProps<RoleNodeData>) {
+  const { isDark } = useTheme()
+  const colors = isDark ? themeColors.dark : themeColors.light
   const isGoal = data.isGoal === true && !data.isCurrentRole
 
-  const border = data.isCurrentRole
-    ? 'border-[#FFE600]'
+  const borderColor = data.isCurrentRole
+    ? '#FFE600'
     : isGoal
-      ? 'border-[#FFE600]/80'
+      ? 'rgba(255, 230, 0, 0.8)'
     : data.isPossibleNext
-      ? 'border-green-500/80'
+      ? 'rgba(34, 197, 94, 0.8)'
       : data.isSelected
-        ? 'border-[#FFE600]'
-        : 'border-white/15'
+        ? '#FFE600'
+        : colors.cardBorder
 
   const shadow = data.isCurrentRole
-    ? 'shadow-[0_0_0_1px_rgba(255,230,0,0.20),0_12px_40px_rgba(0,0,0,0.55)]'
+    ? '0 0 0 1px rgba(255,230,0,0.20), 0 12px 40px rgba(0,0,0,0.55)'
     : isGoal
-      ? 'shadow-[0_0_0_1px_rgba(255,230,0,0.14),0_12px_40px_rgba(0,0,0,0.55)]'
+      ? '0 0 0 1px rgba(255,230,0,0.14), 0 12px 40px rgba(0,0,0,0.55)'
     : data.isPossibleNext
-      ? 'shadow-[0_0_0_1px_rgba(34,197,94,0.18),0_12px_40px_rgba(0,0,0,0.55)]'
+      ? '0 0 0 1px rgba(34,197,94,0.18), 0 12px 40px rgba(0,0,0,0.55)'
       : data.isSelected
-        ? 'shadow-[0_0_0_1px_rgba(255,230,0,0.18),0_12px_40px_rgba(0,0,0,0.55)]'
-        : 'shadow-[0_12px_40px_rgba(0,0,0,0.55)]'
+        ? '0 0 0 1px rgba(255,230,0,0.18), 0 12px 40px rgba(0,0,0,0.55)'
+        : isDark ? '0 12px 40px rgba(0,0,0,0.55)' : '0 4px 20px rgba(0,0,0,0.12)'
 
   return (
     <div
-      className={[
-        'rounded-lg border bg-white/7 px-4 py-3 backdrop-blur-md',
-        'min-w-[220px] max-w-[260px]',
-        'transition-[box-shadow,transform] duration-150',
-        'hover:-translate-y-[1px]',
-        border,
-        shadow,
-      ].join(' ')}
+      className="rounded-lg px-4 py-3 backdrop-blur-md min-w-[220px] max-w-[260px] transition-[box-shadow,transform] duration-150 hover:-translate-y-[1px]"
+      style={{
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+        border: `1px solid ${borderColor}`,
+        boxShadow: shadow,
+      }}
     >
       <Handle
         type="target"
         position={Position.Top}
-        className="!h-2 !w-2 !border-0 !bg-white/30"
+        style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
+        className="!h-2 !w-2 !border-0"
       />
 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-white">{data.label}</div>
-          <div className="mt-1 text-xs text-white/60">{data.department}</div>
+          <div className="truncate text-sm font-semibold" style={{ color: colors.textPrimary }}>{data.label}</div>
+          <div className="mt-1 text-xs" style={{ color: colors.textMuted }}>{data.department}</div>
         </div>
-        <div className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/80">
+        <div
+          className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+          style={{
+            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+            color: colors.textSecondary,
+          }}
+        >
           {data.employeeCount}
         </div>
       </div>
 
-      <div className="mt-2 text-[11px] text-white/45">
-        Avg years: <span className="font-semibold text-white/70">{(data.avgYearsInRole ?? 0).toFixed(1)}</span>
+      <div className="mt-2 text-[11px]" style={{ color: colors.textMuted }}>
+        Avg years: <span className="font-semibold" style={{ color: colors.textSecondary }}>{(data.avgYearsInRole ?? 0).toFixed(1)}</span>
       </div>
 
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!h-2 !w-2 !border-0 !bg-white/30"
+        style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
+        className="!h-2 !w-2 !border-0"
       />
     </div>
   )

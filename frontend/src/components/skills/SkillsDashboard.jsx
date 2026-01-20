@@ -6,8 +6,9 @@ import SkillSearchBar from './SkillSearchBar';
 import SkillsPortfolio from './SkillsPortfolio';
 import SkillDetailModal from './SkillDetailModal';
 import AddSkillModal from './AddSkillModal';
-import { THEME, PROGRESS_COLORS } from './ThemeSwitcher';
+import { DARK_THEME, LIGHT_THEME, PROGRESS_COLORS } from './ThemeSwitcher';
 import { useState } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function SkillsDashboard() {
   const {
@@ -25,7 +26,9 @@ export default function SkillsDashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  const theme = THEME;
+  // Use global theme context
+  const { isDark } = useTheme();
+  const theme = isDark ? DARK_THEME : LIGHT_THEME;
 
   const handleSkillClick = (skill) => {
     setSelectedSkill(skill);

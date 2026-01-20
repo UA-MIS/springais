@@ -1,3 +1,5 @@
+import { useTheme, themeColors } from '../../context/ThemeContext'
+
 export type GraphControlsState = {
   search: string
   department: string | 'all'
@@ -15,6 +17,8 @@ export type GraphControlsProps = {
 
 export function GraphControls(props: GraphControlsProps) {
   const { state, departments, onChange, onReset, isOpen, onToggle } = props
+  const { isDark } = useTheme()
+  const colors = isDark ? themeColors.dark : themeColors.light
 
   const activeCount =
     (state.search.trim() ? 1 : 0) + (state.department !== 'all' ? 1 : 0) + (state.minSuccessRate > 0 ? 1 : 0)
@@ -25,7 +29,12 @@ export function GraphControls(props: GraphControlsProps) {
         <button
           type="button"
           onClick={onToggle}
-          className="rounded-full border border-[#FFE600]/30 bg-white/7 px-3 py-2 text-xs font-semibold text-white shadow-2xl backdrop-blur-md hover:border-[#FFE600]"
+          className="rounded-full px-3 py-2 text-xs font-semibold shadow-2xl backdrop-blur-md"
+          style={{
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            border: `1px solid rgba(255, 230, 0, 0.3)`,
+            color: colors.textPrimary,
+          }}
           title="Toggle filters"
         >
           Filters{activeCount ? ` · ${activeCount}` : ''}
@@ -33,13 +42,23 @@ export function GraphControls(props: GraphControlsProps) {
       </div>
 
       {isOpen ? (
-        <div className="mt-3 w-[360px] rounded-xl border border-white/15 bg-white/7 p-3 shadow-2xl backdrop-blur-md">
+        <div
+          className="mt-3 w-[360px] rounded-xl p-3 shadow-2xl backdrop-blur-md"
+          style={{
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            border: `1px solid ${colors.cardBorder}`,
+          }}
+        >
           <div className="flex items-center justify-between gap-3">
-            <div className="text-sm font-semibold text-white">Filters</div>
+            <div className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Filters</div>
             <button
               type="button"
               onClick={onReset}
-              className="rounded-md bg-white/15 px-2 py-1 text-xs font-semibold text-white hover:bg-white/20"
+              className="rounded-md px-2 py-1 text-xs font-semibold"
+              style={{
+                backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
+                color: colors.textPrimary,
+              }}
             >
               Reset
             </button>
@@ -47,22 +66,30 @@ export function GraphControls(props: GraphControlsProps) {
 
           <div className="mt-3 space-y-3">
             <label className="block">
-              <div className="text-xs font-semibold text-white/60">Search</div>
+              <div className="text-xs font-semibold" style={{ color: colors.textMuted }}>Search</div>
               <input
                 value={state.search}
                 onChange={(e) => onChange({ ...state, search: e.target.value })}
                 placeholder="Role name (e.g. Manager)"
-                className="mt-1 w-full bg-transparent px-0 py-2 text-sm text-white placeholder:text-white/25 outline-none border-b border-[#FFE600]/30 focus:border-[#FFE600]"
+                className="mt-1 w-full bg-transparent px-0 py-2 text-sm outline-none border-b border-[#FFE600]/30 focus:border-[#FFE600]"
+                style={{
+                  color: colors.textPrimary,
+                }}
               />
-              <div className="mt-1 text-[11px] text-white/45">Shows matches + their neighbors (PoE-ish).</div>
+              <div className="mt-1 text-[11px]" style={{ color: colors.textMuted }}>Shows matches + their neighbors (PoE-ish).</div>
             </label>
 
             <label className="block">
-              <div className="text-xs font-semibold text-white/60">Department</div>
+              <div className="text-xs font-semibold" style={{ color: colors.textMuted }}>Department</div>
               <select
                 value={state.department}
                 onChange={(e) => onChange({ ...state, department: e.target.value as GraphControlsState['department'] })}
-                className="mt-1 w-full rounded-md border border-white/15 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-[#FFE600]"
+                className="mt-1 w-full rounded-md px-3 py-2 text-sm outline-none focus:border-[#FFE600]"
+                style={{
+                  backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.04)',
+                  border: `1px solid ${colors.cardBorder}`,
+                  color: colors.textPrimary,
+                }}
               >
                 <option value="all">All</option>
                 {departments.map((d) => (
@@ -75,8 +102,8 @@ export function GraphControls(props: GraphControlsProps) {
 
             <label className="block">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-semibold text-white/60">Min success rate</div>
-                <div className="text-xs font-semibold text-white">{Math.round(state.minSuccessRate * 100)}%</div>
+                <div className="text-xs font-semibold" style={{ color: colors.textMuted }}>Min success rate</div>
+                <div className="text-xs font-semibold" style={{ color: colors.textPrimary }}>{Math.round(state.minSuccessRate * 100)}%</div>
               </div>
               <input
                 type="range"
@@ -86,7 +113,7 @@ export function GraphControls(props: GraphControlsProps) {
                 onChange={(e) => onChange({ ...state, minSuccessRate: Number(e.target.value) / 100 })}
                 className="mt-2 w-full accent-[#FFE600]"
               />
-              <div className="mt-1 text-[11px] text-white/45">Edges below threshold are hidden; nodes stay.</div>
+              <div className="mt-1 text-[11px]" style={{ color: colors.textMuted }}>Edges below threshold are hidden; nodes stay.</div>
             </label>
           </div>
         </div>

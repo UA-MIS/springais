@@ -1,23 +1,53 @@
 import type { NodeProps } from 'reactflow'
 import { Handle, Position } from 'reactflow'
 import type { SkillNodeData } from '@/data/mockRoleSkillTrees'
+import { useTheme, themeColors } from '../../context/ThemeContext'
 
 export function SkillNode({ data }: NodeProps<SkillNodeData>) {
-  const base =
-    'rounded-xl border bg-white/7 px-6 py-5 text-base font-semibold shadow-[0_12px_40px_rgba(0,0,0,0.55)] backdrop-blur-md'
+  const { isDark } = useTheme()
+  const colors = isDark ? themeColors.dark : themeColors.light
 
-  const kind =
+  const borderColor =
     data.kind === 'role'
-      ? 'text-white border-[#FFE600]/70'
+      ? 'rgba(255, 230, 0, 0.7)'
       : data.kind === 'path'
-        ? 'text-white/85 border-white/20'
-        : 'text-white/70 border-white/15'
+        ? isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
+        : colors.cardBorder
+
+  const textColor =
+    data.kind === 'role'
+      ? colors.textPrimary
+      : data.kind === 'path'
+        ? colors.textSecondary
+        : colors.textMuted
+
+  const shadow = isDark
+    ? '0 12px 40px rgba(0,0,0,0.55)'
+    : '0 4px 20px rgba(0,0,0,0.12)'
 
   return (
-    <div className={[base, kind].join(' ')}>
-      <Handle type="target" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-white/30" />
-      <div className="max-w-[360px] whitespace-normal leading-snug">{data.label}</div>
-      <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-white/30" />
+    <div
+      className="rounded-lg px-4 py-3 text-sm font-semibold backdrop-blur-md"
+      style={{
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+        border: `1px solid ${borderColor}`,
+        boxShadow: shadow,
+        color: textColor,
+      }}
+    >
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
+        className="!h-2 !w-2 !border-0"
+      />
+      <div className="max-w-[200px] whitespace-normal leading-snug text-center">{data.label}</div>
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
+        className="!h-2 !w-2 !border-0"
+      />
     </div>
   )
 }

@@ -35,6 +35,11 @@ Read VERIFICATION.md for integration testing.
 
 Connect the match results frontend to the AI-powered matching engine backend, enabling users to see real job recommendations based on their skills, with success pattern insights augmenting the data.
 
+## Auth Requirement (Block M)
+
+- All `/api/matches/*` endpoints require JWT authentication.
+- Use the shared API client (`frontend/src/services/api.ts`) so the token is attached automatically.
+
 **Why this matters:**
 - Block J (Match Results UI) has components but uses mock data
 - Block E (Matching Engine) has algorithm but no user interface

@@ -24,6 +24,15 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/employees
 
 # 4. Test protected route without token (should fail)
 curl http://localhost:8000/api/employees
+
+# 5. Test skill recommendations endpoint
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/skills/recommendations
+
+# 6. Test recommendation status update
+curl -X PATCH -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "in_progress"}' \
+  "http://localhost:8000/api/skills/recommendations/Python/status"
 ```
 
 ---
@@ -540,10 +549,261 @@ SELECT password_hash FROM users WHERE email = 'user@example.com';
 
 ---
 
+### 11. Skill Recommendations - Database Test
+
+**Verify table exists:**
+```sql
+-- Check table created
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'user_skill_recommendations';
+```
+
+**Expected columns:**
+- `id` (uuid)
+- `user_id` (uuid)
+- `skill_name` (varchar)
+- `category` (varchar)
+- `priority_score` (numeric)
+- `source` (varchar)
+- `related_job_ids` (jsonb)
+- `status` (varchar)
+- `created_at`, `updated_at` (timestamp)
+
+**✅ Pass Criteria:**
+- Table exists with all required columns
+- Foreign key to `user_profiles` exists
+- Indexes on `user_id` and `priority_score`
+
+---
+
+### 12. Skill Recommendations - API Test
+
+**Test get recommendations (empty - cold start):**
+```bash
+# User with no matches or career goal
+curl -H "Authorization: Bearer $TOKEN" \
+     http://localhost:8000/api/skills/recommendations
+```
+
+**Expected response (LLM bootstrap):**
+```json
+{
+  "recommendations": [
+    {
+      "skill": "Python",
+      "category": "programming",
+      "priority": 0.5,
+      "source": "llm_bootstrap",
+      "related_roles": [],
+      "status": "recommended"
+    },
+    ...
+  ]
+}
+```
+
+**Test refresh recommendations:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+     "http://localhost:8000/api/skills/recommendations?refresh=true"
+```
+
+**Expected:** Fresh recommendations computed
+
+**Test update status:**
+```bash
+curl -X PATCH -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"status": "in_progress"}' \
+     "http://localhost:8000/api/skills/recommendations/Python/status"
+```
+
+**Expected response:**
+```json
+{
+  "skill": "Python",
+  "status": "in_progress"
+}
+```
+
+**Test dismiss recommendation:**
+```bash
+curl -X PATCH -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"status": "dismissed"}' \
+     "http://localhost:8000/api/skills/recommendations/Python/status"
+```
+
+**Expected:** Skill no longer appears in default recommendations list
+
+**✅ Pass Criteria:**
+- Empty user gets LLM bootstrap recommendations
+- Refresh parameter triggers recomputation
+- Status updates persist to database
+- Dismissed skills excluded from results
+
+---
+
+### 13. Skill Recommendations - Aggregation Test
+
+**Setup: Create user with saved matches**
+```sql
+-- Insert test matches with skill_gaps
+INSERT INTO matches (id, user_id, employee_id, job_posting_id, match_mode, 
+                     overall_score, skill_match_score, experience_score, 
+                     growth_potential_score, skill_gaps, matched_skills)
+VALUES 
+  (gen_random_uuid(), '<user_id>', 'EMP001', 'JOB001', 'best_fit', 
+   0.8, 0.7, 0.9, 0.75, '["Python", "AWS", "Leadership"]', '["SQL", "Java"]'),
+  (gen_random_uuid(), '<user_id>', 'EMP001', 'JOB002', 'best_fit', 
+   0.75, 0.65, 0.85, 0.8, '["Python", "Docker", "Leadership"]', '["SQL"]'),
+  (gen_random_uuid(), '<user_id>', 'EMP001', 'JOB003', 'best_fit', 
+   0.7, 0.6, 0.8, 0.7, '["Python", "Kubernetes"]', '["Java"]');
+```
+
+**Test aggregated recommendations:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+     "http://localhost:8000/api/skills/recommendations?refresh=true"
+```
+
+**Expected response:**
+```json
+{
+  "recommendations": [
+    {
+      "skill": "Python",
+      "priority": 1.0,        // 3/3 matches = highest
+      "source": "saved_matches",
+      "related_roles": ["JOB001", "JOB002", "JOB003"]
+    },
+    {
+      "skill": "Leadership",
+      "priority": 0.67,       // 2/3 matches
+      "source": "saved_matches",
+      "related_roles": ["JOB001", "JOB002"]
+    },
+    {
+      "skill": "AWS",
+      "priority": 0.33,       // 1/3 matches
+      "source": "saved_matches",
+      "related_roles": ["JOB001"]
+    },
+    ...
+  ]
+}
+```
+
+**✅ Pass Criteria:**
+- Skills appearing in more matches have higher priority
+- `related_roles` correctly lists which jobs need each skill
+- Priority scores normalized (0.0 - 1.0)
+- Skills user already has are excluded
+
+---
+
+### 14. Skill Recommendations - Career Goal Test
+
+**Setup: Set user's career goal**
+```sql
+UPDATE career_paths 
+SET target_position_node_id = 'senior_data_scientist'
+WHERE user_id = '<user_id>';
+```
+
+**Test career goal recommendations:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+     "http://localhost:8000/api/skills/recommendations?refresh=true"
+```
+
+**Expected:** Recommendations include skills for "Senior Data Scientist" role with `source: "career_goal"` and higher priority weighting.
+
+**✅ Pass Criteria:**
+- Career goal skills included in recommendations
+- Career goal skills have elevated priority (2x weight)
+- Source correctly marked as "career_goal"
+
+---
+
+### 15. Skill Recommendations - Trigger Test
+
+**Test auto-refresh after match save:**
+1. Save a new match with unique skill gaps
+2. Check recommendations updated automatically
+
+```bash
+# Save match (mock - adjust to actual endpoint)
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"job_posting_id": "JOB_NEW", "skill_gaps": ["NewSkill123"]}' \
+     http://localhost:8000/api/matches/save
+
+# Get recommendations (should include NewSkill123)
+curl -H "Authorization: Bearer $TOKEN" \
+     http://localhost:8000/api/skills/recommendations
+```
+
+**Expected:** `NewSkill123` appears in recommendations
+
+**Test auto-refresh after resume upload:**
+1. Upload new resume with different skills
+2. Recommendations should exclude new current skills
+
+**✅ Pass Criteria:**
+- New matches trigger recommendation refresh
+- Resume upload triggers recommendation refresh
+- Career goal change triggers recommendation refresh
+
+---
+
+### 16. Skill Recommendations - Frontend Test
+
+**Open browser:**
+```
+http://localhost:3000/profile
+```
+
+**Test skills dashboard loads recommendations:**
+1. Login as user with saved matches
+2. Navigate to Profile → My Skills tab
+
+**Expected:**
+- Skills display includes "recommended" status items
+- Recommended skills show with visual indicator (different from active/complete)
+- Priority-based ordering (highest priority first)
+
+**Test status update from UI:**
+1. Click on a recommended skill
+2. Mark as "Start Learning" (in_progress)
+3. Verify skill moves to active section
+
+**Test dismiss from UI:**
+1. Click dismiss on a recommended skill
+2. Verify skill removed from list
+3. Refresh page - skill should stay dismissed
+
+**Verify localStorage fallback:**
+```javascript
+// In browser console
+// Disable network, refresh page
+// Should fall back to mock data with console warning
+```
+
+**✅ Pass Criteria:**
+- Skills dashboard fetches from `/api/skills/recommendations`
+- Recommended skills display correctly
+- Status updates work (in_progress, dismissed)
+- Mock data fallback works when API unavailable
+
+---
+
 ## Final Checklist
 
 Before marking BLOCK-M as complete:
 
+**Authentication:**
 - [ ] User can register via frontend (creates DB record)
 - [ ] User can login via frontend (returns JWT token)
 - [ ] Token stored in localStorage
@@ -561,27 +821,43 @@ Before marking BLOCK-M as complete:
 - [ ] No security vulnerabilities (passwords hashed, tokens signed)
 - [ ] Documentation updated for Blocks N, O, P (how to use API client)
 
+**Skill Recommendations:**
+- [ ] `user_skill_recommendations` table exists with correct schema
+- [ ] `GET /api/skills/recommendations` returns prioritized list
+- [ ] `PATCH /api/skills/recommendations/{skill}/status` works
+- [ ] Aggregation from saved matches works (skill_gaps)
+- [ ] Career goal skills included with elevated priority
+- [ ] LLM bootstrap works for cold start users
+- [ ] Priority scores normalized correctly (0.0 - 1.0)
+- [ ] `related_roles` field correctly populated
+- [ ] Status updates persist (in_progress, dismissed)
+- [ ] Dismissed skills excluded from results
+- [ ] Auto-refresh triggers work (match save, resume upload, career goal)
+- [ ] Frontend displays recommendations from API
+- [ ] Frontend can update recommendation status
+- [ ] Mock data fallback works when API unavailable
+
 ---
 
 ## Success Criteria Met
 
 If all above checks pass:
 
-1. ✅ Update `TASKS.md` - all 10 tasks checked
+1. ✅ Update `TASKS.md` - all 14 tasks checked
 2. ✅ Update `PROJECT-STATUS.md`:
    - Status: 🔄 → ✅
-   - Progress: 10/10 tasks
+   - Progress: 14/14 tasks
 3. ✅ Update Overall Progress section
 4. ✅ Unblock Blocks N, O, P (update their CONTEXT.md files)
 5. ✅ Commit changes:
    ```bash
    git add .
-   git commit -m "✅ Complete BLOCK-M: Core integration - Auth system connected"
+   git commit -m "✅ Complete BLOCK-M: Core integration - Auth + Skill Recommendations"
    git push
    ```
-6. ✅ Notify team: "Block M complete! Core auth working. Blocks N, O, P can now start."
+6. ✅ Notify team: "Block M complete! Core auth + skill recommendations working. Blocks N, O, P can now start."
 
 ---
 
-**Last Updated:** 2026-01-06
+**Last Updated:** 2026-01-20
 **Status:** Ready for verification

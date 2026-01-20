@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 SkillCategory = Literal["technical", "soft", "domain", "certification"]
 ProficiencyLevel = Literal["beginner", "intermediate", "advanced", "expert"]
+RecommendationStatus = Literal["recommended", "in_progress", "dismissed"]
 
 
 # ============================================
@@ -163,3 +164,27 @@ class SkillTaxonomyResponse(BaseModel):
         default_factory=dict,
         description="Count of skills per category"
     )
+
+
+# ============================================
+# Skill Recommendation Models
+# ============================================
+
+class SkillRecommendationItem(BaseModel):
+    """A single skill recommendation."""
+
+    skill: str = Field(..., description="Recommended skill name")
+    category: Optional[str] = Field(
+        default=None,
+        description="Skill category (UI categories such as leadership_management)"
+    )
+    priority: float = Field(..., ge=0.0, le=1.0, description="Priority score (0-1)")
+    source: str = Field(..., description="Recommendation source")
+    related_roles: List[str] = Field(default_factory=list, description="Related job IDs")
+    status: RecommendationStatus = Field(default="recommended")
+
+
+class SkillRecommendationsResponse(BaseModel):
+    """Response for skill recommendations endpoint."""
+
+    recommendations: List[SkillRecommendationItem] = Field(default_factory=list)

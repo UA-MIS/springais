@@ -7,11 +7,23 @@ export interface FilterOptions {
   timePeriod: string;
 }
 
-interface FilterControlsProps {
-  onFilterChange: (filters: FilterOptions) => void;
+interface ThemeColors {
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  cardBg: string;
+  cardBorder: string;
+  border: string;
+  accent: string;
 }
 
-export default function FilterControls({ onFilterChange }: FilterControlsProps) {
+interface FilterControlsProps {
+  onFilterChange: (filters: FilterOptions) => void;
+  isDark?: boolean;
+  colors?: ThemeColors;
+}
+
+export default function FilterControls({ onFilterChange, isDark = true, colors }: FilterControlsProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<FilterOptions>({
     department: searchParams.get('dept') || 'All',
@@ -19,9 +31,20 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
     timePeriod: searchParams.get('period') || 'All time',
   });
 
+  // Default colors for backwards compatibility
+  const themeColors = colors || {
+    textPrimary: '#ffffff',
+    textSecondary: 'rgba(255, 255, 255, 0.85)',
+    textMuted: 'rgba(255, 255, 255, 0.6)',
+    cardBg: '#ffffff',
+    cardBorder: 'rgba(255, 255, 255, 0.15)',
+    border: 'rgba(255, 255, 255, 0.15)',
+    accent: '#FFE600',
+  };
+
   const optionStyle: React.CSSProperties = {
-    backgroundColor: '#09090b',
-    color: 'rgba(255,255,255,0.92)',
+    backgroundColor: isDark ? '#09090b' : '#ffffff',
+    color: isDark ? 'rgba(255,255,255,0.92)' : '#1e293b',
   };
 
   const hasActiveFilters =
@@ -63,18 +86,35 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
   if (filters.roleLevel !== 'All') activeFiltersList.push(filters.roleLevel);
   if (filters.timePeriod !== 'All time') activeFiltersList.push(filters.timePeriod);
 
+  const selectStyle: React.CSSProperties = {
+    backgroundColor: isDark ? 'rgba(9, 9, 11, 0.6)' : themeColors.cardBg,
+    color: themeColors.textPrimary,
+    borderColor: themeColors.border,
+  };
+
   return (
-    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md mb-6">
+    <div
+      className="p-6 rounded-sm shadow-2xl mb-6 transition-colors"
+      style={{
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : themeColors.cardBg,
+        border: `1px solid ${themeColors.cardBorder}`,
+        backdropFilter: isDark ? 'blur(12px)' : 'none',
+      }}
+    >
       <div className="flex flex-col md:flex-row gap-4 items-end">
         {/* Department Filter */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-white/75 mb-2">
+          <label
+            className="block text-sm font-medium mb-2"
+            style={{ color: themeColors.textMuted }}
+          >
             Department
           </label>
           <select
             value={filters.department}
             onChange={(e) => handleFilterChange('department', e.target.value)}
-            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-zinc-950/60 text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 rounded-lg outline-none transition-colors"
+            style={selectStyle}
           >
             <option value="All" style={optionStyle}>All</option>
             <option value="Advisory" style={optionStyle}>Advisory</option>
@@ -86,13 +126,17 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
 
         {/* Role Level Filter */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-white/75 mb-2">
+          <label
+            className="block text-sm font-medium mb-2"
+            style={{ color: themeColors.textMuted }}
+          >
             Role Level
           </label>
           <select
             value={filters.roleLevel}
             onChange={(e) => handleFilterChange('roleLevel', e.target.value)}
-            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-zinc-950/60 text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 rounded-lg outline-none transition-colors"
+            style={selectStyle}
           >
             <option value="All" style={optionStyle}>All</option>
             <option value="Analyst" style={optionStyle}>Analyst</option>
@@ -104,13 +148,17 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
 
         {/* Time Period Filter */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-white/75 mb-2">
+          <label
+            className="block text-sm font-medium mb-2"
+            style={{ color: themeColors.textMuted }}
+          >
             Time Period
           </label>
           <select
             value={filters.timePeriod}
             onChange={(e) => handleFilterChange('timePeriod', e.target.value)}
-            className="w-full px-4 py-2 border border-white/15 rounded-lg bg-zinc-950/60 text-white/85 focus:ring-2 focus:ring-[#FFE600] focus:border-[#FFE600] outline-none"
+            className="w-full px-4 py-2 rounded-lg outline-none transition-colors"
+            style={selectStyle}
           >
             <option value="All time" style={optionStyle}>All time</option>
             <option value="Last 5 years" style={optionStyle}>Last 5 years</option>
@@ -121,7 +169,8 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
         {/* Apply Button */}
         <button
           onClick={handleApplyFilters}
-          className="px-6 py-2 bg-[#FFE600] text-[#2E2E38] font-semibold rounded-lg hover:bg-[#FFD700] transition-colors"
+          className="px-6 py-2 font-semibold rounded-lg transition-colors"
+          style={{ backgroundColor: themeColors.accent, color: '#2E2E38' }}
         >
           Apply Filters
         </button>
@@ -130,7 +179,12 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
         {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
-            className="px-6 py-2 bg-white/10 text-white/85 font-semibold rounded-lg hover:bg-white/15 transition-colors border border-white/10"
+            className="px-6 py-2 font-semibold rounded-lg transition-colors"
+            style={{
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : themeColors.cardBg,
+              color: themeColors.textPrimary,
+              border: `1px solid ${themeColors.border}`,
+            }}
           >
             Clear Filters
           </button>
@@ -139,9 +193,15 @@ export default function FilterControls({ onFilterChange }: FilterControlsProps) 
 
       {/* Active Filters Indicator */}
       {hasActiveFilters && (
-        <div className="mt-4 pt-4 border-t border-white/10">
-          <p className="text-sm text-white/60">
-            Filtered by: <span className="font-semibold text-white/85">{activeFiltersList.join(', ')}</span>
+        <div
+          className="mt-4 pt-4"
+          style={{ borderTop: `1px solid ${themeColors.border}` }}
+        >
+          <p className="text-sm" style={{ color: themeColors.textMuted }}>
+            Filtered by:{' '}
+            <span className="font-semibold" style={{ color: themeColors.textSecondary }}>
+              {activeFiltersList.join(', ')}
+            </span>
           </p>
         </div>
       )}

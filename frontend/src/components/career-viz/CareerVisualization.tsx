@@ -11,6 +11,7 @@ import { TransitionEdge } from './TransitionEdge'
 import { transformCareerGraphToReactFlow } from './graphTransformUtils'
 import type { RoleNodeData, TransitionEdgeData } from './graphTransformUtils'
 import { useNavigate } from 'react-router-dom'
+import { useTheme, themeColors } from '../../context/ThemeContext'
 
 const nodeTypes = { roleNode: RoleNode }
 const edgeTypes = { transitionEdge: TransitionEdge }
@@ -54,6 +55,9 @@ function computeSearchVisibleRoleIds(
 
 export function CareerVisualization({ employeeCurrentRoleId }: Props) {
   const navigate = useNavigate()
+  const { isDark } = useTheme()
+  const colors = isDark ? themeColors.dark : themeColors.light
+
   const [graph, setGraph] = useState<CareerGraphData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -224,20 +228,31 @@ export function CareerVisualization({ employeeCurrentRoleId }: Props) {
     setFilters({ search: '', department: 'all', minSuccessRate: 0 })
   }
 
+  const containerStyle = {
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+    border: `1px solid ${colors.cardBorder}`,
+  }
+
   if (loading) {
     return (
-      <div className="flex h-[720px] w-full items-center justify-center rounded-xl border border-white/15 bg-white/5">
-        <div className="text-sm font-semibold text-white/60">Loading career paths…</div>
+      <div
+        className="flex h-[720px] w-full items-center justify-center rounded-xl"
+        style={containerStyle}
+      >
+        <div className="text-sm font-semibold" style={{ color: colors.textMuted }}>Loading career paths…</div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex h-[720px] w-full items-center justify-center rounded-xl border border-white/15 bg-white/5">
+      <div
+        className="flex h-[720px] w-full items-center justify-center rounded-xl"
+        style={containerStyle}
+      >
         <div className="max-w-lg p-6 text-center">
-          <div className="text-sm font-semibold text-white">Failed to load graph</div>
-          <div className="mt-2 text-sm text-white/60">{error}</div>
+          <div className="text-sm font-semibold" style={{ color: colors.textPrimary }}>Failed to load graph</div>
+          <div className="mt-2 text-sm" style={{ color: colors.textMuted }}>{error}</div>
           <button
             type="button"
             onClick={() => {
@@ -245,11 +260,13 @@ export function CareerVisualization({ employeeCurrentRoleId }: Props) {
               setSelectedRoleId(null)
               setLoading(true)
               setError(null)
-              // effect will re-run due to setLoading? no; force by toggling employeeCurrentRoleId isn't possible here
-              // simplest: hard reload in this mock stage
               window.location.reload()
             }}
-            className="mt-4 rounded-md bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20"
+            className="mt-4 rounded-md px-4 py-2 text-sm font-semibold transition-colors"
+            style={{
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.05)',
+              color: colors.textPrimary,
+            }}
           >
             Retry
           </button>
@@ -260,14 +277,23 @@ export function CareerVisualization({ employeeCurrentRoleId }: Props) {
 
   if (!graph || graph.roles.length === 0) {
     return (
-      <div className="flex h-[720px] w-full items-center justify-center rounded-xl border border-white/15 bg-white/5">
-        <div className="text-sm font-semibold text-white/60">No career path data.</div>
+      <div
+        className="flex h-[720px] w-full items-center justify-center rounded-xl"
+        style={containerStyle}
+      >
+        <div className="text-sm font-semibold" style={{ color: colors.textMuted }}>No career path data.</div>
       </div>
     )
   }
 
   return (
-    <div className="relative h-[720px] w-full overflow-hidden rounded-xl border border-white/15 bg-white/5">
+    <div
+      className="relative h-[720px] w-full overflow-hidden rounded-xl"
+      style={{
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+        border: `1px solid ${colors.cardBorder}`,
+      }}
+    >
       <GraphControls
         state={filters}
         departments={departments}
@@ -294,7 +320,7 @@ export function CareerVisualization({ employeeCurrentRoleId }: Props) {
         proOptions={{ hideAttribution: true }}
       >
         <Controls />
-        <Background color="rgba(255,255,255,0.14)" gap={18} size={1} />
+        <Background color={isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)'} gap={18} size={1} />
       </ReactFlow>
     </div>
   )

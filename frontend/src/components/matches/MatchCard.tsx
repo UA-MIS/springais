@@ -2,10 +2,22 @@ import { Match } from '../../services/mockMatchData';
 import ProgressRing from '../common/ProgressRing';
 import SkillGapDisplay from './SkillGapDisplay';
 
+interface ThemeColors {
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  cardBg: string;
+  cardBorder: string;
+  border: string;
+  accent: string;
+}
+
 interface MatchCardProps {
   match: Match;
   onViewDetails: (matchId: string) => void;
   onSave: (matchId: string) => void;
+  isDark: boolean;
+  colors: ThemeColors;
 }
 
 function formatDate(dateString: string): string {
@@ -24,16 +36,28 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function MatchCard({ match, onViewDetails, onSave }: MatchCardProps) {
+export default function MatchCard({ match, onViewDetails, onSave, isDark, colors }: MatchCardProps) {
   const scorePercentage = Math.round(match.overall_score * 100);
 
   return (
-    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:bg-white/10 transition-all">
+    <div
+      className="p-6 rounded-sm shadow-2xl transition-all"
+      style={{
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+        border: `1px solid ${colors.cardBorder}`,
+        backdropFilter: isDark ? 'blur(12px)' : 'none',
+      }}
+    >
       {/* Header: Title + Score */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
-          <h3 className="text-xl font-bold text-white mb-2">{match.job_title}</h3>
-          <div className="text-sm text-white/60">
+          <h3
+            className="text-xl font-bold mb-2"
+            style={{ color: colors.textPrimary }}
+          >
+            {match.job_title}
+          </h3>
+          <div className="text-sm" style={{ color: colors.textMuted }}>
             <p className="font-medium">{match.service_line} · {match.department}</p>
             <p className="mt-1">{match.location} · Posted {formatDate(match.posted_date)}</p>
             {match.experience_required && (
@@ -52,12 +76,23 @@ export default function MatchCard({ match, onViewDetails, onSave }: MatchCardPro
           matched_skills={match.matched_skills}
           skill_gaps={match.skill_gaps}
           skill_match_score={match.skill_match_score}
+          isDark={isDark}
+          colors={colors}
         />
       </div>
 
       {/* Explanation */}
-      <div className="mb-4 p-3 bg-white/5 rounded-sm border border-white/10">
-        <p className="text-sm text-white/80 italic leading-relaxed">
+      <div
+        className="mb-4 p-3 rounded-sm"
+        style={{
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+          border: `1px solid ${colors.border}`,
+        }}
+      >
+        <p
+          className="text-sm italic leading-relaxed"
+          style={{ color: colors.textSecondary }}
+        >
           "{match.explanation}"
         </p>
       </div>
@@ -66,13 +101,22 @@ export default function MatchCard({ match, onViewDetails, onSave }: MatchCardPro
       <div className="flex gap-3">
         <button
           onClick={() => onViewDetails(match.id)}
-          className="flex-1 px-4 py-2 bg-[#FFE600] text-[#2E2E38] rounded-sm hover:bg-[#FFD700] font-semibold transition-colors"
+          className="flex-1 px-4 py-2 rounded-sm font-semibold transition-colors"
+          style={{
+            backgroundColor: colors.accent,
+            color: '#2E2E38',
+          }}
         >
           View Details
         </button>
         <button
           onClick={() => onSave(match.id)}
-          className="px-4 py-2 bg-white/10 text-white/85 font-semibold rounded-sm hover:bg-white/15 transition-colors border border-white/10"
+          className="px-4 py-2 font-semibold rounded-sm transition-colors"
+          style={{
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
+            color: colors.textPrimary,
+            border: `1px solid ${colors.border}`,
+          }}
         >
           Save Match
         </button>
