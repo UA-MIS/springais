@@ -1,35 +1,49 @@
-import { Routes, Route } from 'react-router-dom'
-import { CareerPathPage } from '@/pages/CareerPathPage'
-import { RoleRequirementPage } from '@/pages/RoleRequirementPage'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
+import LoginPage from './components/auth/LoginPage';
+import ProtectedRoute from './components/layout/ProtectedRoute';
+import MainLayout from './components/layout/MainLayout';
+import SuccessPatternPage from './components/successPatterns/SuccessPatternPage';
+import MatchResultsPage from './components/matches/MatchResultsPage';
+import { CareerPathPage } from '@/pages/CareerPathPage';
+import { RoleRequirementPage } from '@/pages/RoleRequirementPage';
+
+// Placeholder component for skills dashboard (to be implemented in Block I)
+function SkillsDashboard() {
+  return (
+    <div>
+      <h1 className="text-3xl font-bold mb-4">Skills Dashboard</h1>
+      <p className="text-gray-600">Skills dashboard content will be implemented in Block I</p>
+    </div>
+  );
+}
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/career-paths" element={<CareerPathPage />} />
+    <Routes>
+      {/* Public routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+      {/* Protected routes */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard" element={<SkillsDashboard />} />
+        <Route path="/matches" element={<MatchResultsPage />} />
+        <Route path="/career-path" element={<CareerPathPage />} />
         <Route path="/career-paths/:roleId" element={<RoleRequirementPage />} />
-      </Routes>
-    </div>
-  )
+        <Route path="/success-patterns" element={<SuccessPatternPage />} />
+      </Route>
+
+      {/* Default redirect */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
 }
 
-function HomePage() {
-  return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-4xl font-bold">SpringAIS</h1>
-      <p className="text-lg mt-4">AI-powered talent mobility platform</p>
-    </div>
-  )
-}
-
-function LoginPage() {
-  return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-2xl font-bold">Login</h1>
-    </div>
-  )
-}
-
-export default App
+export default App;
