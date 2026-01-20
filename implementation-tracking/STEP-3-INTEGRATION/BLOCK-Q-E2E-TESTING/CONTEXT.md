@@ -462,6 +462,17 @@ def login(request: LoginRequest):
 
 **Objective:** Populate database with realistic, impressive demo data
 
+**Pre-Demo Data Regeneration (Optional):**
+> **Note from Block A:** The synthetic employee data was generated with mock LLM mode for development speed. Before demo, consider regenerating with real APIs for more natural-sounding feedback themes and achievements:
+> ```bash
+> docker exec springais-backend python /app/scripts/generate_synthetic_data.py \
+>   --output /app/data/synthetic_employees.sql --count 900 --seed 42 --json
+> ```
+> - **Cost:** ~$1.30 (OpenAI API)
+> - **Time:** ~54 minutes
+> - **Benefit:** More varied, natural text in `feedback_themes` and `notable_achievement` fields
+> - **Keys required:** `OPENAI_API_KEY` and `ONET_API_KEY` in `.env`
+
 **Data to seed:**
 1. **Users (3-5 demo accounts):**
    - `demo@springais.com` / `DemoPass123` (primary demo account)

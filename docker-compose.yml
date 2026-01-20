@@ -40,6 +40,8 @@ services:
     volumes:
       - ./backend:/app
       - ./uploads:/app/uploads
+      - ./scripts:/app/scripts
+      - ./data:/app/data
     ports:
       - "8000:8000"
     environment:
