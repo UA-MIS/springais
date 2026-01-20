@@ -7,16 +7,7 @@ import SuccessPatternPage from './components/successPatterns/SuccessPatternPage'
 import MatchResultsPage from './components/matches/MatchResultsPage';
 import { CareerPathPage } from '@/pages/CareerPathPage';
 import { RoleRequirementPage } from '@/pages/RoleRequirementPage';
-
-// Placeholder component for skills dashboard (to be implemented in Block I)
-function SkillsDashboard() {
-  return (
-    <div>
-      <h1 className="text-3xl font-bold mb-4">Skills Dashboard</h1>
-      <p className="text-gray-600">Skills dashboard content will be implemented in Block I</p>
-    </div>
-  );
-}
+import SkillsDashboard from './components/skills/SkillsDashboard';
 
 function App() {
   return (
