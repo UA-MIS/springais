@@ -6,12 +6,15 @@ Endpoints:
 - POST /api/skills/upload - Upload resume file and extract skills
 - GET /api/skills/taxonomy - Get full skill taxonomy
 - POST /api/skills/taxonomy/seed - Seed skill taxonomy database
+- GET /api/skills/recommendations - Get skill recommendations
+- PATCH /api/skills/recommendations/{skill_name}/status - Update status
 """
 
 import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -22,6 +25,7 @@ from app.schemas.skill import (
     ResumeUploadResponse,
     SkillTaxonomyEntry,
     SkillTaxonomyResponse,
+    SkillRecommendationsResponse,
 )
 from app.services.resume_parser import parse_resume, validate_file_type
 from app.services.skill_extractor import extract_skills_from_text
@@ -33,10 +37,18 @@ from app.services.skill_normalizer import (
     get_normalizer_cache,
 )
 from app.models.skill_taxonomy import SkillTaxonomy
+from app.models.skill_recommendation import UserSkillRecommendation
+from app.services.recommendation_service import SkillRecommendationService
+from app.utils.security import get_current_user_from_token
+from app.models.user_profile import UserProfile
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/skills", tags=["skills"])
+
+
+class RecommendationStatusUpdate(BaseModel):
+    status: str = Field(..., description="New status: recommended, in_progress, dismissed")
 
 
 # ============================================
@@ -51,6 +63,7 @@ router = APIRouter(prefix="/skills", tags=["skills"])
 )
 async def extract_skills(
     request: SkillExtractionRequest,
+    _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """
@@ -69,6 +82,14 @@ async def extract_skills(
 
         # Categorize
         categories = categorize_skills(normalized_skills)
+
+        # Persist extracted skills to user profile
+        _current_user.skills = [skill.name for skill in normalized_skills]
+        db.commit()
+
+        # Refresh recommendations after skill update
+        service = SkillRecommendationService(db)
+        await service.compute_recommendations(_current_user.id)
 
         return SkillExtractionResponse(
             skills=normalized_skills,
@@ -99,6 +120,7 @@ async def extract_skills(
 )
 async def upload_resume(
     file: UploadFile = File(..., description="Resume file (PDF, DOCX, or TXT)"),
+    _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """
@@ -130,6 +152,14 @@ async def upload_resume(
 
         # Categorize
         categories = categorize_skills(normalized_skills)
+
+        # Persist extracted skills to user profile
+        _current_user.skills = [skill.name for skill in normalized_skills]
+        db.commit()
+
+        # Refresh recommendations after skill update
+        service = SkillRecommendationService(db)
+        await service.compute_recommendations(_current_user.id)
 
         return ResumeUploadResponse(
             filename=file.filename,
@@ -165,6 +195,7 @@ async def upload_resume(
 )
 async def get_taxonomy(
     category: str = None,
+    _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """
@@ -231,6 +262,7 @@ async def get_taxonomy(
     description="Seed the skill taxonomy database with initial data."
 )
 async def seed_taxonomy(
+    _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """
@@ -265,6 +297,7 @@ async def seed_taxonomy(
 async def search_taxonomy(
     q: str,
     limit: int = 10,
+    _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """
@@ -314,6 +347,93 @@ async def search_taxonomy(
 
 
 # ============================================
+# Skill Recommendation Endpoints
+# ============================================
+
+@router.get(
+    "/recommendations",
+    response_model=SkillRecommendationsResponse,
+    summary="Get personalized skill recommendations",
+    description="Aggregate recommendations from saved matches, career goals, and LLM bootstrap.",
+)
+async def get_skill_recommendations(
+    refresh: bool = False,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Get aggregated skill recommendations.
+
+    - **user_id**: Optional UUID (required when auth is not wired)
+    - **refresh**: Recompute recommendations if true
+    """
+    service = SkillRecommendationService(db)
+
+    if refresh:
+        recommendations = await service.compute_recommendations(current_user.id)
+    else:
+        recommendations = (
+            db.query(UserSkillRecommendation)
+            .filter(UserSkillRecommendation.user_id == current_user.id)
+            .filter(UserSkillRecommendation.status != "dismissed")
+            .order_by(UserSkillRecommendation.priority_score.desc())
+            .all()
+        )
+
+        if not recommendations:
+            recommendations = await service.compute_recommendations(current_user.id)
+
+    return SkillRecommendationsResponse(
+        recommendations=[
+            {
+                "skill": rec.skill_name,
+                "category": rec.category,
+                "priority": float(rec.priority_score),
+                "source": rec.source,
+                "related_roles": rec.related_job_ids,
+                "status": rec.status,
+            }
+            for rec in recommendations
+        ]
+    )
+
+
+@router.patch(
+    "/recommendations/{skill_name}/status",
+    summary="Update recommendation status",
+    description="Update recommendation status: recommended, in_progress, dismissed.",
+)
+async def update_recommendation_status(
+    skill_name: str,
+    payload: RecommendationStatusUpdate,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Update recommendation status for a user.
+
+    - **user_id**: Optional UUID (required when auth is not wired)
+    """
+    status_value = payload.status.strip()
+    if status_value not in {"recommended", "in_progress", "dismissed"}:
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    rec = (
+        db.query(UserSkillRecommendation)
+        .filter(UserSkillRecommendation.user_id == current_user.id)
+        .filter(UserSkillRecommendation.skill_name.ilike(skill_name))
+        .first()
+    )
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+
+    rec.status = status_value
+    db.commit()
+
+    return {"skill": rec.skill_name, "status": rec.status}
+
+
+# ============================================
 # Utility Endpoints
 # ============================================
 
@@ -324,6 +444,7 @@ async def search_taxonomy(
 )
 async def normalize_skills(
     skills: List[str],
+    _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """
@@ -352,6 +473,7 @@ async def normalize_skills(
     description="Get statistics about skill extraction and taxonomy."
 )
 async def get_stats(
+    _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """

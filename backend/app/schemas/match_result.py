@@ -120,6 +120,18 @@ class MatchResult(BaseModel):
         }
 
 
+class MatchSaveRequest(BaseModel):
+    """Request to save a match for a user."""
+
+    employee_id: str = Field(..., description="Employee identifier")
+    job_posting_id: str = Field(..., description="Job posting identifier")
+    match_mode: MatchModeEnum = Field(..., description="Match mode used")
+    scores: MatchScores = Field(..., description="Score breakdown")
+    skill_gaps: List[str] = Field(default_factory=list, description="Missing skills")
+    matched_skills: List[str] = Field(default_factory=list, description="Matched skills")
+    explanation: Optional[str] = Field(default=None, description="Match explanation")
+
+
 class MatchResultDetail(MatchResult):
     """Detailed match result with additional context."""
 

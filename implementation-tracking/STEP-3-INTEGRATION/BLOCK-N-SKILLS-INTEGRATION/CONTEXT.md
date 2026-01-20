@@ -32,6 +32,12 @@ Read VERIFICATION.md for integration testing.
 
 Connect the skills dashboard frontend to the AI-powered skill extraction backend, enabling users to extract skills from resumes, analyze skill gaps, and receive personalized skill recommendations.
 
+## Auth Requirement (Block M)
+
+- All endpoints in this block require JWT authentication.
+- Frontend must use the shared API client (`frontend/src/services/api.ts`) which injects `Authorization: Bearer <token>`.
+- Do not call `/api/skills/*` directly without the token.
+
 **Why this matters:**
 - Block I (Skills Dashboard) has UI components but uses mock data
 - Block G (Skill Extraction) has AI pipeline but no user interface

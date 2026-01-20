@@ -7,6 +7,14 @@ from .match_result import (
     MatchResultDetail,
     EmployeeMatchesResponse,
     DetailedMatchResponse,
+    MatchSaveRequest,
+)
+
+from .auth import (
+    RegisterRequest,
+    LoginRequest,
+    AuthResponse,
+    UserResponse,
 )
 
 from .skill import (
@@ -20,6 +28,8 @@ from .skill import (
     EmployeeSkillsUpdate,
     SkillTaxonomyEntry,
     SkillTaxonomyResponse,
+    SkillRecommendationItem,
+    SkillRecommendationsResponse,
 )
 
 __all__ = [
@@ -30,6 +40,7 @@ __all__ = [
     "MatchResultDetail",
     "EmployeeMatchesResponse",
     "DetailedMatchResponse",
+    "MatchSaveRequest",
     # Skill schemas
     "Skill",
     "SkillList",
@@ -41,4 +52,10 @@ __all__ = [
     "EmployeeSkillsUpdate",
     "SkillTaxonomyEntry",
     "SkillTaxonomyResponse",
+    "SkillRecommendationItem",
+    "SkillRecommendationsResponse",
+    "RegisterRequest",
+    "LoginRequest",
+    "AuthResponse",
+    "UserResponse",
 ]

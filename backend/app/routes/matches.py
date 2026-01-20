@@ -7,19 +7,26 @@ Endpoints for job matching:
 """
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
 from ..config.matching_config import MatchMode
 from ..schemas.match_result import (
     MatchModeEnum,
     EmployeeMatchesResponse,
     DetailedMatchResponse,
+    MatchSaveRequest,
 )
 from ..services.matching_service import (
     MatchingService,
     match_by_skills,
     get_match_detail,
 )
+from ..utils.security import get_current_user_from_token
+from ..database import get_db
+from ..models.match import Match
+from ..models.user_profile import UserProfile
+from ..services.recommendation_service import SkillRecommendationService
 
 # Import mock data for employee info (will be replaced with DB in Block O)
 import sys
@@ -30,7 +37,11 @@ try:
 except ImportError:
     get_mock_employee = lambda x: None
 
-router = APIRouter(prefix="/matches", tags=["matches"])
+router = APIRouter(
+    prefix="/matches",
+    tags=["matches"],
+    dependencies=[Depends(get_current_user_from_token)],
+)
 
 
 @router.get(
@@ -214,3 +225,43 @@ async def analyze_skill_gaps(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gap analysis failed: {str(e)}")
+
+
+@router.post(
+    "/save",
+    summary="Save a match for a user",
+    description="Persist a match and trigger skill recommendation refresh.",
+)
+async def save_match(
+    payload: MatchSaveRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Save a match to the database.
+
+    Required fields include job_posting_id, employee_id, match_mode, scores,
+    and skill gap details.
+    """
+    match = Match(
+        employee_id=payload.employee_id,
+        job_posting_id=payload.job_posting_id,
+        user_id=current_user.id,
+        match_mode=payload.match_mode.value,
+        overall_score=payload.scores.overall,
+        skill_match_score=payload.scores.skill_match,
+        experience_score=payload.scores.experience_match,
+        growth_potential_score=payload.scores.growth_potential,
+        skill_gaps=payload.skill_gaps,
+        matched_skills=payload.matched_skills,
+        explanation=payload.explanation,
+    )
+    db.add(match)
+    db.commit()
+    db.refresh(match)
+
+    # Refresh recommendations after saving a match
+    service = SkillRecommendationService(db)
+    await service.compute_recommendations(current_user.id)
+
+    return {"saved": True, "match_id": str(match.id)}

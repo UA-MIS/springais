@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTheme, themeColors } from '../../context/ThemeContext';
 
 interface ProgressRingProps {
   percentage: number;
@@ -7,12 +8,14 @@ interface ProgressRingProps {
   className?: string;
 }
 
-export default function ProgressRing({ 
-  percentage, 
-  size = 120, 
+export default function ProgressRing({
+  percentage,
+  size = 120,
   strokeWidth = 10,
   className = ''
 }: ProgressRingProps) {
+  const { isDark } = useTheme();
+  const colors = isDark ? themeColors.dark : themeColors.light;
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -40,6 +43,8 @@ export default function ProgressRing({
     return () => clearInterval(timer);
   }, [percentage]);
 
+  const bgStroke = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
       <svg
@@ -52,7 +57,7 @@ export default function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="rgba(255, 255, 255, 0.15)"
+          stroke={bgStroke}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -73,10 +78,10 @@ export default function ProgressRing({
       {/* Percentage text */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center">
-          <span className="text-3xl font-bold text-white">
+          <span className="text-3xl font-bold" style={{ color: colors.textPrimary }}>
             {Math.round(animatedPercentage)}
           </span>
-          <span className="text-lg font-semibold text-white">%</span>
+          <span className="text-lg font-semibold" style={{ color: colors.textPrimary }}>%</span>
         </div>
       </div>
     </div>
