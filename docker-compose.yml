@@ -67,6 +67,22 @@ services:
     environment:
       - VITE_API_URL=http://localhost:8000
 
+  ey_scraper:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: springais-ey-scraper
+    profiles: ["scraper"]
+    working_dir: /repo
+    entrypoint: ["python", "scripts/scrape_ey_jobs.py"]
+    volumes:
+      - ./:/repo
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/springais
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
