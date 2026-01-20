@@ -1,9 +1,30 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Import config file to use JS config (Tailwind v4 approach) */
+@config "../tailwind.config.js";
 
 /* Tailwind v4: ensure these sources are scanned for class candidates */
 @source "../index.html";
 @source "./**/*.{js,ts,jsx,tsx}";
+
+/* EY Brand Colors via CSS theme extension */
+@theme {
+  --color-ey-yellow: #ffe600;
+  --color-ey-yellow-dark: #e6cf00;
+  --color-ey-black: #2e2e38;
+  --color-ey-confident-black: #1a1a24;
+  --color-ey-off-white: #f6f6fa;
+  --color-ey-gray-light: #c4c4cd;
+  --color-ey-gray: #747480;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+  /* Green gradient colors for progress indicators */
+  --color-progress-start: #166534;   /* Dark green - 0% */
+  --color-progress-mid: #22c55e;     /* Medium green - 50% */
+  --color-progress-end: #4ade80;     /* Bright green - 100% */
+}
 
 body {
   margin: 0;
@@ -50,4 +71,32 @@ code {
   caret-color: rgba(255, 255, 255, 0.95);
   transition: background-color 999999s ease-in-out 0s;
   box-shadow: 0 0 0px 1000px transparent inset;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Smooth transitions for skill cards */
+.skill-card-enter {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.skill-card-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
