@@ -32,6 +32,11 @@ Read VERIFICATION.md for integration testing.
 
 Connect the visualization components (career path graph and success pattern charts) to the backend pattern analysis service, transforming static mock visualizations into dynamic, data-driven components that display real employee success patterns.
 
+## Auth Requirement (Block M)
+
+- All `/api/patterns/*` endpoints require JWT authentication.
+- Use the shared API client (`frontend/src/services/api.ts`) so the token is attached automatically.
+
 **Why this matters:**
 - Blocks K and L currently display mock data (static graphs and charts)
 - Block F provides real pattern analysis via API endpoints

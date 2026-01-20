@@ -6,6 +6,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const userData = await authService.getCurrentUser(token);
       setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
       // Token is invalid, clear it
       setToken(null);
@@ -41,6 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(response.token);
       setUser(response.user);
       localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
+  const register = async (email: string, password: string, name: string) => {
+    try {
+      const response = await authService.register(email, password, name);
+      setToken(response.token);
+      setUser(response.user);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
     } catch (error: any) {
       throw error;
     }
@@ -50,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     authService.logout();
+    localStorage.removeItem('user');
   };
 
   useEffect(() => {
@@ -57,13 +73,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       checkAuth();
     } else {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );

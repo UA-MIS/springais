@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/matches');
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -131,10 +131,16 @@ export default function LoginPage() {
                 )}
               </button>
 
-              <div className="pt-2 text-center">
+              <div className="pt-2 text-center space-y-2">
                 <Link to="/forgot-password" className="text-sm text-white/45 hover:text-white/70">
                   Forgot Password?
                 </Link>
+                <div className="text-sm text-white/45">
+                  New here?{' '}
+                  <Link to="/register" className="text-white/70 hover:text-white">
+                    Create an account
+                  </Link>
+                </div>
               </div>
             </form>
           </div>

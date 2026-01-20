@@ -1,15 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme, themeColors } from '../../context/ThemeContext';
 
-type LogoutButtonVariant = 'default' | 'dark';
-
-interface LogoutButtonProps {
-  variant?: LogoutButtonVariant;
-}
-
-export default function LogoutButton({ variant = 'default' }: LogoutButtonProps) {
+export default function LogoutButton() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const colors = isDark ? themeColors.dark : themeColors.light;
 
   const handleLogout = () => {
     logout();
@@ -19,11 +16,18 @@ export default function LogoutButton({ variant = 'default' }: LogoutButtonProps)
   return (
     <button
       onClick={handleLogout}
-      className={
-        variant === 'dark'
-          ? 'px-4 py-2 text-sm font-medium text-white/90 hover:bg-white/10 rounded-md transition-colors border border-white/10'
-          : 'px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 rounded-md transition-colors'
-      }
+      className="px-4 py-2 text-sm font-medium rounded-md transition-colors border"
+      style={{
+        color: isDark ? colors.textSecondary : '#ffffff',
+        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'transparent',
+        backgroundColor: 'transparent',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
     >
       Logout
     </button>

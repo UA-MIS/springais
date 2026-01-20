@@ -13,13 +13,19 @@ Endpoints:
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.utils.security import get_current_user_from_token
 from app.services.pattern_service import SuccessPatternService
+from app.services.recommendation_service import SkillRecommendationService
+from app.models.career_path import CareerPath
+from app.models.user_profile import UserProfile
 from app.schemas.pattern import (
     PatternsByRoleResponse,
     TransitionDetailResponse,
@@ -31,12 +37,56 @@ from app.schemas.pattern import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/patterns", tags=["patterns"])
+router = APIRouter(
+    prefix="/patterns",
+    tags=["patterns"],
+    dependencies=[Depends(get_current_user_from_token)],
+)
+
+
+class CareerGoalUpdate(BaseModel):
+    target_position_node_id: str = Field(..., min_length=1)
 
 
 def get_pattern_service(db: Session = Depends(get_db)) -> SuccessPatternService:
     """Dependency to get pattern service with database session."""
     return SuccessPatternService(db=db)
+
+
+@router.post(
+    "/career-goal",
+    summary="Update career goal target",
+    description="Set target position node for the current user and refresh recommendations.",
+)
+async def update_career_goal(
+    payload: CareerGoalUpdate,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    career_path = (
+        db.query(CareerPath)
+        .filter(CareerPath.user_id == current_user.id)
+        .first()
+    )
+    if career_path:
+        career_path.target_position_node_id = payload.target_position_node_id
+        career_path.last_updated_at = datetime.now(timezone.utc)
+    else:
+        career_path = CareerPath(
+            user_id=current_user.id,
+            target_position_node_id=payload.target_position_node_id,
+            graph_data={},
+            progression_status={},
+            last_updated_at=datetime.now(timezone.utc),
+        )
+        db.add(career_path)
+
+    db.commit()
+
+    rec_service = SkillRecommendationService(db)
+    await rec_service.compute_recommendations(current_user.id)
+
+    return {"target_position_node_id": payload.target_position_node_id}
 
 
 # ============================================

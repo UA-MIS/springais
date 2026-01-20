@@ -659,6 +659,413 @@ const employees = await api.get(`/api/employees?role=${roleName}`)
 
 ---
 
+## Skill Recommendations Architecture (Hybrid Approach)
+
+### Problem Statement
+
+The Profile "My Skills" tab shows **role-agnostic** recommended skills ("skills to work towards"), but all existing backend recommendation logic is **role-specific**:
+
+| Existing Source | What It Does | Limitation |
+|-----------------|--------------|------------|
+| `/api/matches/.../skill-gaps/{job_id}` | Skills missing for ONE specific job | Too narrow |
+| `/api/patterns/.../recommendations` | Roles to pursue, with skill gaps per role | Still role-specific |
+| `_get_recommended_skills()` | Hardcoded stub | Not real data |
+
+**Solution:** Hybrid aggregation that combines multiple sources into unified recommendations.
+
+### Data Sources for Recommendations
+
+1. **Saved Matches** - Aggregate `skill_gaps` from all matches the user has saved
+2. **Career Goal** - Skills needed for `career_path.target_position_node_id`
+3. **LLM Bootstrap** - Cold start when user has no saved matches or career goal
+
+### Implementation Files
+
+#### 1. New Model: `backend/app/models/skill_recommendation.py`
+
+```python
+from __future__ import annotations
+from uuid import UUID, uuid4
+from sqlalchemy import ForeignKey, Index, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import text
+from .base import Base, TimestampMixin
+
+class UserSkillRecommendation(Base, TimestampMixin):
+    __tablename__ = "user_skill_recommendations"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("user_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    
+    skill_name: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str | None] = mapped_column(String)  # cloud_infrastructure, leadership_management, etc.
+    priority_score: Mapped[float] = mapped_column(Numeric, default=0.5)  # 0.0-1.0
+    source: Mapped[str] = mapped_column(String)  # "career_goal", "saved_matches", "success_patterns", "llm_bootstrap"
+    
+    # Which roles need this skill (for explainability)
+    related_job_ids: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    
+    # User interaction
+    status: Mapped[str] = mapped_column(String, default="recommended")  # recommended, in_progress, dismissed
+    user_notes: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        Index("idx_skill_rec_user_id", "user_id"),
+        Index("idx_skill_rec_priority", "user_id", "priority_score"),
+    )
+```
+
+Register in `backend/app/models/__init__.py`.
+
+#### 2. New Service: `backend/app/services/recommendation_service.py`
+
+```python
+from collections import Counter
+from uuid import UUID
+from sqlalchemy.orm import Session
+from app.models.user_profile import UserProfile
+from app.models.match import Match
+from app.models.skill_recommendation import UserSkillRecommendation
+
+class SkillRecommendationService:
+    def __init__(self, db: Session):
+        self.db = db
+    
+    async def compute_recommendations(self, user_id: UUID) -> list[UserSkillRecommendation]:
+        """Main entry point - aggregates from all sources."""
+        user = self.db.query(UserProfile).filter_by(id=user_id).first()
+        if not user:
+            return []
+        
+        current_skills = set(user.skills or [])
+        recommendations = {}
+        
+        # Source 1: Aggregate from saved matches (skill_gaps field)
+        matches = self.db.query(Match).filter_by(user_id=user_id).all()
+        for match in matches:
+            for skill in (match.skill_gaps or []):
+                if skill not in current_skills:
+                    if skill not in recommendations:
+                        recommendations[skill] = {"count": 0, "job_ids": [], "source": "saved_matches"}
+                    recommendations[skill]["count"] += 1
+                    recommendations[skill]["job_ids"].append(str(match.job_posting_id))
+        
+        # Source 2: Career goal (if set)
+        career_path = user.career_path
+        if career_path and career_path.target_position_node_id:
+            goal_skills = await self._get_skills_for_role(career_path.target_position_node_id)
+            for skill in goal_skills:
+                if skill not in current_skills:
+                    if skill not in recommendations:
+                        recommendations[skill] = {"count": 0, "job_ids": [], "source": "career_goal"}
+                    recommendations[skill]["count"] += 2  # Weight career goal higher
+        
+        # Source 3: LLM bootstrap (if no matches and no career goal)
+        if not recommendations and not matches:
+            recommendations = await self._llm_bootstrap(user)
+        
+        # Convert to priority scores and persist
+        return self._persist_recommendations(user_id, recommendations, len(matches))
+    
+    async def _get_skills_for_role(self, role_id: str) -> list[str]:
+        """Get required skills for a target role."""
+        # Query job_postings or role definitions for required skills
+        # Implementation depends on your data model
+        return []
+    
+    async def _llm_bootstrap(self, user: UserProfile) -> dict:
+        """Cold start: use LLM to suggest skills based on current role/skills."""
+        from app.services.skill_extractor import get_openai_client
+        
+        client = get_openai_client()
+        prompt = f"""
+        User's current role: {user.current_role or 'Not specified'}
+        User's current skills: {user.skills or []}
+        Target service line: {user.target_service_line or 'Not specified'}
+        
+        Suggest 5-10 skills they should develop next for career growth.
+        Return as JSON object where keys are skill names and values are categories.
+        
+        Categories (use exactly these): cloud_infrastructure, leadership_management, 
+        data_analytics, consulting_excellence, programming, security, business_acumen
+        
+        Example: {{"Python": "programming", "AWS": "cloud_infrastructure"}}
+        """
+        
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        
+        import json
+        skills_dict = json.loads(response.choices[0].message.content)
+        
+        return {
+            skill: {"count": 1, "job_ids": [], "source": "llm_bootstrap", "category": category}
+            for skill, category in skills_dict.items()
+        }
+    
+    def _persist_recommendations(
+        self, 
+        user_id: UUID, 
+        recommendations: dict, 
+        total_matches: int
+    ) -> list[UserSkillRecommendation]:
+        """Save to DB, calculate priority scores."""
+        # Delete old recommendations for this user (except user-modified ones)
+        self.db.query(UserSkillRecommendation)\
+            .filter_by(user_id=user_id)\
+            .filter(UserSkillRecommendation.status == "recommended")\
+            .delete()
+        
+        results = []
+        for skill, data in recommendations.items():
+            # Priority: normalize by match count, cap at 1.0
+            priority = data["count"] / max(total_matches, 1) if total_matches else 0.5
+            
+            rec = UserSkillRecommendation(
+                user_id=user_id,
+                skill_name=skill,
+                category=data.get("category"),
+                priority_score=min(priority, 1.0),
+                source=data["source"],
+                related_job_ids=data["job_ids"],
+            )
+            self.db.add(rec)
+            results.append(rec)
+        
+        self.db.commit()
+        return results
+```
+
+#### 3. New Endpoint: `backend/app/routes/skills.py` (add to existing)
+
+```python
+from uuid import UUID
+from app.services.recommendation_service import SkillRecommendationService
+from app.models.skill_recommendation import UserSkillRecommendation
+
+@router.get(
+    "/recommendations",
+    summary="Get personalized skill recommendations",
+    description="Get aggregated skill recommendations based on saved roles, career goals, and success patterns."
+)
+async def get_skill_recommendations(
+    refresh: bool = False,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """
+    Get aggregated skill recommendations for the current user's profile.
+    
+    - **refresh**: If True, recompute from all sources. Otherwise return cached.
+    """
+    service = SkillRecommendationService(db)
+    
+    if refresh:
+        recommendations = await service.compute_recommendations(current_user.id)
+    else:
+        recommendations = db.query(UserSkillRecommendation)\
+            .filter_by(user_id=current_user.id)\
+            .filter(UserSkillRecommendation.status != "dismissed")\
+            .order_by(UserSkillRecommendation.priority_score.desc())\
+            .all()
+        
+        # If none exist, compute fresh
+        if not recommendations:
+            recommendations = await service.compute_recommendations(current_user.id)
+    
+    return {
+        "recommendations": [
+            {
+                "skill": r.skill_name,
+                "category": r.category,
+                "priority": float(r.priority_score),
+                "source": r.source,
+                "related_roles": r.related_job_ids,
+                "status": r.status,
+            }
+            for r in recommendations
+        ]
+    }
+
+@router.patch(
+    "/recommendations/{skill_name}/status",
+    summary="Update recommendation status",
+)
+async def update_recommendation_status(
+    skill_name: str,
+    status: str,  # "in_progress", "dismissed", "recommended"
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """User marks a recommendation as in-progress or dismisses it."""
+    rec = db.query(UserSkillRecommendation)\
+        .filter_by(user_id=current_user.id, skill_name=skill_name)\
+        .first()
+    
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+    
+    if status not in ["in_progress", "dismissed", "recommended"]:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    rec.status = status
+    db.commit()
+    
+    return {"skill": skill_name, "status": status}
+```
+
+#### 4. Frontend Hook Update: `frontend/src/hooks/useSkills.js`
+
+```javascript
+import { useState, useEffect } from 'react';
+import { api } from '../lib/api';
+import { MOCK_SKILLS } from '../mocks/mockSkills';  // Fallback
+
+export function useSkills() {
+  const [skills, setSkills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  // ... existing state
+  
+  useEffect(() => {
+    async function fetchSkills() {
+      try {
+        // Fetch user's current skills + recommendations in parallel
+        const [currentRes, recsRes] = await Promise.all([
+          api.get('/api/skills/'),
+          api.get('/api/skills/recommendations'),
+        ]);
+        
+        // Map current skills
+        const currentSkills = (currentRes.skills || []).map(s => ({
+          ...s,
+          status: s.proficiency >= 80 ? 'complete' : 'active',
+        }));
+        
+        // Map recommendations
+        const recommendedSkills = (recsRes.recommendations || []).map(r => ({
+          id: `rec-${r.skill}`,
+          name: r.skill,
+          category: r.category,
+          proficiency: 0,
+          status: r.status === 'in_progress' ? 'active' : 'recommended',
+          priority: r.priority,
+          source: r.source,
+          relatedRoles: r.related_roles,
+          progress: { current: 0, total: 4, unit: 'modules' },
+        }));
+        
+        setSkills([...currentSkills, ...recommendedSkills]);
+      } catch (err) {
+        console.error('Failed to fetch skills, using mock data', err);
+        setError(err);
+        setSkills(MOCK_SKILLS);  // Fallback for dev
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchSkills();
+  }, []);
+  
+  // Update recommendation status
+  const updateRecommendationStatus = async (skillName, newStatus) => {
+    try {
+      await api.patch(`/api/skills/recommendations/${encodeURIComponent(skillName)}/status`, {
+        status: newStatus,
+      });
+      
+      setSkills(skills.map(s => 
+        s.name === skillName ? { ...s, status: newStatus } : s
+      ));
+    } catch (err) {
+      console.error('Failed to update status', err);
+    }
+  };
+  
+  // Refresh recommendations (after saving a new match, etc.)
+  const refreshRecommendations = async () => {
+    try {
+      const recsRes = await api.get('/api/skills/recommendations?refresh=true');
+      // Merge with existing skills...
+    } catch (err) {
+      console.error('Failed to refresh recommendations', err);
+    }
+  };
+  
+  return {
+    skills,
+    loading,
+    error,
+    // ... existing returns
+    updateRecommendationStatus,
+    refreshRecommendations,
+  };
+}
+```
+
+#### 5. Triggers for Recomputation
+
+Call `service.compute_recommendations(user_id)` when:
+
+| Trigger Location | Event |
+|------------------|-------|
+| `routes/skills.py` - after `/upload` | User uploads new resume (new current skills) |
+| `routes/matches.py` - after save match | User saves a match (new skill gaps to aggregate) |
+| `routes/patterns.py` - after set career goal | User updates career target |
+
+Example in matches.py:
+```python
+@router.post("/save")
+async def save_match(match_id: UUID, ...):
+    # ... save match logic ...
+    
+    # Trigger recommendation refresh
+    rec_service = SkillRecommendationService(db)
+    await rec_service.compute_recommendations(current_user.id)
+    
+    return {"saved": True}
+```
+
+### Skill Categories
+
+The mock data uses these EY-specific categories (keep for consistency):
+
+- `cloud_infrastructure` - AWS, Azure, Kubernetes, etc.
+- `leadership_management` - Team Leadership, Mentorship, etc.
+- `data_analytics` - Python, SQL, ML, Tableau, etc.
+- `consulting_excellence` - Client Presentations, Stakeholder Management, etc.
+- `programming` - JavaScript, React, Node.js, etc.
+- `security` - Security Best Practices, OWASP, etc.
+- `business_acumen` - Financial Analysis, Agile, etc.
+
+LLM bootstrap prompt includes these exact categories to ensure consistency.
+
+### Migration Required
+
+Create Alembic migration for `user_skill_recommendations` table:
+
+```bash
+cd backend
+alembic revision --autogenerate -m "add_user_skill_recommendations"
+alembic upgrade head
+```
+
+---
+
 ## References
 
 **Related Step 2 Blocks:**
@@ -726,7 +1133,7 @@ When you complete a task in TASKS.md:
 
 ---
 
-**Last Updated:** 2026-01-06
+**Last Updated:** 2026-01-20
 **Status:** Ready for development
 **Blocking:** Blocks N, O, P (all depend on this)
 **Blocked by:** Block C (Database Models), Block H (Auth & Layout)
