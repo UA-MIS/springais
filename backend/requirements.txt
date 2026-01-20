@@ -37,6 +37,8 @@ tiktoken>=0.5.2
 # Web Scraping
 beautifulsoup4>=4.12.3
 requests>=2.31.0
+lxml>=5.1.0
+tqdm>=4.66.0
 
 # Machine Learning - PCA for embeddings
 scikit-learn>=1.4.0
