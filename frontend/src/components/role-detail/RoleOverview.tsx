@@ -78,6 +78,21 @@ export default function RoleOverview({ match }: RoleOverviewProps) {
                 })}
               </p>
             </div>
+            {match.job_posting_url && (
+              <div>
+                <span className="text-sm" style={{ color: colors.textMuted }}>Job Posting</span>
+                <p className="font-medium">
+                  <a
+                    href={match.job_posting_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: colors.accent }}
+                  >
+                    View on EY Careers
+                  </a>
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -102,6 +117,23 @@ export default function RoleOverview({ match }: RoleOverviewProps) {
           </div>
         </div>
       </div>
+
+      {match.job_description && (
+        <div
+          className="p-6 rounded-lg"
+          style={{
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            border: `1px solid ${colors.cardBorder}`,
+          }}
+        >
+          <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+            Job Description
+          </h3>
+          <p className="text-sm leading-relaxed" style={{ color: colors.textSecondary }}>
+            {match.job_description}
+          </p>
+        </div>
+      )}
 
       {/* Matched Skills */}
       <div
@@ -142,11 +174,12 @@ function ScoreBar({
   isDark,
 }: {
   label: string
-  score: number
+  score?: number
   colors: typeof themeColors.dark
   isDark: boolean
 }) {
-  const percentage = Math.round(score * 100)
+  const normalized = Number.isFinite(score) ? (score as number) : 0
+  const percentage = Math.round(normalized * 100)
   return (
     <div>
       <div className="flex justify-between mb-1">

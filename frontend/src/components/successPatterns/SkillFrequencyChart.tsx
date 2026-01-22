@@ -9,21 +9,15 @@ import {
   Cell,
 } from 'recharts';
 import { SkillFrequency } from '../../services/successPatternService';
-import { useTheme, themeColors } from '../../context/ThemeContext';
 
 interface SkillFrequencyChartProps {
   data: SkillFrequency[];
 }
 
 export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
-
-  const gridStroke = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)';
-  const axisStroke = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
-  const tickStroke = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.15)';
-  const tickFill = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)';
-  const labelFill = isDark ? 'rgba(255,255,255,0.60)' : 'rgba(0,0,0,0.5)';
+  const gridStroke = 'rgba(255,255,255,0.14)';
+  const axisStroke = 'rgba(255,255,255,0.25)';
+  const tickStroke = 'rgba(255,255,255,0.22)';
 
   // Get top 10 skills, sorted by frequency
   const topSkills = [...data]
@@ -34,16 +28,9 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
     if (active && payload && payload.length) {
       const skill = payload[0].payload as SkillFrequency;
       return (
-        <div
-          className="p-3 rounded-sm shadow-2xl"
-          style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-            border: `1px solid ${colors.cardBorder}`,
-            backdropFilter: isDark ? 'blur(12px)' : 'none',
-          }}
-        >
-          <p className="font-semibold" style={{ color: colors.textPrimary }}>{skill.skill}</p>
-          <p className="text-sm" style={{ color: colors.textMuted }}>
+        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
+          <p className="font-semibold text-white">{skill.skill}</p>
+          <p className="text-sm text-white/60">
             Required for <span className="font-bold">{skill.frequency}%</span> of successful
             transitions
           </p>
@@ -54,15 +41,8 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
   };
 
   return (
-    <div
-      className="p-6 rounded-sm shadow-2xl transition-colors"
-      style={{
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-        border: `1px solid ${colors.cardBorder}`,
-        backdropFilter: isDark ? 'blur(12px)' : 'none',
-      }}
-    >
-      <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md">
+      <h3 className="text-lg font-semibold mb-4 text-white">
         Top Skills for Successful Transitions
       </h3>
       <div className="flex justify-center">
@@ -78,12 +58,12 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
               <XAxis
                 type="number"
                 domain={[0, 100]}
-                tick={{ fontSize: 12, fill: tickFill }}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
                 label={{
                   value: 'Frequency (%)',
                   position: 'bottom',
                   offset: 10,
-                  fill: labelFill,
+                  fill: 'rgba(255,255,255,0.60)',
                 }}
                 axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
                 tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
@@ -91,7 +71,7 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
               <YAxis
                 type="category"
                 dataKey="skill"
-                tick={{ fontSize: 12, fill: tickFill }}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
                 width={150}
                 axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
                 tickLine={{ stroke: tickStroke, strokeWidth: 1 }}

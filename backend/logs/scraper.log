@@ -1,0 +1,48 @@
+2026-01-20 22:03:47,962 - INFO - Starting EY job scraper
+2026-01-20 22:03:47,963 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
+2026-01-20 22:03:47,964 - INFO - Workers: 32 | English-only: yes
+2026-01-20 22:03:53,981 - INFO - Locale en_US: +100 links (total unique now 100)
+2026-01-20 22:03:57,372 - INFO - Locale en_GB: +100 links (total unique now 100)
+2026-01-20 22:04:05,897 - INFO - Locale en: +100 links (total unique now 100)
+2026-01-20 22:04:05,897 - INFO - Found 100 unique job links (after locale merge)
+2026-01-20 22:05:24,313 - INFO - Starting EY job scraper
+2026-01-20 22:05:24,313 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
+2026-01-20 22:05:24,316 - INFO - Workers: 32 | English-only: yes
+2026-01-20 22:05:27,505 - INFO - Locale en_US: +100 links (total unique now 100)
+2026-01-20 22:05:31,063 - INFO - Locale en_GB: +100 links (total unique now 100)
+2026-01-20 22:05:34,604 - INFO - Locale en: +100 links (total unique now 100)
+2026-01-20 22:05:34,605 - INFO - Found 100 unique job links (after locale merge)
+2026-01-20 22:08:18,722 - INFO - Starting EY job scraper
+2026-01-20 22:08:18,722 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
+2026-01-20 22:08:18,723 - INFO - Workers: 32 | English-only: yes
+2026-01-20 22:08:25,115 - INFO - Locale en_US: +100 links (total unique now 100)
+2026-01-20 22:08:28,313 - INFO - Locale en_GB: +100 links (total unique now 100)
+2026-01-20 22:08:31,687 - INFO - Locale en: +100 links (total unique now 100)
+2026-01-20 22:08:31,688 - INFO - Found 100 unique job links (after locale merge)
+2026-01-20 22:14:59,333 - INFO - Starting EY job scraper
+2026-01-20 22:14:59,338 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
+2026-01-20 22:14:59,338 - INFO - Workers: 32 | English-only: yes
+2026-01-20 22:15:03,685 - INFO - Locale en_US: +100 links (total unique now 100)
+2026-01-20 22:15:21,239 - INFO - Locale en_GB: +100 links (total unique now 100)
+2026-01-20 22:15:39,769 - INFO - Locale en: +100 links (total unique now 100)
+2026-01-20 22:15:39,770 - INFO - Found 100 unique job links (after locale merge)
+2026-01-20 22:22:01,235 - INFO - Starting EY job scraper
+2026-01-20 22:22:01,235 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
+2026-01-20 22:22:01,236 - INFO - Workers: 32 | English-only: yes
+2026-01-20 22:22:05,028 - INFO - Locale en_US: +100 links (total unique now 100)
+2026-01-20 22:22:09,825 - INFO - Locale en_GB: +100 links (total unique now 100)
+2026-01-20 22:22:14,076 - INFO - Locale en: +100 links (total unique now 100)
+2026-01-20 22:22:14,079 - INFO - Found 100 unique job links (after locale merge)
+2026-01-20 22:22:46,884 - INFO - Upsert complete: parsed=100/100 (failed=0) | 100 new, 0 updated, 0 archived
+2026-01-20 22:22:46,885 - INFO - Service lines: {'Consulting': 86, 'Tax': 9, 'Assurance': 5}
+2026-01-20 22:22:46,885 - INFO - Top tags: [('consulting', 50), ('gds', 27), ('data', 26), ('sap', 10), ('tax', 9), ('risk', 5), ('assurance', 5), ('parthenon', 4), ('compliance', 4), ('forensics', 4), ('cloud', 2)]
+2026-01-20 22:22:46,885 - INFO - Done
+2026-01-20 22:25:18,611 - INFO - Starting EY job scraper
+2026-01-20 22:25:18,611 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
+2026-01-20 22:25:18,612 - INFO - Workers: 64 | English-only: yes
+2026-01-20 22:31:07,223 - INFO - Locale en_US: +7680 links (total unique now 7680)
+2026-01-20 22:31:07,225 - INFO - Found 7680 unique job links (after locale merge)
+2026-01-20 23:03:28,157 - INFO - Upsert complete: parsed=6663/7680 (failed=1017) | 6566 new, 97 updated, 3 archived
+2026-01-20 23:03:28,158 - INFO - Service lines: {'Consulting': 4762, 'Tax': 1123, 'Assurance': 778}
+2026-01-20 23:03:28,158 - INFO - Top tags: [('consulting', 2039), ('data', 1193), ('tax', 1123), ('assurance', 802), ('risk', 595), ('sap', 355), ('compliance', 349), ('gds', 310), ('parthenon', 216), ('cyber', 139), ('forensics', 135), ('cloud', 123), ('microsoft', 38), ('oracle', 37), ('grc', 26), ('independence', 23), ('devops', 12), ('sox', 10), ('appsec', 4), ('zscaler', 2)]
+2026-01-20 23:03:28,159 - INFO - Done

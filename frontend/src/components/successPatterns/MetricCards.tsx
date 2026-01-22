@@ -1,52 +1,20 @@
 import { SuccessPatternMetrics } from '../../services/successPatternService';
 
-interface ThemeColors {
-  textPrimary: string;
-  textSecondary: string;
-  textMuted: string;
-  cardBg: string;
-  cardBorder: string;
-  border: string;
-  accent: string;
-}
-
 interface MetricCardsProps {
   metrics: SuccessPatternMetrics;
-  isDark?: boolean;
-  colors?: ThemeColors;
 }
 
-export default function MetricCards({ metrics, isDark = true, colors }: MetricCardsProps) {
-  // Default colors for backwards compatibility
-  const themeColors = colors || {
-    textPrimary: '#ffffff',
-    textSecondary: 'rgba(255, 255, 255, 0.85)',
-    textMuted: 'rgba(255, 255, 255, 0.6)',
-    cardBg: '#ffffff',
-    cardBorder: 'rgba(255, 255, 255, 0.15)',
-    border: 'rgba(255, 255, 255, 0.15)',
-    accent: '#FFE600',
-  };
-
-  const cardStyle: React.CSSProperties = {
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : themeColors.cardBg,
-    border: `1px solid ${themeColors.cardBorder}`,
-    backdropFilter: isDark ? 'blur(12px)' : 'none',
-  };
-
+export default function MetricCards({ metrics }: MetricCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {/* Average Time to Promotion */}
-      <div className="p-6 rounded-sm shadow-2xl transition-all" style={cardStyle}>
+      <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:border-[#FFE600]/60 transition-all">
         <div className="flex items-center gap-4">
-          <div
-            className="w-12 h-12 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: `${themeColors.accent}26` }}
-          >
+          <div className="w-12 h-12 bg-[#FFE600]/15 rounded-lg flex items-center justify-center">
             <svg
-              className="w-6 h-6"
+              className="w-6 h-6 text-[#FFE600]"
               fill="none"
-              stroke={themeColors.accent}
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path
@@ -58,23 +26,20 @@ export default function MetricCards({ metrics, isDark = true, colors }: MetricCa
             </svg>
           </div>
           <div>
-            <p className="text-sm" style={{ color: themeColors.textMuted }}>Average Time to Promotion</p>
-            <p className="text-2xl font-bold" style={{ color: themeColors.textPrimary }}>{metrics.avgTimeToPromotion} years</p>
+            <p className="text-sm text-white/60">Average Time to Promotion</p>
+            <p className="text-2xl font-bold text-white">{metrics.avgTimeToPromotion} years</p>
           </div>
         </div>
       </div>
 
       {/* Overall Success Rate */}
-      <div className="p-6 rounded-sm shadow-2xl transition-all" style={cardStyle}>
+      <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:border-[#FFE600]/60 transition-all">
         <div className="flex items-center gap-4">
-          <div
-            className="w-12 h-12 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: `${themeColors.accent}26` }}
-          >
+          <div className="w-12 h-12 bg-[#FFE600]/15 rounded-lg flex items-center justify-center">
             <svg
-              className="w-6 h-6"
+              className="w-6 h-6 text-[#FFE600]"
               fill="none"
-              stroke={themeColors.accent}
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path
@@ -86,8 +51,8 @@ export default function MetricCards({ metrics, isDark = true, colors }: MetricCa
             </svg>
           </div>
           <div>
-            <p className="text-sm" style={{ color: themeColors.textMuted }}>Overall Success Rate</p>
-            <p className="text-2xl font-bold" style={{ color: themeColors.textPrimary }}>
+            <p className="text-sm text-white/60">Overall Success Rate</p>
+            <p className="text-2xl font-bold text-white">
               {(metrics.overallSuccessRate * 100).toFixed(0)}%
             </p>
           </div>
@@ -95,16 +60,13 @@ export default function MetricCards({ metrics, isDark = true, colors }: MetricCa
       </div>
 
       {/* Sample Size */}
-      <div className="p-6 rounded-sm shadow-2xl transition-all" style={cardStyle}>
+      <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:border-[#FFE600]/60 transition-all">
         <div className="flex items-center gap-4">
-          <div
-            className="w-12 h-12 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: `${themeColors.accent}26` }}
-          >
+          <div className="w-12 h-12 bg-[#FFE600]/15 rounded-lg flex items-center justify-center">
             <svg
-              className="w-6 h-6"
+              className="w-6 h-6 text-[#FFE600]"
               fill="none"
-              stroke={themeColors.accent}
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path
@@ -116,8 +78,8 @@ export default function MetricCards({ metrics, isDark = true, colors }: MetricCa
             </svg>
           </div>
           <div>
-            <p className="text-sm" style={{ color: themeColors.textMuted }}>Sample Size</p>
-            <p className="text-2xl font-bold" style={{ color: themeColors.textPrimary }}>{metrics.totalSampleSize} transitions</p>
+            <p className="text-sm text-white/60">Sample Size</p>
+            <p className="text-2xl font-bold text-white">{metrics.totalSampleSize} transitions</p>
           </div>
         </div>
       </div>

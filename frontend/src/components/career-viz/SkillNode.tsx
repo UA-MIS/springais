@@ -1,25 +1,44 @@
 import type { NodeProps } from 'reactflow'
 import { Handle, Position } from 'reactflow'
-import type { SkillNodeData } from '@/data/mockRoleSkillTrees'
 import { useTheme, themeColors } from '../../context/ThemeContext'
+
+export type SkillNodeData = {
+  label: string
+  kind: 'role' | 'path' | 'skill'
+  emphasis?: 'goal'
+  has?: boolean // User has this skill
+  required?: boolean // Skill is required (not just preferred)
+}
 
 export function SkillNode({ data }: NodeProps<SkillNodeData>) {
   const { isDark } = useTheme()
   const colors = isDark ? themeColors.dark : themeColors.light
+
+  // Skills the user has get green styling
+  const hasSkill = data.kind === 'skill' && data.has
 
   const borderColor =
     data.kind === 'role'
       ? 'rgba(255, 230, 0, 0.7)'
       : data.kind === 'path'
         ? isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
-        : colors.cardBorder
+        : hasSkill
+          ? 'rgba(34, 197, 94, 0.5)' // Green for skills user has
+          : colors.cardBorder
 
   const textColor =
     data.kind === 'role'
       ? colors.textPrimary
       : data.kind === 'path'
         ? colors.textSecondary
-        : colors.textMuted
+        : hasSkill
+          ? '#22c55e' // Green text for skills user has
+          : colors.textMuted
+
+  const bgColor =
+    hasSkill
+      ? isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'
+      : isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg
 
   const shadow = isDark
     ? '0 12px 40px rgba(0,0,0,0.55)'
@@ -29,7 +48,7 @@ export function SkillNode({ data }: NodeProps<SkillNodeData>) {
     <div
       className="rounded-lg px-4 py-3 text-sm font-semibold backdrop-blur-md"
       style={{
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+        backgroundColor: bgColor,
         border: `1px solid ${borderColor}`,
         boxShadow: shadow,
         color: textColor,
@@ -41,7 +60,10 @@ export function SkillNode({ data }: NodeProps<SkillNodeData>) {
         style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
         className="!h-2 !w-2 !border-0"
       />
-      <div className="max-w-[200px] whitespace-normal leading-snug text-center">{data.label}</div>
+      <div className="max-w-[200px] whitespace-normal leading-snug text-center">
+        {hasSkill && <span className="mr-1">✓</span>}
+        {data.label}
+      </div>
       <Handle
         type="source"
         position={Position.Bottom}

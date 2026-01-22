@@ -1,11 +1,20 @@
 import axios, { AxiosInstance } from 'axios';
 
+const normalizeBaseUrl = (raw: string): string => {
+  const trimmed = raw.replace(/\/+$/, '');
+  if (trimmed.endsWith('/api')) {
+    return trimmed;
+  }
+  return `${trimmed}/api`;
+};
+
 class APIClient {
   private client: AxiosInstance;
 
   constructor() {
+    const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+      baseURL: normalizeBaseUrl(rawBaseUrl),
     });
 
     // Add token to all requests

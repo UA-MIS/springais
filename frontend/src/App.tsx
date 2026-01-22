@@ -4,13 +4,16 @@ import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
+import SuccessPatternPage from './components/successPatterns/SuccessPatternPage';
 import MatchResultsPage from './components/matches/MatchResultsPage';
 import RoleDetailPage from './pages/RoleDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import SavedRolesPage from './pages/SavedRolesPage';
+import { MatchesProvider } from './context/MatchesContext';
 
 function App() {
   return (
+    <MatchesProvider>
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
@@ -29,6 +32,7 @@ function App() {
         <Route path="/matches" element={<MatchResultsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/saved" element={<SavedRolesPage />} />
+        <Route path="/success-patterns" element={<SuccessPatternPage />} />
 
         {/* Role detail page - accessed when clicking a match */}
         <Route path="/role/:roleId" element={<RoleDetailPage />} />
@@ -37,6 +41,7 @@ function App() {
       {/* Default redirect - Match Results is the starting point */}
       <Route path="/" element={<Navigate to="/matches" replace />} />
     </Routes>
+    </MatchesProvider>
   );
 }
 

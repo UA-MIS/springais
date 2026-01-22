@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID, uuid4
 
 import bcrypt
-from sqlalchemy import Boolean, DateTime, Index, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import text
+from pgvector.sqlalchemy import Vector
 
 from .base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from .career_path import CareerPath
+    from .employee import Employee
     from .match import Match
 
 
@@ -33,11 +35,23 @@ class UserProfile(Base, TimestampMixin):
     years_experience: Mapped[float | None] = mapped_column(Numeric)
     target_service_line: Mapped[str | None] = mapped_column(String)
     skills: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    employee_id: Mapped[str | None] = mapped_column(
+        String,
+        ForeignKey("employees.id"),
+        nullable=True,
+    )
     resume_text: Mapped[str | None] = mapped_column(Text)
     resume_file_url: Mapped[str | None] = mapped_column(String)
     skill_assessment_scores: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     onboarding_complete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # LLM-extracted skill columns
+    llm_listed_skills: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    llm_inferred_skills: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+
+    # Embedding column
+    resume_embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
 
     matches: Mapped[list["Match"]] = relationship(
         "Match",
@@ -45,6 +59,7 @@ class UserProfile(Base, TimestampMixin):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    employee: Mapped[Optional["Employee"]] = relationship("Employee", uselist=False)
     career_path: Mapped[CareerPath | None] = relationship(
         "CareerPath",
         back_populates="user_profile",

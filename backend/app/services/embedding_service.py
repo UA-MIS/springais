@@ -8,17 +8,25 @@ This service provides:
 - Batch processing for cost optimization
 """
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Literal
 import json
 import asyncio
+import logging
 import numpy as np
 from openai import AsyncOpenAI
 from openai import RateLimitError, APIError
 import redis.asyncio as redis
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 import joblib
 from ..utils.text import normalize_skill_text, calculate_cosine_similarity
 from ..utils.pca_loader import load_pca_model_safe
+from ..models.skill_embedding import SkillEmbedding
+from ..models.job_posting import JobPosting
+from ..models.user_profile import UserProfile
+
+logger = logging.getLogger(__name__)
 
 
 class SimilarSkill:
@@ -539,3 +547,222 @@ class EmbeddingService:
             )
 
         return reduced_embedding
+
+    # ============================================
+    # Database Storage Methods
+    # ============================================
+
+    async def embed_and_store_skill(
+        self,
+        db: AsyncSession,
+        skill_text: str,
+        source_type: Literal["job_posting", "user"],
+        source_id: str
+    ) -> SkillEmbedding:
+        """
+        Embed a skill and store it in the database.
+
+        Args:
+            db: Async SQLAlchemy session
+            skill_text: The skill text to embed
+            source_type: Either "job_posting" or "user"
+            source_id: The ID of the source (job posting ID or user ID)
+
+        Returns:
+            SkillEmbedding record (existing or newly created)
+        """
+        normalized = normalize_skill_text(skill_text)
+
+        try:
+            # Check if already embedded
+            stmt = select(SkillEmbedding).where(
+                SkillEmbedding.normalized_text == normalized,
+                SkillEmbedding.source_type == source_type,
+                SkillEmbedding.source_id == source_id
+            )
+            result = await db.execute(stmt)
+            existing = result.scalar_one_or_none()
+
+            if existing:
+                logger.debug(f"Found existing embedding for skill '{skill_text}'")
+                return existing
+
+            # Generate embedding using existing method
+            embedding = await self.embed_skill(skill_text)
+
+            # Create SkillEmbedding record
+            skill_embedding = SkillEmbedding(
+                skill_text=skill_text,
+                normalized_text=normalized,
+                embedding=embedding,
+                source_type=source_type,
+                source_id=source_id,
+                embedding_model="text-embedding-3-large-pca",
+                token_count=len(skill_text.split())  # Approximate token count
+            )
+
+            db.add(skill_embedding)
+            await db.commit()
+            await db.refresh(skill_embedding)
+
+            logger.info(f"Stored embedding for skill '{skill_text}' (source: {source_type}/{source_id})")
+            return skill_embedding
+
+        except Exception as e:
+            logger.error(f"Failed to embed and store skill '{skill_text}': {e}")
+            await db.rollback()
+            raise
+
+    async def embed_and_store_job(
+        self,
+        db: AsyncSession,
+        job: JobPosting
+    ) -> None:
+        """
+        Generate and store embeddings for a job posting.
+
+        Args:
+            db: Async SQLAlchemy session
+            job: JobPosting model instance
+
+        Updates:
+            - job.description_embedding
+            - job.title_embedding
+        """
+        try:
+            # Generate embedding for job description
+            if job.description:
+                description_embedding = await self.embed_skill(job.description)
+                job.description_embedding = description_embedding
+                logger.debug(f"Generated description embedding for job '{job.id}'")
+
+            # Generate embedding for job title
+            if job.title:
+                title_embedding = await self.embed_skill(job.title)
+                job.title_embedding = title_embedding
+                logger.debug(f"Generated title embedding for job '{job.id}'")
+
+            await db.commit()
+            logger.info(f"Stored embeddings for job posting '{job.id}'")
+
+        except Exception as e:
+            logger.error(f"Failed to embed job posting '{job.id}': {e}")
+            await db.rollback()
+            raise
+
+    async def embed_and_store_user_resume(
+        self,
+        db: AsyncSession,
+        user: UserProfile
+    ) -> None:
+        """
+        Generate and store embedding for a user's resume.
+
+        Args:
+            db: Async SQLAlchemy session
+            user: UserProfile model instance
+
+        Updates:
+            - user.resume_embedding
+        """
+        # Skip if no resume text
+        if user.resume_text is None:
+            logger.debug(f"User '{user.id}' has no resume text, skipping embedding")
+            return
+
+        try:
+            # Generate embedding for resume text
+            resume_embedding = await self.embed_skill(user.resume_text)
+            user.resume_embedding = resume_embedding
+
+            await db.commit()
+            logger.info(f"Stored resume embedding for user '{user.id}'")
+
+        except Exception as e:
+            logger.error(f"Failed to embed resume for user '{user.id}': {e}")
+            await db.rollback()
+            raise
+
+    async def batch_embed_and_store_skills(
+        self,
+        db: AsyncSession,
+        skills: List[str],
+        source_type: str,
+        source_id: str
+    ) -> List[SkillEmbedding]:
+        """
+        Embed multiple skills and store them in the database.
+
+        Args:
+            db: Async SQLAlchemy session
+            skills: List of skill texts to embed
+            source_type: Source type for all skills
+            source_id: Source ID for all skills
+
+        Returns:
+            List of all SkillEmbedding records (existing + new)
+        """
+        if not skills:
+            return []
+
+        all_embeddings: List[SkillEmbedding] = []
+        skills_to_embed: List[str] = []
+        skill_to_normalized: Dict[str, str] = {}
+
+        try:
+            # Check which skills are already embedded
+            for skill in skills:
+                normalized = normalize_skill_text(skill)
+                skill_to_normalized[skill] = normalized
+
+                stmt = select(SkillEmbedding).where(
+                    SkillEmbedding.normalized_text == normalized,
+                    SkillEmbedding.source_type == source_type,
+                    SkillEmbedding.source_id == source_id
+                )
+                result = await db.execute(stmt)
+                existing = result.scalar_one_or_none()
+
+                if existing:
+                    all_embeddings.append(existing)
+                    logger.debug(f"Found existing embedding for skill '{skill}'")
+                else:
+                    skills_to_embed.append(skill)
+
+            # If all skills already embedded, return early
+            if not skills_to_embed:
+                logger.debug(f"All {len(skills)} skills already embedded")
+                return all_embeddings
+
+            # Batch embed new skills using existing batch method
+            logger.info(f"Embedding {len(skills_to_embed)} new skills (batch)")
+            embeddings_map = await self.embed_skills_batch(skills_to_embed)
+
+            # Store new embeddings in database
+            for skill_text, embedding in embeddings_map.items():
+                skill_embedding = SkillEmbedding(
+                    skill_text=skill_text,
+                    normalized_text=skill_to_normalized[skill_text],
+                    embedding=embedding,
+                    source_type=source_type,
+                    source_id=source_id,
+                    embedding_model="text-embedding-3-large-pca",
+                    token_count=len(skill_text.split())
+                )
+                db.add(skill_embedding)
+                all_embeddings.append(skill_embedding)
+
+            await db.commit()
+
+            # Refresh all new embeddings to get their IDs
+            for emb in all_embeddings:
+                if emb.id is None:
+                    await db.refresh(emb)
+
+            logger.info(f"Stored {len(skills_to_embed)} new skill embeddings")
+            return all_embeddings
+
+        except Exception as e:
+            logger.error(f"Failed to batch embed skills: {e}")
+            await db.rollback()
+            raise

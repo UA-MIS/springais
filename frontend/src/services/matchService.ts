@@ -1,5 +1,5 @@
+import api from './api';
 import { Match } from './mockMatchData';
-import { MOCK_MATCHES_BEST_FIT, MOCK_MATCHES_STRETCH, MOCK_MATCHES_EXPLORATORY } from './mockMatchData';
 
 export type MatchMode = 'best_fit' | 'stretch' | 'exploratory';
 
@@ -10,59 +10,106 @@ export interface MatchFilters {
   experience_levels?: string[];
 }
 
-// For Step 2: Returns mock data
-// In Step 3 (Block O), this will be replaced with actual API calls
+const DEFAULT_EMPLOYEE_ID = 1;
+const DEFAULT_MATCH_LIMIT = 500;  // Fetch all matches for client-side filtering
+
+const mapMatchResult = (item: any): Match => {
+  const gapAnalysis = item.gap_analysis || {};
+  return {
+    id: String(item.job_id),
+    job_id: String(item.job_id),
+    job_title: item.title,
+    service_line: item.service_line,
+    department: item.department,
+    location: item.location,
+    posted_date: new Date().toISOString().split('T')[0],
+    experience_required: undefined,
+    overall_score: item.scores?.overall ?? 0,
+    skill_match_score: item.scores?.skill_match ?? 0,
+    experience_score: item.scores?.experience_match ?? 0,
+    growth_potential_score: item.scores?.growth_potential ?? 0,
+    matched_skills: gapAnalysis.overlapping_skills || [],
+    skill_gaps: gapAnalysis.missing_skills || [],
+    explanation: item.explanation || '',
+    salary_range: item.salary_range,
+    job_posting_url: item.job_posting_url,
+  };
+};
+
+const mapMatchDetail = (item: any): Match => {
+  const gapAnalysis = item.gap_analysis || {};
+  const experienceRequired = item.experience_years_min !== undefined && item.experience_years_max !== undefined
+    ? `${item.experience_years_min}-${item.experience_years_max} years`
+    : undefined;
+
+  return {
+    id: String(item.job_id),
+    job_id: String(item.job_id),
+    job_title: item.title,
+    service_line: item.service_line,
+    department: item.department,
+    location: item.location,
+    posted_date: item.posted_date || new Date().toISOString().split('T')[0],
+    experience_required: experienceRequired,
+    overall_score: item.scores?.overall ?? 0,
+    skill_match_score: item.scores?.skill_match ?? 0,
+    experience_score: item.scores?.experience_match ?? 0,
+    growth_potential_score: item.scores?.growth_potential ?? 0,
+    matched_skills: gapAnalysis.overlapping_skills || [],
+    skill_gaps: gapAnalysis.missing_skills || [],
+    explanation: item.explanation || '',
+    salary_range: item.salary_range,
+    job_posting_url: item.job_posting_url,
+    job_description: item.job_description,
+    required_skills: item.required_skills || [],
+    preferred_skills: item.preferred_skills || [],
+  };
+};
+
 export async function getMatches(
   mode: MatchMode,
   filters?: MatchFilters
 ): Promise<{ matches: Match[]; total: number }> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
+  // Fetch all matches in one request for client-side filtering
+  // Client-side filtering handles mode-based score ranges and US-only filter
+  const params: Record<string, string | number> = {
+    mode: 'exploratory',  // Use exploratory to get ALL matches (lowest threshold)
+    limit: DEFAULT_MATCH_LIMIT,
+    min_score: 0,  // Get all matches, filter client-side
+  };
 
-  let matches: Match[] = [];
-  switch (mode) {
-    case 'best_fit':
-      matches = MOCK_MATCHES_BEST_FIT;
-      break;
-    case 'stretch':
-      matches = MOCK_MATCHES_STRETCH;
-      break;
-    case 'exploratory':
-      matches = MOCK_MATCHES_EXPLORATORY;
-      break;
-  }
-
-  // Apply filters (if provided)
-  if (filters) {
-    matches = matches.filter(match => {
-      if (filters.departments && filters.departments.length > 0) {
-        if (!filters.departments.includes(match.department)) return false;
-      }
-      if (filters.locations && filters.locations.length > 0) {
-        if (!filters.locations.includes(match.location)) return false;
-      }
-      if (filters.min_score !== undefined) {
-        if (match.overall_score < filters.min_score / 100) return false;
-      }
-      // Experience level filtering would go here
-      return true;
-    });
-  }
+  const response = await api.get(`/matches/employee/${DEFAULT_EMPLOYEE_ID}`, { params });
+  const data = response.data;
+  const matches = (data.matches || []).map(mapMatchResult);
 
   return {
     matches,
-    total: matches.length
+    total: data.total_count ?? matches.length,
   };
 }
 
-// For Step 3: Will be implemented when connecting to Block E backend
 export async function getMatchDetails(matchId: string): Promise<Match | null> {
-  // TODO: Implement API call to get match details
-  const allMatches = [...MOCK_MATCHES_BEST_FIT, ...MOCK_MATCHES_STRETCH, ...MOCK_MATCHES_EXPLORATORY];
-  return allMatches.find(m => m.id === matchId) || null;
+  const response = await api.get(`/matches/employee/${DEFAULT_EMPLOYEE_ID}/job/${matchId}`);
+  const detail = response.data?.match;
+  if (!detail) {
+    return null;
+  }
+  return mapMatchDetail(detail);
 }
 
-export async function saveMatch(userId: string, matchId: string): Promise<void> {
-  // TODO: Implement API call to save match
-  console.log('Saving match', matchId, 'for user', userId);
+export async function saveMatch(match: Match, mode: MatchMode): Promise<void> {
+  await api.post('/matches/save', {
+    employee_id: String(DEFAULT_EMPLOYEE_ID),
+    job_posting_id: match.job_id,
+    match_mode: mode,
+    scores: {
+      skill_match: match.skill_match_score,
+      experience_match: match.experience_score,
+      growth_potential: match.growth_potential_score,
+      overall: match.overall_score,
+    },
+    skill_gaps: match.skill_gaps,
+    matched_skills: match.matched_skills,
+    explanation: match.explanation,
+  });
 }
