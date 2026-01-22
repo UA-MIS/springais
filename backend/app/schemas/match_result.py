@@ -81,7 +81,7 @@ class MatchScores(BaseModel):
 class MatchResult(BaseModel):
     """Summary match result for list display."""
 
-    job_id: int = Field(description="Job posting ID")
+    job_id: str = Field(description="Job posting ID")
     title: str = Field(description="Job title")
     department: str = Field(description="Department name")
     service_line: str = Field(description="Service line (Consulting, Assurance, Tax)")
@@ -141,8 +141,18 @@ class MatchResultDetail(MatchResult):
         default_factory=list,
         description="Nice-to-have skills"
     )
-    experience_years_min: int = Field(description="Minimum years experience required")
-    experience_years_max: int = Field(description="Maximum years experience")
+    job_posting_url: Optional[str] = Field(
+        default=None,
+        description="External job posting URL"
+    )
+    experience_years_min: Optional[int] = Field(
+        default=None,
+        description="Minimum years experience required"
+    )
+    experience_years_max: Optional[int] = Field(
+        default=None,
+        description="Maximum years experience"
+    )
     salary_range: Optional[str] = Field(default=None, description="Salary range if available")
     role_level: int = Field(description="Role level in hierarchy (1-9)")
     role_level_delta: int = Field(
@@ -157,7 +167,7 @@ class MatchResultDetail(MatchResult):
 class EmployeeMatchesResponse(BaseModel):
     """Response for GET /api/matches/employee/{employee_id}."""
 
-    employee_id: int = Field(description="Employee ID")
+    employee_id: str = Field(description="Employee ID")
     employee_name: str = Field(description="Employee name")
     current_role: str = Field(description="Employee's current role")
     match_mode: MatchModeEnum = Field(description="Mode used for matching")
@@ -185,7 +195,7 @@ class EmployeeMatchesResponse(BaseModel):
 class DetailedMatchResponse(BaseModel):
     """Response for GET /api/matches/employee/{employee_id}/job/{job_id}."""
 
-    employee_id: int = Field(description="Employee ID")
+    employee_id: str = Field(description="Employee ID")
     employee_name: str = Field(description="Employee name")
     match: MatchResultDetail = Field(description="Detailed match information")
 

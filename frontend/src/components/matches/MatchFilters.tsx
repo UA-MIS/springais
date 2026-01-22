@@ -6,6 +6,7 @@ export interface FilterState {
   locations: string[];
   min_score: number;
   experience_levels: string[];
+  usOnly: boolean;
 }
 
 interface ThemeColors {
@@ -76,16 +77,21 @@ export default function MatchFilters({ filters, onFiltersChange, isDark, colors 
     onFiltersChange({
       departments: [],
       locations: [],
-      min_score: 70,
-      experience_levels: []
+      min_score: 0,
+      experience_levels: [],
+      usOnly: true,  // Default to US only
     });
   };
 
-  const hasActiveFilters = 
+  const toggleUsOnly = () => {
+    onFiltersChange({ ...filters, usOnly: !filters.usOnly });
+  };
+
+  const hasActiveFilters =
     filters.departments.length > 0 ||
     filters.locations.length > 0 ||
-    filters.min_score !== 70 ||
-    filters.experience_levels.length > 0;
+    filters.experience_levels.length > 0 ||
+    !filters.usOnly;  // Show reset if US filter is off
 
   const inputBgColor = isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg;
   const dropdownBgColor = isDark ? 'rgba(30, 30, 40, 0.95)' : colors.cardBg;
@@ -277,33 +283,49 @@ export default function MatchFilters({ filters, onFiltersChange, isDark, colors 
           </div>
         </div>
 
-        {/* Min Score Slider */}
+        {/* US Only Toggle */}
         <div>
           <label
             className="block text-sm font-medium mb-2"
             style={{ color: colors.textMuted }}
           >
-            Min Match Score: {filters.min_score}%
+            Region
           </label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={filters.min_score}
-            onChange={(e) => onFiltersChange({ ...filters, min_score: parseInt(e.target.value) })}
-            className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+          <button
+            onClick={toggleUsOnly}
+            className="w-full px-4 py-2 rounded-sm text-left flex justify-between items-center transition-colors"
             style={{
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
-              accentColor: colors.accent,
+              backgroundColor: filters.usOnly ? colors.accent : inputBgColor,
+              border: `1px solid ${filters.usOnly ? colors.accent : colors.border}`,
+              color: filters.usOnly ? '#2E2E38' : colors.textPrimary,
             }}
-          />
-          <div
-            className="flex justify-between text-xs mt-1"
+          >
+            <span className="text-sm font-medium">
+              {filters.usOnly ? 'US Only' : 'All Regions'}
+            </span>
+            <span
+              className="w-10 h-5 rounded-full relative transition-colors"
+              style={{
+                backgroundColor: filters.usOnly
+                  ? 'rgba(0, 0, 0, 0.2)'
+                  : isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <span
+                className="absolute top-0.5 w-4 h-4 rounded-full transition-all"
+                style={{
+                  backgroundColor: filters.usOnly ? '#2E2E38' : colors.textMuted,
+                  left: filters.usOnly ? '22px' : '2px',
+                }}
+              />
+            </span>
+          </button>
+          <p
+            className="text-xs mt-1"
             style={{ color: colors.textMuted }}
           >
-            <span>0%</span>
-            <span>100%</span>
-          </div>
+            {filters.usOnly ? 'Showing US positions only' : 'Showing all global positions'}
+          </p>
         </div>
       </div>
 

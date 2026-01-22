@@ -6,6 +6,10 @@ Extracts structured skills from resume text including:
 - Soft skills (communication, leadership, teamwork)
 - Domain skills (industry-specific expertise)
 - Certifications (professional certifications)
+
+Skills are categorized as:
+- Listed skills: Explicitly mentioned by name in the resume
+- Inferred skills: Implied by experience, projects, or responsibilities
 """
 
 import json
@@ -14,6 +18,7 @@ import asyncio
 from typing import List, Optional, Tuple
 
 from openai import AsyncOpenAI, APIError, RateLimitError, APITimeoutError
+from pydantic import BaseModel
 
 from app.config import get_openai_client
 from app.schemas.skill import Skill, SkillList
@@ -41,29 +46,51 @@ COST_PER_1M_OUTPUT = 0.40  # $0.40 per 1M output tokens
 
 
 # ============================================
+# Result Model
+# ============================================
+
+class SkillExtractionResult(BaseModel):
+    """Result of skill extraction containing listed and inferred skills."""
+
+    listed_skills: List[Skill]
+    inferred_skills: List[Skill]
+    tokens_used: int
+    cost_usd: float
+
+
+# ============================================
 # Prompt Template
 # ============================================
 
-SKILL_EXTRACTION_PROMPT = """You are a skill extraction assistant. Extract all skills from the resume below.
+SKILL_EXTRACTION_PROMPT = """You are a skill extraction assistant. Analyze the resume and extract:
 
-Instructions:
-1. Identify all technical skills (programming languages, tools, frameworks, databases, cloud platforms)
-2. Identify all soft skills (communication, leadership, teamwork, problem-solving)
-3. Identify all domain skills (industry-specific expertise like financial analysis, marketing, etc.)
-4. Identify all certifications (professional certifications like AWS Certified, PMP, CPA)
-5. Infer proficiency level based on years mentioned or context:
+1. LISTED SKILLS: Skills explicitly mentioned by name in the resume (e.g., "Proficient in Python", "Skills: Java, SQL")
+2. INFERRED SKILLS: Skills implied by experience, projects, or responsibilities but not explicitly listed (e.g., if they led a team of 10, infer "Team Leadership"; if they built REST APIs, infer "API Design")
+
+For each skill, provide:
+- name: Normalized skill name (e.g., "Javascript" → "JavaScript", "ML" → "Machine Learning")
+- category: One of "technical", "soft", "domain", or "certification"
+- proficiency: One of "beginner", "intermediate", "advanced", or "expert" based on:
    - beginner: <1 year or just learning
    - intermediate: 1-3 years or working knowledge
    - advanced: 3-5 years or strong proficiency
    - expert: 5+ years or deep expertise
-6. Normalize skill names to standard forms (e.g., "Javascript" → "JavaScript", "ML" → "Machine Learning")
+
+Categories:
+- technical: programming languages, tools, frameworks, databases, cloud platforms
+- soft: communication, leadership, teamwork, problem-solving
+- domain: industry-specific expertise like financial analysis, marketing
+- certification: professional certifications like AWS Certified, PMP, CPA
 
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {{
-  "skills": [
+  "listed_skills": [
     {{"name": "Python", "category": "technical", "proficiency": "advanced"}},
-    {{"name": "Leadership", "category": "soft", "proficiency": "intermediate"}},
-    {{"name": "AWS Certified Solutions Architect", "category": "certification", "proficiency": "advanced"}}
+    {{"name": "AWS", "category": "technical", "proficiency": "intermediate"}}
+  ],
+  "inferred_skills": [
+    {{"name": "CI/CD", "category": "technical", "proficiency": "intermediate"}},
+    {{"name": "Team Leadership", "category": "soft", "proficiency": "advanced"}}
   ]
 }}
 
@@ -114,16 +141,17 @@ class SkillExtractor:
         self,
         text: str,
         clean_text: bool = True
-    ) -> Tuple[List[Skill], dict]:
+    ) -> SkillExtractionResult:
         """
-        Extract skills from resume text.
+        Extract skills from resume text, separating listed vs inferred skills.
 
         Args:
             text: Resume text to extract skills from
             clean_text: Whether to clean the text first (default: True)
 
         Returns:
-            Tuple of (list of Skill objects, usage dict with tokens/cost)
+            SkillExtractionResult containing listed_skills, inferred_skills,
+            tokens_used, and cost_usd
 
         Raises:
             ValueError: If text is empty or extraction fails after retries
@@ -146,7 +174,7 @@ class SkillExtractor:
     async def _extract_with_retry(
         self,
         text: str
-    ) -> Tuple[List[Skill], dict]:
+    ) -> SkillExtractionResult:
         """
         Extract skills with retry logic for API failures.
 
@@ -154,7 +182,7 @@ class SkillExtractor:
             text: Cleaned resume text
 
         Returns:
-            Tuple of (skills list, usage dict)
+            SkillExtractionResult with listed and inferred skills
         """
         last_error = None
 
@@ -187,7 +215,7 @@ class SkillExtractor:
 
         raise ValueError(f"Skill extraction failed after {MAX_RETRIES} retries: {last_error}")
 
-    async def _call_openai(self, text: str) -> Tuple[List[Skill], dict]:
+    async def _call_openai(self, text: str) -> SkillExtractionResult:
         """
         Make the actual OpenAI API call.
 
@@ -195,7 +223,7 @@ class SkillExtractor:
             text: Resume text
 
         Returns:
-            Tuple of (skills list, usage dict)
+            SkillExtractionResult with listed and inferred skills
         """
         prompt = SKILL_EXTRACTION_PROMPT.format(resume_text=text)
 
@@ -218,68 +246,87 @@ class SkillExtractor:
 
         # Parse response
         content = response.choices[0].message.content
-        skills = self._parse_response(content)
+        listed_skills, inferred_skills = self._parse_response(content)
 
         # Calculate usage
-        usage = {
-            "prompt_tokens": response.usage.prompt_tokens,
-            "completion_tokens": response.usage.completion_tokens,
-            "total_tokens": response.usage.total_tokens,
-            "cost_usd": self._calculate_cost(
-                response.usage.prompt_tokens,
-                response.usage.completion_tokens
-            )
-        }
-
-        logger.info(
-            f"Extracted {len(skills)} skills. "
-            f"Tokens: {usage['total_tokens']}, Cost: ${usage['cost_usd']:.6f}"
+        tokens_used = response.usage.total_tokens
+        cost_usd = self._calculate_cost(
+            response.usage.prompt_tokens,
+            response.usage.completion_tokens
         )
 
-        return skills, usage
+        total_skills = len(listed_skills) + len(inferred_skills)
+        logger.info(
+            f"Extracted {total_skills} skills ({len(listed_skills)} listed, {len(inferred_skills)} inferred). "
+            f"Tokens: {tokens_used}, Cost: ${cost_usd:.6f}"
+        )
 
-    def _parse_response(self, content: str) -> List[Skill]:
+        return SkillExtractionResult(
+            listed_skills=listed_skills,
+            inferred_skills=inferred_skills,
+            tokens_used=tokens_used,
+            cost_usd=cost_usd
+        )
+
+    def _parse_response(self, content: str) -> Tuple[List[Skill], List[Skill]]:
         """
-        Parse LLM response into Skill objects.
+        Parse LLM response into listed and inferred Skill objects.
 
         Args:
             content: JSON string from LLM
 
         Returns:
-            List of validated Skill objects
+            Tuple of (listed_skills, inferred_skills)
         """
         try:
             data = json.loads(content)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON response: {e}")
             logger.debug(f"Raw content: {content}")
-            return []
+            return [], []
 
-        if "skills" not in data:
-            logger.warning("Response missing 'skills' key")
-            return []
+        listed_skills = []
+        inferred_skills = []
 
-        skills = []
-        for item in data["skills"]:
-            try:
-                # Validate and create Skill object
-                skill = Skill(
-                    name=item.get("name", "").strip(),
-                    category=item.get("category", "technical"),
-                    proficiency=item.get("proficiency", "intermediate")
-                )
-                if skill.name:  # Only add if name is not empty
-                    skills.append(skill)
-            except Exception as e:
-                logger.warning(f"Failed to parse skill: {item}, error: {e}")
-                continue
+        # Parse listed skills
+        for item in data.get("listed_skills", []):
+            skill = self._parse_skill_item(item)
+            if skill:
+                listed_skills.append(skill)
 
-        return skills
+        # Parse inferred skills
+        for item in data.get("inferred_skills", []):
+            skill = self._parse_skill_item(item)
+            if skill:
+                inferred_skills.append(skill)
+
+        # Fallback: if old format with just "skills" key, treat all as listed
+        if not listed_skills and not inferred_skills and "skills" in data:
+            for item in data["skills"]:
+                skill = self._parse_skill_item(item)
+                if skill:
+                    listed_skills.append(skill)
+
+        return listed_skills, inferred_skills
+
+    def _parse_skill_item(self, item: dict) -> Optional[Skill]:
+        """Parse a single skill item from LLM response."""
+        try:
+            skill = Skill(
+                name=item.get("name", "").strip(),
+                category=item.get("category", "technical"),
+                proficiency=item.get("proficiency", "intermediate")
+            )
+            if skill.name:
+                return skill
+        except Exception as e:
+            logger.warning(f"Failed to parse skill: {item}, error: {e}")
+        return None
 
     async def _extract_from_chunks(
         self,
         text: str
-    ) -> Tuple[List[Skill], dict]:
+    ) -> SkillExtractionResult:
         """
         Extract skills from chunked text (for long resumes).
 
@@ -287,33 +334,35 @@ class SkillExtractor:
             text: Long resume text
 
         Returns:
-            Tuple of (merged skills list, combined usage dict)
+            SkillExtractionResult with merged skills
         """
         chunks = chunk_text(text, max_tokens=3000)
         logger.info(f"Text chunked into {len(chunks)} parts")
 
-        all_skills = []
-        total_usage = {
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "total_tokens": 0,
-            "cost_usd": 0.0
-        }
+        all_listed = []
+        all_inferred = []
+        total_tokens = 0
+        total_cost = 0.0
 
         for i, chunk in enumerate(chunks):
             logger.info(f"Processing chunk {i + 1}/{len(chunks)}")
-            skills, usage = await self._extract_with_retry(chunk)
+            result = await self._extract_with_retry(chunk)
 
-            all_skills.extend(skills)
-            total_usage["prompt_tokens"] += usage["prompt_tokens"]
-            total_usage["completion_tokens"] += usage["completion_tokens"]
-            total_usage["total_tokens"] += usage["total_tokens"]
-            total_usage["cost_usd"] += usage["cost_usd"]
+            all_listed.extend(result.listed_skills)
+            all_inferred.extend(result.inferred_skills)
+            total_tokens += result.tokens_used
+            total_cost += result.cost_usd
 
         # Deduplicate skills across chunks
-        unique_skills = self._deduplicate_skills(all_skills)
+        unique_listed = self._deduplicate_skills(all_listed)
+        unique_inferred = self._deduplicate_skills(all_inferred)
 
-        return unique_skills, total_usage
+        return SkillExtractionResult(
+            listed_skills=unique_listed,
+            inferred_skills=unique_inferred,
+            tokens_used=total_tokens,
+            cost_usd=total_cost
+        )
 
     def _deduplicate_skills(self, skills: List[Skill]) -> List[Skill]:
         """
@@ -376,7 +425,7 @@ class SkillExtractor:
 async def extract_skills_from_text(
     text: str,
     clean_text: bool = True
-) -> Tuple[List[Skill], dict]:
+) -> SkillExtractionResult:
     """
     Convenience function to extract skills from text.
 
@@ -385,10 +434,11 @@ async def extract_skills_from_text(
         clean_text: Whether to clean text first
 
     Returns:
-        Tuple of (skills list, usage dict)
+        SkillExtractionResult with listed_skills, inferred_skills, tokens_used, cost_usd
 
     Usage:
-        skills, usage = await extract_skills_from_text("Resume text...")
+        result = await extract_skills_from_text("Resume text...")
+        print(result.listed_skills, result.inferred_skills)
     """
     extractor = SkillExtractor()
     return await extractor.extract_skills(text, clean_text)

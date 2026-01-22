@@ -6,13 +6,22 @@ Implements AI-powered job matching with three modes:
 - Stretch: Ambitious matches (70-85% skill match)
 - Exploratory: Career pivot opportunities (50-70% skill match)
 
-This implementation uses mock data for testing. In Block O (Integration),
-this will be connected to real database models from Block C.
+Uses real database models and vector embeddings for semantic skill matching.
 """
 
+import logging
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import numpy as np
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+from app.models.job_posting import JobPosting
+from app.models.employee import Employee
+from app.models.user_profile import UserProfile
+from app.models.skill_embedding import SkillEmbedding
+from app.utils.text import normalize_skill_text
 
 from ..config.matching_config import (
     MatchMode,
@@ -28,35 +37,43 @@ from ..schemas.match_result import (
     MatchModeEnum,
 )
 
-# Import mock data - will be replaced with DB queries in Block O
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-try:
-    from tests.fixtures.mock_data import (
-        MockEmployee,
-        MockJobPosting,
-        MOCK_EMPLOYEES,
-        MOCK_JOB_POSTINGS,
-        MOCK_SKILL_EMBEDDINGS,
-        get_mock_employee,
-        get_mock_job_posting,
-    )
-except ImportError:
-    # Fallback for when tests.fixtures is not available
-    MockEmployee = None
-    MockJobPosting = None
-    MOCK_EMPLOYEES = []
-    MOCK_JOB_POSTINGS = []
-    MOCK_SKILL_EMBEDDINGS = {}
-    get_mock_employee = lambda x: None
-    get_mock_job_posting = lambda x: None
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class EmployeeProfile:
+    id: str
+    name: str
+    current_role: str
+    role_level: int
+    experience_years: Optional[float]  # None means unknown/not provided
+    service_line: str
+    skills: List[str]
+    skill_embeddings: Dict[str, List[float]]
+
+
+@dataclass
+class JobPostingData:
+    id: str
+    title: str
+    department: str
+    service_line: str
+    location: str
+    description: str
+    required_skills: List[str]
+    preferred_skills: List[str]
+    experience_years_min: Optional[int]
+    experience_years_max: Optional[int]
+    salary_range: Optional[str]
+    posting_url: Optional[str]
+    role_level: int
+    skill_embeddings: Dict[str, List[float]]
 
 
 @dataclass
 class MatchCandidate:
     """Internal representation of a match candidate during scoring."""
-    job: "MockJobPosting"
+    job: "JobPostingData"
     skill_score: float = 0.0
     experience_score: float = 0.0
     growth_score: float = 0.0
@@ -83,6 +100,8 @@ class MatchingService:
 
     def __init__(
         self,
+        db: Optional[Session] = None,
+        user_profile: Optional[UserProfile] = None,
         mode: MatchMode = MatchMode.BEST_FIT,
         top_k: int = 10,
         min_overall_score: float = 0.5,
@@ -95,11 +114,15 @@ class MatchingService:
             top_k: Number of top matches to return
             min_overall_score: Minimum overall score threshold
         """
+        self.db = db
+        self.user_profile = user_profile
         self.config = get_matching_config(
             mode=mode,
             top_k=top_k,
             min_overall_score=min_overall_score,
         )
+        # Cache for skill embeddings to avoid repeated DB queries
+        self._embedding_cache: Dict[str, List[float]] = {}
 
     # ============================================
     # Public API Methods
@@ -125,40 +148,48 @@ class MatchingService:
         Raises:
             ValueError: If employee not found
         """
-        # Get employee (mock data for now)
-        employee = get_mock_employee(employee_id)
-        if not employee:
-            raise ValueError(f"Employee {employee_id} not found")
+        results, _total = self.find_matches_for_employee_with_total(
+            employee_id=employee_id,
+            department_filter=department_filter,
+            location_filter=location_filter,
+        )
+        return results
 
-        # Get all job postings (mock data for now)
+    def find_matches_for_employee_with_total(
+        self,
+        employee_id: int,
+        department_filter: Optional[str] = None,
+        location_filter: Optional[str] = None,
+    ) -> tuple[List[MatchResult], int]:
+        # Pre-load all embeddings in one query to avoid N+1 problem
+        self._preload_all_embeddings()
+
+        employee = self._get_employee_profile(employee_id)
+        if not employee:
+            raise ValueError("Employee not found")
+
         job_postings = self._get_filtered_jobs(department_filter, location_filter)
 
-        # Score all candidates
         candidates = []
         for job in job_postings:
-            # Skip invalid role transitions
             if not is_valid_role_transition(employee.role_level, job.role_level):
                 continue
-
             candidate = self._score_candidate(employee, job)
             candidates.append(candidate)
 
-        # Filter by mode-specific thresholds and minimum score
         filtered = self._filter_by_mode(candidates)
+        total_count = len(filtered)
 
-        # Sort by overall score and take top K
         filtered.sort(key=lambda c: c.overall_score, reverse=True)
         top_matches = filtered[:self.config.top_k]
 
-        # Convert to MatchResult
         results = [self._to_match_result(c) for c in top_matches]
-
-        return results
+        return results, total_count
 
     def get_detailed_match(
         self,
         employee_id: int,
-        job_id: int,
+        job_id: str,
     ) -> MatchResultDetail:
         """
         Get detailed match information for a specific employee-job pair.
@@ -173,13 +204,13 @@ class MatchingService:
         Raises:
             ValueError: If employee or job not found
         """
-        employee = get_mock_employee(employee_id)
+        employee = self._get_employee_profile(employee_id)
         if not employee:
-            raise ValueError(f"Employee {employee_id} not found")
+            raise ValueError("Employee not found")
 
-        job = get_mock_job_posting(job_id)
+        job = self._get_job_by_id(str(job_id))
         if not job:
-            raise ValueError(f"Job posting {job_id} not found")
+            raise ValueError("Job posting not found")
 
         candidate = self._score_candidate(employee, job)
         return self._to_match_result_detail(candidate, employee)
@@ -187,7 +218,7 @@ class MatchingService:
     def analyze_skill_gaps(
         self,
         employee_id: int,
-        job_id: int,
+        job_id: str,
     ) -> SkillGapAnalysis:
         """
         Analyze skill gaps between an employee and a job posting.
@@ -199,13 +230,13 @@ class MatchingService:
         Returns:
             SkillGapAnalysis with overlapping, missing, and transferable skills
         """
-        employee = get_mock_employee(employee_id)
+        employee = self._get_employee_profile(employee_id)
         if not employee:
-            raise ValueError(f"Employee {employee_id} not found")
+            raise ValueError("Employee not found")
 
-        job = get_mock_job_posting(job_id)
+        job = self._get_job_by_id(str(job_id))
         if not job:
-            raise ValueError(f"Job posting {job_id} not found")
+            raise ValueError("Job posting not found")
 
         return self._calculate_skill_gaps(employee, job)
 
@@ -215,7 +246,7 @@ class MatchingService:
 
     def _score_candidate(
         self,
-        employee: "MockEmployee",
+        employee: "EmployeeProfile",
         job: "MockJobPosting",
     ) -> MatchCandidate:
         """
@@ -256,8 +287,8 @@ class MatchingService:
 
     def _calculate_skill_match_score(
         self,
-        employee: "MockEmployee",
-        job: "MockJobPosting",
+        employee: "EmployeeProfile",
+        job: "JobPostingData",
     ) -> float:
         """
         Calculate semantic skill match score using cosine similarity.
@@ -272,8 +303,9 @@ class MatchingService:
         Returns:
             Skill match score between 0.0 and 1.0
         """
-        if not job.required_skills:
-            return 1.0  # No requirements = perfect match
+        required_skills = self._effective_required_skills(job)
+        if not required_skills:
+            return 0.0  # No skills listed = no signal
 
         if not employee.skills:
             return 0.0  # No skills = no match
@@ -287,12 +319,12 @@ class MatchingService:
 
         if not employee_embeddings:
             # Fallback to exact string matching
-            return self._exact_skill_match_score(employee.skills, job.required_skills)
+            return self._exact_skill_match_score(employee.skills, required_skills)
 
         matches = []
         employee_skills_lower = {s.lower() for s in employee.skills}
 
-        for required_skill in job.required_skills:
+        for required_skill in required_skills:
             # First, check for exact string match (case-insensitive)
             if required_skill.lower() in employee_skills_lower:
                 matches.append(1.0)
@@ -300,7 +332,7 @@ class MatchingService:
 
             # No exact match - try embedding similarity
             job_embedding = job.skill_embeddings.get(required_skill)
-            if not job_embedding:
+            if job_embedding is None:
                 # No embedding available, no match
                 matches.append(0.0)
                 continue
@@ -308,7 +340,7 @@ class MatchingService:
             # Find best matching employee skill using embeddings
             best_similarity = 0.0
             for emp_embedding in employee_embeddings:
-                if emp_embedding:
+                if emp_embedding is not None:
                     similarity = self._cosine_similarity(emp_embedding, job_embedding)
                     best_similarity = max(best_similarity, similarity)
 
@@ -319,9 +351,9 @@ class MatchingService:
 
     def _calculate_experience_score(
         self,
-        user_years: int,
-        job_min_years: int,
-        job_max_years: int,
+        user_years: Optional[float],
+        job_min_years: Optional[int],
+        job_max_years: Optional[int],
     ) -> float:
         """
         Calculate experience alignment score.
@@ -334,26 +366,50 @@ class MatchingService:
         Returns:
             Experience score between 0.0 and 1.0
 
-        Formula from CONTEXT.md:
+        Scoring logic:
+        - If user has no experience data, return 0 (not 100%)
+        - If job has no requirements, assume entry-level friendly
         - In range: 1.0 (perfect)
-        - Under-qualified: penalize based on gap
-        - Over-qualified: slight penalty (min 0.7)
+        - Under-qualified: linear decay (-15% per year under)
+        - Over-qualified: slight penalty (-5% per year over, floor at 50%)
         """
+        # If user has no experience data, return 0 (not 100%)
+        if user_years is None:
+            logger.debug("No user experience data, returning 0")
+            return 0.0
+
+        # If job has no experience requirements, assume entry-level friendly
+        if job_min_years is None and job_max_years is None:
+            logger.debug("No job experience requirements, using entry-level heuristic")
+            return 0.8 if user_years <= 3 else 0.5  # Slight penalty for overqualified
+
+        # If only min specified, assume no max cap (add reasonable upper bound)
+        if job_max_years is None:
+            job_max_years = job_min_years + 10  # Reasonable upper bound
+
+        if job_min_years is None:
+            job_min_years = 0
+
+        # Score based on fit
         if job_min_years <= user_years <= job_max_years:
             return 1.0
         elif user_years < job_min_years:
-            # Under-qualified
+            # Underqualified: linear decay
             gap = job_min_years - user_years
-            return max(0.0, 1.0 - (gap / max(job_min_years, 1)))
+            score = max(0.0, 1.0 - (gap * 0.15))  # -15% per year under
+            logger.debug(f"Underqualified by {gap} years, score: {score}")
+            return score
         else:
-            # Over-qualified (slight penalty)
-            excess = user_years - job_max_years
-            return max(0.7, 1.0 - (excess / 10))
+            # Overqualified: slight penalty
+            gap = user_years - job_max_years
+            score = max(0.5, 1.0 - (gap * 0.05))  # -5% per year over, floor at 50%
+            logger.debug(f"Overqualified by {gap} years, score: {score}")
+            return score
 
     def _calculate_growth_potential_score(
         self,
-        employee: "MockEmployee",
-        job: "MockJobPosting",
+        employee: "EmployeeProfile",
+        job: "JobPostingData",
     ) -> float:
         """
         Calculate growth potential score.
@@ -370,11 +426,26 @@ class MatchingService:
         Returns:
             Growth potential score between 0.0 and 1.0
         """
+        # If user has no skills, we can't measure growth potential meaningfully
+        # Growth implies going FROM somewhere TO somewhere - with no baseline, it's meaningless
+        if not employee.skills:
+            return 0.0
+
         # Factor 1: Skill gap (more gaps = more growth potential)
-        employee_skill_set = set(employee.skills)
-        job_skill_set = set(job.required_skills)
+        # But only count meaningful gaps - if user has SOME skills, gaps represent learning opportunities
+        employee_skill_set = set(employee.skills or [])
+        job_skill_set = set(self._effective_required_skills(job))
         skill_gaps = job_skill_set - employee_skill_set
-        skill_gap_factor = min(len(skill_gaps) / 3, 1.0)  # Normalized to 0-1
+
+        # Normalize: growth is good if there are 1-3 skills to learn, diminishing returns beyond that
+        # Having 7 gaps isn't better than having 3 - it might mean the role is too far a stretch
+        if len(skill_gaps) == 0:
+            skill_gap_factor = 0.0  # Already qualified, no growth needed
+        elif len(skill_gaps) <= 3:
+            skill_gap_factor = len(skill_gaps) / 3  # 1-3 gaps is optimal
+        else:
+            # More than 3 gaps starts to decrease the score (too big a stretch)
+            skill_gap_factor = max(0.3, 1.0 - (len(skill_gaps) - 3) * 0.1)
 
         # Factor 2: Role level progression
         role_delta = job.role_level - employee.role_level
@@ -398,8 +469,8 @@ class MatchingService:
 
     def _calculate_skill_gaps(
         self,
-        employee: "MockEmployee",
-        job: "MockJobPosting",
+        employee: "EmployeeProfile",
+        job: "JobPostingData",
     ) -> SkillGapAnalysis:
         """
         Analyze skill gaps between employee and job.
@@ -411,9 +482,9 @@ class MatchingService:
         Returns:
             SkillGapAnalysis with categorized skills
         """
-        employee_skills = set(employee.skills)
-        required_skills = set(job.required_skills)
-        preferred_skills = set(job.preferred_skills)
+        employee_skills = set(employee.skills or [])
+        required_skills = set(self._effective_required_skills(job))
+        preferred_skills = set(job.preferred_skills or []) if job.required_skills else set()
 
         # Exact overlapping skills
         overlapping = list(employee_skills & required_skills)
@@ -427,13 +498,13 @@ class MatchingService:
         # Also check for semantically similar skills that could transfer
         for emp_skill in employee_skills - required_skills - preferred_skills:
             emp_embedding = employee.skill_embeddings.get(emp_skill)
-            if not emp_embedding:
+            if emp_embedding is None:
                 continue
 
             # Check if any missing skill is semantically close
             for miss_skill in missing:
                 miss_embedding = job.skill_embeddings.get(miss_skill)
-                if miss_embedding:
+                if miss_embedding is not None:
                     similarity = self._cosine_similarity(emp_embedding, miss_embedding)
                     if similarity > 0.7 and emp_skill not in transferable:
                         transferable.append(emp_skill)
@@ -445,6 +516,13 @@ class MatchingService:
             transferable_skills=transferable,
             gap_count=len(missing),
         )
+
+    def _effective_required_skills(self, job: "JobPostingData") -> List[str]:
+        if job.required_skills:
+            return job.required_skills
+        if job.preferred_skills:
+            return job.preferred_skills
+        return []
 
     # ============================================
     # Helper Methods
@@ -534,7 +612,7 @@ class MatchingService:
         self,
         department: Optional[str] = None,
         location: Optional[str] = None,
-    ) -> List["MockJobPosting"]:
+    ) -> List["JobPostingData"]:
         """
         Get job postings with optional filters.
 
@@ -545,15 +623,194 @@ class MatchingService:
         Returns:
             List of matching job postings
         """
-        jobs = MOCK_JOB_POSTINGS
+        if not self.db:
+            logger.warning("No database session available, returning empty job list")
+            return []
 
+        query = self.db.query(JobPosting).filter(JobPosting.is_active == True)
         if department:
-            jobs = [j for j in jobs if j.department.lower() == department.lower()]
-
+            query = query.filter(JobPosting.service_line.ilike(f"%{department}%"))
         if location:
-            jobs = [j for j in jobs if j.location.lower() == location.lower()]
+            query = query.filter(JobPosting.location.ilike(f"%{location}%"))
+        jobs = query.all()
+        return [self._to_job_posting_data(job) for job in jobs]
 
-        return jobs
+    def _get_employee_profile(self, employee_id: int) -> Optional["EmployeeProfile"]:
+        if self.user_profile:
+            mapped_employee = self._resolve_employee_from_user()
+            if mapped_employee:
+                return EmployeeProfile(
+                    id=str(mapped_employee.id),
+                    name=self.user_profile.full_name or "User",
+                    current_role=mapped_employee.current_role,
+                    role_level=mapped_employee.role_level,
+                    experience_years=float(mapped_employee.years_experience),
+                    service_line=mapped_employee.service_line,
+                    skills=mapped_employee.skills or [],
+                    skill_embeddings=self._build_skill_embeddings(mapped_employee.skills or []),
+                )
+
+            # Don't default experience - None means unknown
+            exp_years = None
+            if self.user_profile.years_experience is not None:
+                exp_years = float(self.user_profile.years_experience)
+
+            return EmployeeProfile(
+                id=str(self.user_profile.id),
+                name=self.user_profile.full_name or "User",
+                current_role=self.user_profile.current_role or "Employee",
+                role_level=3,
+                experience_years=exp_years,
+                service_line=self.user_profile.target_service_line or "General",
+                skills=self.user_profile.skills or [],
+                skill_embeddings=self._build_skill_embeddings(self.user_profile.skills or []),
+            )
+
+        employee = get_mock_employee(employee_id)
+        if not employee:
+            return None
+        return EmployeeProfile(
+            id=str(employee.id),
+            name=employee.name,
+            current_role=employee.current_role,
+            role_level=employee.role_level,
+            experience_years=employee.experience_years,
+            service_line=employee.service_line,
+            skills=employee.skills,
+            skill_embeddings=employee.skill_embeddings,
+        )
+
+    def _get_job_by_id(self, job_id: str) -> Optional["JobPostingData"]:
+        if self.db:
+            job = self.db.query(JobPosting).filter(JobPosting.id == job_id).first()
+            if job:
+                return self._to_job_posting_data(job)
+        job = get_mock_job_posting(job_id)
+        if not job:
+            return None
+        return JobPostingData(
+            id=str(job.id),
+            title=job.title,
+            department=job.department,
+            service_line=job.service_line,
+            location=job.location,
+            description=job.description,
+            required_skills=job.required_skills,
+            preferred_skills=job.preferred_skills,
+            experience_years_min=job.experience_years_min,
+            experience_years_max=job.experience_years_max,
+            salary_range=getattr(job, "salary_range", None),
+            posting_url=getattr(job, "posting_url", None),
+            role_level=getattr(job, "role_level", 3),
+            skill_embeddings=job.skill_embeddings,
+        )
+
+    def _to_job_posting_data(self, job: JobPosting) -> JobPostingData:
+        # Use LLM-extracted skills if available, fall back to regex-extracted
+        if job.llm_required_skills:
+            required_skills = [s["name"] for s in job.llm_required_skills if isinstance(s, dict) and s.get("name")]
+        else:
+            required_skills = job.required_skills or []
+
+        if job.llm_inferred_skills:
+            # Include inferred skills in preferred skills
+            inferred_skills = [s["name"] for s in job.llm_inferred_skills if isinstance(s, dict) and s.get("name")]
+            preferred_skills = (job.preferred_skills or []) + inferred_skills
+        else:
+            preferred_skills = job.preferred_skills or []
+
+        # Use LLM experience years if available
+        exp_min = job.llm_experience_years_min if job.llm_experience_years_min is not None else job.experience_years_min
+        exp_max = job.llm_experience_years_max if job.llm_experience_years_max is not None else job.experience_years_max
+
+        skills_for_embeddings = required_skills + preferred_skills
+        return JobPostingData(
+            id=str(job.id),
+            title=job.title,
+            department=job.service_line,
+            service_line=job.service_line,
+            location=job.location,
+            description=job.description,
+            required_skills=required_skills,
+            preferred_skills=preferred_skills,
+            experience_years_min=exp_min,
+            experience_years_max=exp_max,
+            salary_range=None,
+            posting_url=job.posting_url,
+            role_level=3,
+            skill_embeddings=self._build_skill_embeddings(skills_for_embeddings),
+        )
+
+    def _preload_all_embeddings(self) -> None:
+        """
+        Pre-load ALL skill embeddings from database into cache.
+
+        This prevents N+1 query problem when processing thousands of jobs.
+        Called once at the start of matching to load all embeddings in a single query.
+        """
+        if not self.db or self._embedding_cache:
+            return  # Already loaded or no DB
+
+        logger.info("Pre-loading all skill embeddings into cache...")
+        results = self.db.query(SkillEmbedding).all()
+
+        for result in results:
+            if result.embedding is not None:
+                # Cache by normalized text for fast lookup
+                self._embedding_cache[result.normalized_text] = list(result.embedding)
+
+        logger.info(f"Loaded {len(self._embedding_cache)} skill embeddings into cache")
+
+    def _build_skill_embeddings(self, skills: List[str]) -> Dict[str, List[float]]:
+        """Build skill embeddings from cache or return empty dict."""
+        embeddings: Dict[str, List[float]] = {}
+        if not self.db:
+            return embeddings
+
+        for skill in skills:
+            normalized = normalize_skill_text(skill)
+            # Look up in cache first (fast path)
+            if normalized in self._embedding_cache:
+                embeddings[skill] = self._embedding_cache[normalized]
+            # Fallback to DB query only if cache miss and cache is empty (not preloaded)
+            elif not self._embedding_cache:
+                result = self.db.query(SkillEmbedding).filter(
+                    SkillEmbedding.normalized_text == normalized
+                ).first()
+                if result and result.embedding is not None:
+                    embeddings[skill] = list(result.embedding)
+                    self._embedding_cache[normalized] = embeddings[skill]
+
+        return embeddings
+
+    def _resolve_employee_from_user(self) -> Optional[Employee]:
+        if not self.db or not self.user_profile:
+            return None
+
+        if self.user_profile.employee_id:
+            return self.db.query(Employee).filter(Employee.id == self.user_profile.employee_id).first()
+
+        query = self.db.query(Employee)
+        if self.user_profile.target_service_line:
+            query = query.filter(Employee.service_line == self.user_profile.target_service_line)
+
+        candidates = query.all()
+        if not candidates:
+            return None
+
+        user_skills = set((self.user_profile.skills or []))
+        if not user_skills:
+            chosen = candidates[0]
+        else:
+            chosen = max(
+                candidates,
+                key=lambda emp: len(user_skills & set(emp.skills or [])),
+            )
+
+        self.user_profile.employee_id = chosen.id
+        self.db.add(self.user_profile)
+        self.db.commit()
+        return chosen
 
     def _filter_by_mode(
         self,
@@ -577,18 +834,18 @@ class MatchingService:
 
         filtered = []
         for c in candidates:
-            # Must meet minimum overall score
-            if c.overall_score < min_score:
-                continue
-
             # Mode-specific skill threshold filtering
-            # For Best Fit, we want high skill matches
-            # For Exploratory, we actually want lower skill matches (more growth)
             if self.config.mode == MatchMode.BEST_FIT:
+                # Must meet minimum overall score
+                if c.overall_score < min_score:
+                    continue
                 # Accept if skill threshold met OR overall score is very high
                 if c.skill_score >= threshold.min_score or c.overall_score >= 0.75:
                     filtered.append(c)
             elif self.config.mode == MatchMode.STRETCH:
+                # Must meet minimum overall score
+                if c.overall_score < min_score:
+                    continue
                 # Stretch: moderate skill match is ideal
                 if threshold.min_score <= c.skill_score <= threshold.max_score:
                     filtered.append(c)
@@ -596,8 +853,8 @@ class MatchingService:
                     # Also include high matches but prefer stretch range
                     filtered.append(c)
             else:  # Exploratory
-                # Exploratory: lower skill match is fine, growth is key
-                if c.skill_score >= 0.4 and c.growth_score >= 0.3:
+                # Exploratory: show all lower-skill matches (< 70%) regardless of profile strength
+                if c.skill_score < threshold.max_score:
                     filtered.append(c)
 
         return filtered
@@ -625,7 +882,7 @@ class MatchingService:
         )
 
         return MatchResult(
-            job_id=job.id,
+            job_id=str(job.id),
             title=job.title,
             department=job.department,
             service_line=job.service_line,
@@ -665,11 +922,12 @@ class MatchingService:
             match_mode=basic.match_mode,
             explanation=basic.explanation,
             job_description=job.description,
-            required_skills=job.required_skills,
-            preferred_skills=job.preferred_skills,
+            required_skills=self._effective_required_skills(job),
+            preferred_skills=job.preferred_skills or [],
             experience_years_min=job.experience_years_min,
             experience_years_max=job.experience_years_max,
             salary_range=job.salary_range,
+            job_posting_url=job.posting_url,
             role_level=job.role_level,
             role_level_delta=job.role_level - employee.role_level,
             success_pattern_insights=None,  # Will be populated in Block F integration

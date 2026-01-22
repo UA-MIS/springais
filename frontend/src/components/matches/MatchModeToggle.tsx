@@ -17,10 +17,10 @@ interface MatchModeToggleProps {
   colors: ThemeColors;
 }
 
-const MODES: { value: MatchMode; label: string; scoreRange: string; stars: string }[] = [
-  { value: 'best_fit', label: 'Best Fit', scoreRange: '90%+', stars: '⭐⭐⭐' },
-  { value: 'stretch', label: 'Stretch', scoreRange: '70-85%', stars: '⭐⭐' },
-  { value: 'exploratory', label: 'Exploratory', scoreRange: '50-70%', stars: '⭐' }
+const MODES: { value: MatchMode; label: string; scoreRange: string; stars: string; description: string }[] = [
+  { value: 'best_fit', label: 'Best Fit', scoreRange: '90%+', stars: '⭐⭐⭐', description: 'Strong skill match' },
+  { value: 'stretch', label: 'Stretch', scoreRange: '70-90%', stars: '⭐⭐', description: 'Growth opportunity' },
+  { value: 'exploratory', label: 'Exploratory', scoreRange: '<70%', stars: '⭐', description: 'Career pivot' }
 ];
 
 export default function MatchModeToggle({ mode, onModeChange, isDark, colors }: MatchModeToggleProps) {
@@ -48,7 +48,8 @@ export default function MatchModeToggle({ mode, onModeChange, isDark, colors }: 
           >
             <div className="text-lg font-semibold mb-1">{modeOption.label}</div>
             <div className="text-xs mb-1">{modeOption.stars}</div>
-            <div className="text-xs opacity-75">{modeOption.scoreRange}</div>
+            <div className="text-sm font-medium" style={{ color: mode === modeOption.value ? '#2E2E38' : colors.accent }}>{modeOption.scoreRange}</div>
+            <div className="text-xs opacity-75 mt-1">{modeOption.description}</div>
           </button>
         ))}
       </div>

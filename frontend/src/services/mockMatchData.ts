@@ -16,6 +16,11 @@ export interface Match {
   explanation: string;
   salary_range?: string;
   job_posting_url?: string;
+  job_description?: string;
+  required_skills?: string[];
+  preferred_skills?: string[];
+  education_score?: number;
+  certification_score?: number;
 }
 
 export const MOCK_MATCHES_BEST_FIT: Match[] = [

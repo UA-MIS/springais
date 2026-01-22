@@ -188,3 +188,68 @@ class SkillRecommendationsResponse(BaseModel):
     """Response for skill recommendations endpoint."""
 
     recommendations: List[SkillRecommendationItem] = Field(default_factory=list)
+
+
+# ============================================
+# Job Skill Extraction Models
+# ============================================
+
+class ExtractedSkill(BaseModel):
+    """A skill extracted from a job posting with confidence score."""
+
+    name: str = Field(..., description="Normalized skill name")
+    category: Literal["technical", "soft", "domain", "certification", "tool", "methodology"] = Field(
+        ..., description="Skill category"
+    )
+    confidence: float = Field(
+        ..., ge=0.0, le=1.0, description="Confidence score (0.0 - 1.0)"
+    )
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "name": "Python",
+            "category": "technical",
+            "confidence": 0.95
+        }
+    })
+
+
+class JobSkillExtraction(BaseModel):
+    """Extracted skills and metadata from one or more job postings."""
+
+    job_ids: List[str] = Field(
+        ..., description="Job IDs (multiple if LLM grouped similar jobs)"
+    )
+    required_skills: List[ExtractedSkill] = Field(
+        default_factory=list,
+        description="Skills explicitly mentioned as requirements"
+    )
+    inferred_skills: List[ExtractedSkill] = Field(
+        default_factory=list,
+        description="Skills implied by responsibilities"
+    )
+    experience_years_min: Optional[int] = Field(
+        default=None,
+        description="Minimum years of experience required"
+    )
+    experience_years_max: Optional[int] = Field(
+        default=None,
+        description="Maximum years of experience (if range given)"
+    )
+    primary_domain: Optional[str] = Field(
+        default=None,
+        description="Primary domain (e.g., 'Data Engineering', 'Cybersecurity')"
+    )
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "job_ids": ["ey_12345"],
+            "required_skills": [
+                {"name": "Python", "category": "technical", "confidence": 0.95}
+            ],
+            "inferred_skills": [
+                {"name": "Data Pipelines", "category": "technical", "confidence": 0.7}
+            ],
+            "experience_years_min": 3,
+            "experience_years_max": 5,
+            "primary_domain": "Data Engineering"
+        }
+    })
