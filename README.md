@@ -52,7 +52,20 @@ SpringAIS is an AI-powered talent mobility platform designed for EY to help empl
    docker compose up -d --build
    ```
 
-4. **Verify services are running**
+4. **Run database migrations**
+   ```bash
+   docker compose exec backend alembic upgrade head
+   ```
+   
+   This creates all necessary database tables. **This step is required** - without it, the matches page will return 500 errors.
+
+5. **(Optional) Seed initial data**
+   ```bash
+   # Seed job postings
+   docker exec -i springais-postgres psql -U postgres springais < data/seed_job_postings.sql
+   ```
+
+6. **Verify services are running**
    ```bash
    docker compose ps
    ```
@@ -192,6 +205,25 @@ docker compose ps
 # View logs
 docker compose logs postgres
 ```
+
+### 500 Internal Server Error on matches page
+If you get a 500 error when trying to load matches after sign-in, this usually means:
+
+1. **Database migrations not run** - Most common cause
+   ```bash
+   docker compose exec backend alembic upgrade head
+   ```
+
+2. **Empty database** - No job postings or employees
+   ```bash
+   # Seed job postings
+   docker exec -i springais-postgres psql -U postgres springais < data/seed_job_postings.sql
+   ```
+
+3. **Check backend logs** for the actual error:
+   ```bash
+   docker compose logs backend
+   ```
 
 ### Missing Postgres extensions (pgvector / pgcrypto)
 If you upgraded an existing Postgres volume (so init scripts didn’t run), ensure required extensions exist:
