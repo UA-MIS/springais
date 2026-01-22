@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { StageData } from '../../services/successPatternService';
-import { useTheme, themeColors } from '../../context/ThemeContext';
 
 interface TimeToPromotionChartProps {
   data: {
@@ -18,14 +17,9 @@ interface TimeToPromotionChartProps {
 }
 
 export default function TimeToPromotionChart({ data }: TimeToPromotionChartProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
-
-  const gridStroke = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.1)';
-  const axisStroke = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
-  const tickStroke = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.15)';
-  const tickFill = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)';
-  const labelFill = isDark ? 'rgba(255,255,255,0.60)' : 'rgba(0,0,0,0.5)';
+  const gridStroke = 'rgba(255,255,255,0.14)';
+  const axisStroke = 'rgba(255,255,255,0.25)';
+  const tickStroke = 'rgba(255,255,255,0.22)';
 
   // Transform data for multi-line chart
   const departments = Object.keys(data);
@@ -51,15 +45,8 @@ export default function TimeToPromotionChart({ data }: TimeToPromotionChartProps
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div
-          className="p-3 rounded-sm shadow-2xl"
-          style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-            border: `1px solid ${colors.cardBorder}`,
-            backdropFilter: isDark ? 'blur(12px)' : 'none',
-          }}
-        >
-          <p className="font-semibold mb-2" style={{ color: colors.textPrimary }}>{label}</p>
+        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
+          <p className="font-semibold text-white mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: <span className="font-bold">{entry.value} years</span>
@@ -72,15 +59,8 @@ export default function TimeToPromotionChart({ data }: TimeToPromotionChartProps
   };
 
   return (
-    <div
-      className="p-6 rounded-sm shadow-2xl transition-colors"
-      style={{
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-        border: `1px solid ${colors.cardBorder}`,
-        backdropFilter: isDark ? 'blur(12px)' : 'none',
-      }}
-    >
-      <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+    <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md">
+      <h3 className="text-lg font-semibold mb-4 text-white">
         Average Time to Promotion
       </h3>
       <div className="flex justify-center">
@@ -90,7 +70,7 @@ export default function TimeToPromotionChart({ data }: TimeToPromotionChartProps
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} strokeWidth={1.5} />
               <XAxis
                 dataKey="stage"
-                tick={{ fontSize: 12, fill: tickFill }}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
                 axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
                 tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
               />
@@ -99,16 +79,16 @@ export default function TimeToPromotionChart({ data }: TimeToPromotionChartProps
                   value: 'Years',
                   angle: -90,
                   position: 'insideLeft',
-                  fill: labelFill,
+                  fill: 'rgba(255,255,255,0.60)',
                 }}
-                tick={{ fontSize: 12, fill: tickFill }}
+                tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.75)' }}
                 axisLine={{ stroke: axisStroke, strokeWidth: 1.5 }}
                 tickLine={{ stroke: tickStroke, strokeWidth: 1 }}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend
                 wrapperStyle={{ paddingTop: '20px' }}
-                formatter={(value) => <span style={{ color: tickFill }}>{value}</span>}
+                formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.75)' }}>{value}</span>}
               />
               {departments.map((dept) => (
                 <Line

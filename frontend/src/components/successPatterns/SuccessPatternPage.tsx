@@ -9,16 +9,12 @@ import SkillFrequencyChart from './SkillFrequencyChart';
 import DepartmentDistributionChart from './DepartmentDistributionChart';
 import FilterControls, { FilterOptions as FilterControlsOptions } from './FilterControls';
 import SortableWidget from './SortableWidget';
-import { useTheme, themeColors } from '../../context/ThemeContext';
 
 const SUCCESS_PATTERNS_LAYOUT_KEY = 'springais.successPatterns.layout.v1';
 const DEFAULT_WIDGET_ORDER = ['successRate', 'timeToPromotion', 'skillFrequency', 'departmentDistribution'] as const;
 type WidgetId = (typeof DEFAULT_WIDGET_ORDER)[number];
 
 export default function SuccessPatternPage() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
-
   const [data, setData] = useState<SuccessPatternsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,11 +128,8 @@ export default function SuccessPatternPage() {
       <div className="mx-auto w-full max-w-6xl">
         <div className="flex items-center justify-center min-h-[420px]">
           <div className="text-center">
-            <div
-              className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 mb-4"
-              style={{ borderColor: colors.accent }}
-            ></div>
-            <p style={{ color: colors.textMuted }}>Loading success pattern data...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFE600] mb-4"></div>
+            <p className="text-white/60">Loading success pattern data...</p>
           </div>
         </div>
       </div>
@@ -146,20 +139,12 @@ export default function SuccessPatternPage() {
   if (error) {
     return (
       <div className="mx-auto w-full max-w-6xl">
-        <div
-          className="rounded-sm p-6 text-center shadow-2xl"
-          style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-            border: `1px solid ${colors.cardBorder}`,
-            backdropFilter: isDark ? 'blur(12px)' : 'none',
-          }}
-        >
-          <p className="font-semibold mb-2" style={{ color: colors.textPrimary }}>Error loading data</p>
-          <p className="mb-5" style={{ color: colors.textMuted }}>{error}</p>
+        <div className="rounded-sm border border-white/15 bg-white/7 p-6 text-center shadow-2xl backdrop-blur-md">
+          <p className="text-white font-semibold mb-2">Error loading data</p>
+          <p className="text-white/60 mb-5">{error}</p>
           <button
             onClick={() => fetchData(filters)}
-            className="px-6 py-2 font-semibold rounded-lg transition-colors"
-            style={{ backgroundColor: colors.accent, color: '#2E2E38' }}
+            className="px-6 py-2 bg-[#FFE600] text-[#2E2E38] font-semibold rounded-lg hover:bg-[#FFD700] transition-colors"
           >
             Retry
           </button>
@@ -171,34 +156,20 @@ export default function SuccessPatternPage() {
   if (!data) {
     return (
       <div className="mx-auto w-full max-w-6xl">
-        <div
-          className="rounded-sm p-6 text-center shadow-2xl"
-          style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-            border: `1px solid ${colors.cardBorder}`,
-            backdropFilter: isDark ? 'blur(12px)' : 'none',
-          }}
-        >
-          <p style={{ color: colors.textMuted }}>No data available</p>
+        <div className="rounded-sm border border-white/15 bg-white/7 p-6 text-center shadow-2xl backdrop-blur-md">
+          <p className="text-white/60">No data available</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl transition-colors duration-200">
+    <div className="mx-auto w-full max-w-6xl">
       {/* Page Header */}
       <div className="mb-8 flex items-start justify-between gap-6">
         <div>
-          <h1
-            className="text-4xl font-bold mb-2"
-            style={{ color: colors.textPrimary }}
-          >
-            Success Patterns & Career Insights
-          </h1>
-          <p className="text-lg" style={{ color: colors.textMuted }}>
-            Data-driven insights from successful career transitions at EY
-          </p>
+          <h1 className="text-4xl font-bold text-white mb-2">Success Patterns & Career Insights</h1>
+          <p className="text-lg text-white/60">Data-driven insights from successful career transitions at EY</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -207,20 +178,14 @@ export default function SuccessPatternPage() {
               <button
                 type="button"
                 onClick={confirmEditing}
-                className="px-4 py-2 font-semibold rounded-sm transition-colors"
-                style={{ backgroundColor: colors.accent, color: '#2E2E38' }}
+                className="px-4 py-2 bg-[#FFE600] text-[#2E2E38] font-semibold rounded-sm hover:bg-[#FFD700] transition-colors"
               >
                 Confirm changes
               </button>
               <button
                 type="button"
                 onClick={cancelEditing}
-                className="px-4 py-2 font-semibold rounded-sm transition-colors"
-                style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
-                  color: colors.textPrimary,
-                  border: `1px solid ${colors.border}`,
-                }}
+                className="px-4 py-2 bg-white/10 text-white/85 font-semibold rounded-sm hover:bg-white/15 transition-colors border border-white/10"
               >
                 Cancel
               </button>
@@ -229,12 +194,7 @@ export default function SuccessPatternPage() {
             <button
               type="button"
               onClick={startEditing}
-              className="px-4 py-2 font-semibold rounded-sm transition-colors"
-              style={{
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
-                color: colors.textPrimary,
-                border: `1px solid ${colors.border}`,
-              }}
+              className="px-4 py-2 bg-white/10 text-white/85 font-semibold rounded-sm hover:bg-white/15 transition-colors border border-white/10"
             >
               Rearrange
             </button>
@@ -243,10 +203,10 @@ export default function SuccessPatternPage() {
       </div>
 
       {/* Filter Controls */}
-      <FilterControls onFilterChange={handleFilterChange} isDark={isDark} colors={colors} />
+      <FilterControls onFilterChange={handleFilterChange} />
 
       {/* Metric Cards */}
-      <MetricCards metrics={data.metrics} isDark={isDark} colors={colors} />
+      <MetricCards metrics={data.metrics} />
 
       {/* Charts Grid */}
       {isEditingLayout ? (
@@ -254,7 +214,7 @@ export default function SuccessPatternPage() {
           <SortableContext items={activeOrder} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {activeOrder.map((id) => (
-                <SortableWidget key={id} id={id} enabled={true} isDark={isDark} colors={colors}>
+                <SortableWidget key={id} id={id} enabled={true}>
                   {widgets[id]}
                 </SortableWidget>
               ))}
@@ -264,7 +224,7 @@ export default function SuccessPatternPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {activeOrder.map((id) => (
-            <SortableWidget key={id} id={id} enabled={false} isDark={isDark} colors={colors}>
+            <SortableWidget key={id} id={id} enabled={false}>
               {widgets[id]}
             </SortableWidget>
           ))}

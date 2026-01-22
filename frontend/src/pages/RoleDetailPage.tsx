@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTheme, themeColors } from '../context/ThemeContext'
-import { MOCK_MATCHES_BEST_FIT, MOCK_MATCHES_STRETCH, MOCK_MATCHES_EXPLORATORY } from '../services/mockMatchData'
+import { getMatchDetails } from '../services/matchService'
+import { Match } from '../services/mockMatchData'
 import RoleOverview from '../components/role-detail/RoleOverview'
 import RoleSkillsGap from '../components/role-detail/RoleSkillsGap'
 import RolePathTo from '../components/role-detail/RolePathTo'
@@ -22,16 +23,76 @@ export default function RoleDetailPage() {
   const { isDark } = useTheme()
   const colors = isDark ? themeColors.dark : themeColors.light
   const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const [match, setMatch] = useState<Match | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Find the match data for this role
-  const match = useMemo(() => {
-    const allMatches = [
-      ...MOCK_MATCHES_BEST_FIT,
-      ...MOCK_MATCHES_STRETCH,
-      ...MOCK_MATCHES_EXPLORATORY,
-    ]
-    return allMatches.find((m) => m.id === roleId)
+  useEffect(() => {
+    if (!roleId) return
+    let isMounted = true
+    const fetchDetail = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const detail = await getMatchDetails(roleId)
+        if (isMounted) {
+          setMatch(detail)
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setError(err.message || 'Failed to load role details')
+          setMatch(null)
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+    fetchDetail()
+    return () => {
+      isMounted = false
+    }
   }, [roleId])
+
+  if (loading) {
+    return (
+      <div
+        className="max-w-7xl mx-auto py-10 px-6"
+        style={{ color: colors.textPrimary }}
+      >
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Loading role details…</h1>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div
+        className="max-w-7xl mx-auto py-10 px-6"
+        style={{ color: colors.textPrimary }}
+      >
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Failed to load role</h1>
+          <p className="mb-6" style={{ color: colors.textMuted }}>
+            {error}
+          </p>
+          <button
+            onClick={() => navigate('/matches')}
+            className="px-6 py-2 rounded-md font-semibold transition-colors"
+            style={{
+              backgroundColor: colors.accent,
+              color: '#2E2E38',
+            }}
+          >
+            Back to Match Results
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!match) {
     return (

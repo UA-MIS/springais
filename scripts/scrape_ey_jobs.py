@@ -35,8 +35,11 @@ from field_extractors import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = REPO_ROOT / "backend"
 
-# Make `backend/app` importable when running from repo root.
-sys.path.insert(0, str(BACKEND_DIR))
+# Make `backend/app` importable in-container and locally.
+if (BACKEND_DIR / "app").exists():
+    sys.path.insert(0, str(BACKEND_DIR))
+elif (REPO_ROOT / "app").exists():
+    sys.path.insert(0, str(REPO_ROOT))
 
 from app.database import SessionLocal  # noqa: E402
 from app.models import JobPosting  # noqa: E402

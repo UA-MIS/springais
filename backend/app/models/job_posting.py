@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from datetime import date
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, Date, DateTime, Index, Integer, String, Text
+from sqlalchemy import Boolean, Date, DateTime, Index, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pgvector.sqlalchemy import Vector
 
 from .base import Base, TimestampMixin
 
@@ -38,7 +39,23 @@ class JobPosting(Base, TimestampMixin):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    search_vector: Mapped[str | None] = mapped_column(TSVECTOR)
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        server_default=text("NULL"),
+    )
+
+    # LLM-extracted skill columns
+    llm_required_skills: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    llm_inferred_skills: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    llm_experience_years_min: Mapped[int | None] = mapped_column(Integer)
+    llm_experience_years_max: Mapped[int | None] = mapped_column(Integer)
+    llm_primary_domain: Mapped[str | None] = mapped_column(String(100))
+    skill_extraction_hash: Mapped[str | None] = mapped_column(String(64))
+    skills_extracted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # Embedding columns
+    description_embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
+    title_embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
 
     matches: Mapped[list["Match"]] = relationship(
         "Match",

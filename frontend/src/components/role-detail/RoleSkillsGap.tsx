@@ -145,10 +145,12 @@ export default function RoleSkillsGap({ match }: RoleSkillsGapProps) {
               Focus on developing {match.skill_gaps[0]} first - it's highly valued for this role
             </li>
           )}
-          <li className="flex items-start gap-2" style={{ color: colors.textSecondary }}>
-            <span style={{ color: colors.accent }}>•</span>
-            Your {match.matched_skills[0]} experience is a strong foundation
-          </li>
+          {match.matched_skills.length > 0 && (
+            <li className="flex items-start gap-2" style={{ color: colors.textSecondary }}>
+              <span style={{ color: colors.accent }}>•</span>
+              Your {match.matched_skills[0]} experience is a strong foundation
+            </li>
+          )}
           <li className="flex items-start gap-2" style={{ color: colors.textSecondary }}>
             <span style={{ color: colors.accent }}>•</span>
             Consider mentorship or training programs to accelerate skill development

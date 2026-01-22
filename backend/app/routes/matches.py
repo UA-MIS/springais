@@ -17,25 +17,12 @@ from ..schemas.match_result import (
     DetailedMatchResponse,
     MatchSaveRequest,
 )
-from ..services.matching_service import (
-    MatchingService,
-    match_by_skills,
-    get_match_detail,
-)
+from ..services.matching_service import MatchingService
 from ..utils.security import get_current_user_from_token
 from ..database import get_db
 from ..models.match import Match
 from ..models.user_profile import UserProfile
 from ..services.recommendation_service import SkillRecommendationService
-
-# Import mock data for employee info (will be replaced with DB in Block O)
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-try:
-    from tests.fixtures.mock_data import get_mock_employee
-except ImportError:
-    get_mock_employee = lambda x: None
 
 router = APIRouter(
     prefix="/matches",
@@ -70,6 +57,8 @@ async def get_employee_matches(
         default=MatchModeEnum.BEST_FIT,
         description="Matching mode determines score weights and thresholds"
     ),
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
     min_score: float = Query(
         default=0.5,
         ge=0.0,
@@ -87,8 +76,13 @@ async def get_employee_matches(
     limit: int = Query(
         default=10,
         ge=1,
-        le=50,
+        le=500,  # Increased to support fetching all matches
         description="Maximum number of matches to return"
+    ),
+    offset: int = Query(
+        default=0,
+        ge=0,
+        description="Number of matches to skip (for pagination)"
     ),
 ):
     """
@@ -97,38 +91,42 @@ async def get_employee_matches(
     Returns a list of matching jobs with scores and skill gap analysis.
     Results are sorted by overall match score (descending).
     """
-    # Get employee info (mock data for now)
-    employee = get_mock_employee(employee_id)
-    if not employee:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Employee {employee_id} not found"
-        )
-
     # Convert enum to MatchMode
     match_mode = MatchMode(mode.value)
 
     try:
-        # Find matches
-        matches = match_by_skills(
-            employee_id=employee_id,
+        # Request more matches to support pagination
+        service = MatchingService(
+            db=db,
+            user_profile=current_user,
             mode=match_mode,
-            top_k=limit,
-            department=department,
-            location=location,
+            top_k=offset + limit,  # Get enough for offset + limit
+            min_overall_score=min_score,
+        )
+        employee_profile = service._get_employee_profile(employee_id)
+        if not employee_profile:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        matches, total_count = service.find_matches_for_employee_with_total(
+            employee_id=employee_id,
+            department_filter=department,
+            location_filter=location,
         )
 
         # Filter by min_score if different from default
         if min_score > 0.5:
             matches = [m for m in matches if m.scores.overall >= min_score]
+            total_count = len(matches)
+
+        # Apply pagination (offset and limit)
+        paginated_matches = matches[offset:offset + limit]
 
         return EmployeeMatchesResponse(
-            employee_id=employee_id,
-            employee_name=employee.name,
-            current_role=employee.current_role,
+            employee_id=employee_profile.id,
+            employee_name=employee_profile.name,
+            current_role=employee_profile.current_role,
             match_mode=mode,
-            matches=matches,
-            total_count=len(matches),
+            matches=paginated_matches,
+            total_count=total_count,
             cached=False,  # TODO: Add caching in Block O
         )
 
@@ -155,11 +153,13 @@ async def get_employee_matches(
 )
 async def get_detailed_match(
     employee_id: int,
-    job_id: int,
+    job_id: str,
     mode: MatchModeEnum = Query(
         default=MatchModeEnum.BEST_FIT,
         description="Matching mode for scoring"
     ),
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
 ):
     """
     Get detailed match information for a specific employee-job pair.
@@ -167,28 +167,17 @@ async def get_detailed_match(
     Includes full job description, all required/preferred skills,
     and detailed explanation of why this job matches the employee.
     """
-    # Get employee info (mock data for now)
-    employee = get_mock_employee(employee_id)
-    if not employee:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Employee {employee_id} not found"
-        )
-
-    # Convert enum to MatchMode
-    match_mode = MatchMode(mode.value)
-
     try:
-        # Get detailed match
-        match_detail = get_match_detail(
-            employee_id=employee_id,
-            job_id=job_id,
-            mode=match_mode,
-        )
+        match_mode = MatchMode(mode.value)
+        service = MatchingService(db=db, user_profile=current_user, mode=match_mode)
+        employee_profile = service._get_employee_profile(employee_id)
+        if not employee_profile:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        match_detail = service.get_detailed_match(employee_id=employee_id, job_id=job_id)
 
         return DetailedMatchResponse(
-            employee_id=employee_id,
-            employee_name=employee.name,
+            employee_id=employee_profile.id,
+            employee_name=employee_profile.name,
             match=match_detail,
         )
 
@@ -205,7 +194,9 @@ async def get_detailed_match(
 )
 async def analyze_skill_gaps(
     employee_id: int,
-    job_id: int,
+    job_id: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
 ):
     """
     Analyze skill gaps between an employee and a job posting.
@@ -217,7 +208,7 @@ async def analyze_skill_gaps(
     - Gap count
     """
     try:
-        service = MatchingService()
+        service = MatchingService(db=db, user_profile=current_user)
         gap_analysis = service.analyze_skill_gaps(employee_id, job_id)
         return gap_analysis
 

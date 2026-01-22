@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-import { MOCK_SKILLS, SKILL_CATEGORIES } from '../mocks/mockSkills';
+import { SKILL_CATEGORIES } from '../mocks/mockSkills';
 
 const normalizeName = (value) => value?.trim().toLowerCase();
 
@@ -23,7 +23,7 @@ const getFallbackCategory = (skillName) => {
 };
 
 export function useSkills() {
-  const [skills, setSkills] = useState(MOCK_SKILLS);
+  const [skills, setSkills] = useState([]);
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [filterTab, setFilterTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,11 +98,10 @@ export function useSkills() {
       const params = force ? { refresh: true } : undefined;
       const response = await api.get('/skills/recommendations', { params });
       const recommendations = response?.data?.recommendations || [];
-      if (recommendations.length > 0) {
-        mergeRecommendations(recommendations);
-      }
+      mergeRecommendations(recommendations);
     } catch (err) {
       setError(err);
+      setSkills([]);
     } finally {
       setLoading(false);
     }

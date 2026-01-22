@@ -434,6 +434,197 @@ async def update_recommendation_status(
 
 
 # ============================================
+# Skill Plan Generation
+# ============================================
+
+class SkillPlanNode(BaseModel):
+    id: str
+    type: str = "skillNode"
+    position: dict = {"x": 0, "y": 0}
+    data: dict
+
+
+class SkillPlanEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+    markerEnd: dict = {"type": "arrowclosed", "width": 16, "height": 16}
+    style: dict = {"stroke": "rgba(255,255,255,0.55)", "strokeWidth": 3}
+
+
+class SkillPlanResponse(BaseModel):
+    job_id: str
+    job_title: str
+    nodes: List[SkillPlanNode]
+    edges: List[SkillPlanEdge]
+    summary: dict
+
+
+@router.post(
+    "/plan/{job_id}",
+    response_model=SkillPlanResponse,
+    summary="Generate personalized skill plan for a job",
+    description="Generate a skill tree showing what the user needs to learn for a specific role."
+)
+async def generate_skill_plan(
+    job_id: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a personalized skill development plan for a specific job.
+
+    Returns a skill tree structure compatible with React Flow visualization.
+    Skills are grouped by category and marked as 'have' or 'need'.
+    """
+    from app.models.job_posting import JobPosting
+    from app.services.recommendation_service import SkillRecommendationService
+
+    # Get the job posting
+    job = db.query(JobPosting).filter(JobPosting.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Get user's current skills (lowercase for comparison)
+    user_skills_lower = {s.lower() for s in (current_user.skills or [])}
+
+    # Get job's required and preferred skills
+    required_skills = []
+    if job.llm_required_skills:
+        required_skills = [s["name"] for s in job.llm_required_skills if isinstance(s, dict) and s.get("name")]
+    elif job.required_skills:
+        required_skills = job.required_skills or []
+
+    preferred_skills = []
+    if job.llm_inferred_skills:
+        preferred_skills = [s["name"] for s in job.llm_inferred_skills if isinstance(s, dict) and s.get("name")]
+    elif job.preferred_skills:
+        preferred_skills = job.preferred_skills or []
+
+    # Categorize skills
+    skill_categories = {
+        "Technical": [],
+        "Leadership": [],
+        "Domain": [],
+        "Tools": [],
+    }
+
+    def categorize_skill(skill_name: str) -> str:
+        """Simple skill categorization based on keywords."""
+        lower = skill_name.lower()
+        leadership_keywords = ["leadership", "management", "communication", "team", "stakeholder", "mentor", "coaching", "strategy", "negotiation"]
+        domain_keywords = ["audit", "tax", "advisory", "consulting", "financial", "compliance", "regulatory", "accounting", "risk"]
+        tool_keywords = ["excel", "python", "sql", "tableau", "power bi", "sap", "oracle", "salesforce", "aws", "azure", "gcp", "jira", "confluence"]
+
+        for kw in leadership_keywords:
+            if kw in lower:
+                return "Leadership"
+        for kw in domain_keywords:
+            if kw in lower:
+                return "Domain"
+        for kw in tool_keywords:
+            if kw in lower:
+                return "Tools"
+        return "Technical"
+
+    # Process required skills
+    all_skills = [(s, True) for s in required_skills] + [(s, False) for s in preferred_skills]
+    skills_have = []
+    skills_need = []
+
+    for skill_name, is_required in all_skills:
+        has_skill = skill_name.lower() in user_skills_lower
+        category = categorize_skill(skill_name)
+
+        skill_info = {
+            "name": skill_name,
+            "required": is_required,
+            "has": has_skill,
+        }
+
+        if has_skill:
+            skills_have.append(skill_info)
+        else:
+            skills_need.append(skill_info)
+
+        skill_categories[category].append(skill_info)
+
+    # Build React Flow nodes and edges
+    nodes = []
+    edges = []
+
+    # Root node (the role)
+    nodes.append(SkillPlanNode(
+        id="role",
+        data={"label": job.title, "kind": "role", "emphasis": "goal"}
+    ))
+
+    # Category nodes and skill nodes
+    for cat_idx, (category, skills) in enumerate(skill_categories.items()):
+        if not skills:
+            continue
+
+        cat_id = f"cat-{cat_idx}"
+        nodes.append(SkillPlanNode(
+            id=cat_id,
+            data={"label": category, "kind": "path"}
+        ))
+
+        # Edge from role to category (accent style)
+        edges.append(SkillPlanEdge(
+            id=f"role__{cat_id}",
+            source="role",
+            target=cat_id,
+            style={"stroke": "rgba(255,230,0,0.70)", "strokeWidth": 3.5}
+        ))
+
+        # Skill nodes within this category
+        for skill_idx, skill_info in enumerate(skills):
+            skill_id = f"{cat_id}-skill-{skill_idx}"
+            nodes.append(SkillPlanNode(
+                id=skill_id,
+                data={
+                    "label": skill_info["name"],
+                    "kind": "skill",
+                    "has": skill_info["has"],
+                    "required": skill_info["required"],
+                }
+            ))
+
+            # Edge from category to skill (green if user has it, default otherwise)
+            edge_style = (
+                {"stroke": "rgba(34, 197, 94, 0.7)", "strokeWidth": 3}
+                if skill_info["has"]
+                else {"stroke": "rgba(255,255,255,0.55)", "strokeWidth": 3}
+            )
+            edges.append(SkillPlanEdge(
+                id=f"{cat_id}__{skill_id}",
+                source=cat_id,
+                target=skill_id,
+                style=edge_style
+            ))
+
+    # Summary stats
+    total_skills = len(skills_have) + len(skills_need)
+    summary = {
+        "total_skills": total_skills,
+        "skills_have": len(skills_have),
+        "skills_need": len(skills_need),
+        "match_percent": round(len(skills_have) / total_skills * 100) if total_skills > 0 else 0,
+        "skills_have_list": [s["name"] for s in skills_have],
+        "skills_need_list": [s["name"] for s in skills_need],
+    }
+
+    return SkillPlanResponse(
+        job_id=str(job.id),
+        job_title=job.title,
+        nodes=nodes,
+        edges=edges,
+        summary=summary,
+    )
+
+
+# ============================================
 # Utility Endpoints
 # ============================================
 

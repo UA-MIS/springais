@@ -1,66 +1,122 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_MATCHES_BEST_FIT, MOCK_MATCHES_STRETCH, MOCK_MATCHES_EXPLORATORY } from '../../services/mockMatchData';
+import { saveMatch } from '../../services/matchService';
 import MatchCard from './MatchCard';
 import MatchModeToggle, { MatchMode } from './MatchModeToggle';
 import MatchFilters, { FilterState } from './MatchFilters';
 import MatchSortDropdown, { SortOption } from './MatchSortDropdown';
 import EmptyMatchState from './EmptyMatchState';
 import { useTheme, themeColors } from '../../context/ThemeContext';
+import { useMatches } from '../../context/MatchesContext';
+import { Match } from '../../services/mockMatchData';
 
 export default function MatchResultsPage() {
   const { isDark } = useTheme();
   const colors = isDark ? themeColors.dark : themeColors.light;
   const navigate = useNavigate();
 
-  const [mode, setMode] = useState<MatchMode>('best_fit');
+  // Use cached matches from context
+  const { state: matchesState, fetchMatches } = useMatches();
+
+  const [mode, setMode] = useState<MatchMode>(matchesState.mode);
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
     locations: [],
-    min_score: 70,
-    experience_levels: []
+    min_score: 0,  // Not used anymore - mode controls this
+    experience_levels: [],
+    usOnly: true,  // Default to US only
   });
   const [sortBy, setSortBy] = useState<SortOption>('score_desc');
   const [currentPage, setCurrentPage] = useState(1);
   const matchesPerPage = 10;
 
-  // Get matches based on mode
-  const allMatches = useMemo(() => {
+  // Get matches/loading/error from context
+  const matches = matchesState.matches;
+  const loading = matchesState.loading;
+  const error = matchesState.error;
+
+  // Get score range based on mode
+  const getScoreRange = (mode: MatchMode): { min: number; max: number } => {
     switch (mode) {
       case 'best_fit':
-        return MOCK_MATCHES_BEST_FIT;
+        return { min: 0.90, max: 1.0 };
       case 'stretch':
-        return MOCK_MATCHES_STRETCH;
+        return { min: 0.70, max: 0.90 };
       case 'exploratory':
-        return MOCK_MATCHES_EXPLORATORY;
+        return { min: 0, max: 0.70 };
       default:
-        return MOCK_MATCHES_BEST_FIT;
+        return { min: 0, max: 1.0 };
     }
-  }, [mode]);
+  };
+
+  // US locations/cities for filtering
+  const US_LOCATION_PATTERNS = [
+    // States
+    'alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut',
+    'delaware', 'florida', 'georgia', 'hawaii', 'idaho', 'illinois', 'indiana', 'iowa',
+    'kansas', 'kentucky', 'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan',
+    'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new hampshire',
+    'new jersey', 'new mexico', 'new york', 'north carolina', 'north dakota', 'ohio',
+    'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota',
+    'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia',
+    'wisconsin', 'wyoming', 'dc', 'd.c.', 'district of columbia',
+    // Common US cities
+    'atlanta', 'austin', 'boston', 'charlotte', 'chicago', 'cleveland', 'dallas', 'denver',
+    'detroit', 'houston', 'indianapolis', 'los angeles', 'miami', 'minneapolis', 'nashville',
+    'new york', 'nyc', 'philadelphia', 'phoenix', 'pittsburgh', 'portland', 'san antonio',
+    'san diego', 'san francisco', 'san jose', 'seattle', 'tampa', 'washington',
+    // State abbreviations
+    'al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'fl', 'ga', 'hi', 'id', 'il', 'in',
+    'ia', 'ks', 'ky', 'la', 'me', 'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt', 'ne', 'nv',
+    'nh', 'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri', 'sc', 'sd', 'tn',
+    'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy',
+    // Keywords
+    'united states', 'usa', 'u.s.', 'u.s.a',
+  ];
+
+  const isUSLocation = (location: string): boolean => {
+    const lower = location.toLowerCase();
+    return US_LOCATION_PATTERNS.some(pattern => lower.includes(pattern));
+  };
+
+  useEffect(() => {
+    // Fetch matches using cached context - won't refetch if cache is valid
+    fetchMatches(mode, filters);
+  }, [mode, filters, fetchMatches]);
 
   // Filter matches
   const filteredMatches = useMemo(() => {
-    return allMatches.filter((match) => {
+    const scoreRange = getScoreRange(mode);
+
+    return matches.filter((match) => {
+      // Filter by score range based on mode
+      if (match.overall_score < scoreRange.min || match.overall_score >= scoreRange.max) {
+        // Special case: exploratory shows everything below 70%, including 0
+        if (mode !== 'exploratory' || match.overall_score >= scoreRange.max) {
+          return false;
+        }
+      }
+
+      // Filter by US only
+      if (filters.usOnly && !isUSLocation(match.location)) {
+        return false;
+      }
+
       // Filter by departments
       if (filters.departments.length > 0 && !filters.departments.includes(match.department)) {
         return false;
       }
-      // Filter by locations
+
+      // Filter by locations (additional filter on top of US only)
       if (filters.locations.length > 0 && !filters.locations.includes(match.location)) {
         return false;
       }
-      // Filter by min score
-      if (match.overall_score < filters.min_score / 100) {
-        return false;
-      }
+
       // Filter by experience level (simple check - could be enhanced)
       if (filters.experience_levels.length > 0) {
-        // This is a simplified check - in real app, would parse experience_required
-        // For now, just check if any experience level matches the required range
         const matchExperience = match.experience_required || '';
         const hasMatchingExperience = filters.experience_levels.some(level => {
-          // Simple string matching - could be improved
-          return matchExperience.includes(level.split('-')[0]) || 
+          return matchExperience.includes(level.split('-')[0]) ||
                  matchExperience.includes(level.split('+')[0]);
         });
         if (!hasMatchingExperience) {
@@ -69,7 +125,7 @@ export default function MatchResultsPage() {
       }
       return true;
     });
-  }, [allMatches, filters]);
+  }, [matches, filters, mode]);
 
   // Sort matches
   const sortedMatches = useMemo(() => {
@@ -107,10 +163,14 @@ export default function MatchResultsPage() {
     navigate(`/role/${matchId}`);
   };
 
-  const handleSave = (matchId: string) => {
-    // TODO: Save match to user's saved matches
-    console.log('Save match:', matchId);
-    // Could show a toast notification here
+  const handleSave = async (matchId: string) => {
+    const match = matches.find((item) => item.id === matchId);
+    if (!match) return;
+    try {
+      await saveMatch(match, mode);
+    } catch (err) {
+      console.error('Failed to save match', err);
+    }
   };
 
   const handleResetFilters = () => {
@@ -155,15 +215,23 @@ export default function MatchResultsPage() {
         style={{ color: colors.textMuted }}
       >
         Showing {paginatedMatches.length} of {sortedMatches.length} matches
-        {sortedMatches.length !== allMatches.length && (
+        {sortedMatches.length !== matches.length && (
           <span className="ml-2">
-            (filtered from {allMatches.length} total)
+            (filtered from {matches.length} total)
           </span>
         )}
       </div>
 
       {/* Match Cards */}
-      {paginatedMatches.length === 0 ? (
+      {loading ? (
+        <div className="py-12 text-center" style={{ color: colors.textMuted }}>
+          Loading matches...
+        </div>
+      ) : error ? (
+        <div className="py-12 text-center" style={{ color: colors.textMuted }}>
+          {error}
+        </div>
+      ) : paginatedMatches.length === 0 ? (
         <EmptyMatchState onResetFilters={handleResetFilters} isDark={isDark} colors={colors} />
       ) : (
         <>

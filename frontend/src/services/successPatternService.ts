@@ -1,4 +1,6 @@
-// Mock data for success patterns (will be replaced with real API in Step 3)
+import api from './api';
+
+// Types for success patterns
 export interface SuccessPatternMetrics {
   avgTimeToPromotion: number;
   overallSuccessRate: number;
@@ -37,6 +39,19 @@ export interface SuccessPatternsData {
   };
   skillFrequency: SkillFrequency[];
   departmentDistribution: DepartmentData[];
+}
+
+// Backend API response types
+interface ApiTransitionPattern {
+  pattern_id: string;
+  source_role: string;
+  target_role: string;
+  success_rate: number;
+  avg_time_to_promotion_years: number;
+  sample_size: number;
+  service_line: string | null;
+  common_skills: string[];
+  recommended_skills_to_develop: string[];
 }
 
 export const mockSuccessPatterns: SuccessPatternsData = {
@@ -277,17 +292,182 @@ function applyFilters(base: SuccessPatternsData, filters: FilterOptions): Succes
   return next;
 }
 
-// Simulate async API call
-export const getSuccessPatterns = async (filters: FilterOptions = {}): Promise<SuccessPatternsData> => {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
+// Department color mapping for consistent chart colors
+const DEPARTMENT_COLORS: Record<string, string> = {
+  Advisory: '#FFE600',
+  Tax: '#2E2E38',
+  Consulting: '#747480',
+  Audit: '#C4C4CD',
+  Technology: '#22c55e',
+  Strategy: '#3b82f6',
+};
 
-  // In Step 3, replace with: return api.get('/api/patterns/...')
-  // For now, return mock data (optionally filter locally)
-  return applyFilters(mockSuccessPatterns, filters);
+// Success rate color coding
+function getSuccessRateColor(rate: number): string {
+  if (rate >= 70) return '#22c55e'; // green
+  if (rate >= 50) return '#FFE600'; // yellow
+  return '#dc2626'; // red
+}
+
+// Transform API response to frontend format
+function transformApiResponse(patterns: ApiTransitionPattern[]): SuccessPatternsData {
+  if (!patterns || patterns.length === 0) {
+    return {
+      metrics: {
+        avgTimeToPromotion: 0,
+        overallSuccessRate: 0,
+        totalSampleSize: 0,
+        topSkills: [],
+      },
+      successRateByTransition: [],
+      timeToPromotion: {},
+      skillFrequency: [],
+      departmentDistribution: [],
+    };
+  }
+
+  // Build successRateByTransition from patterns
+  const successRateByTransition: TransitionData[] = patterns.map((p) => ({
+    transition: `${p.source_role} → ${p.target_role}`,
+    successRate: Math.round(p.success_rate * 100), // Convert to percentage
+    sampleSize: p.sample_size,
+    color: getSuccessRateColor(p.success_rate * 100),
+  }));
+
+  // Calculate overall metrics
+  const totalSampleSize = patterns.reduce((sum, p) => sum + p.sample_size, 0);
+  const weightedSuccessRate =
+    totalSampleSize > 0
+      ? patterns.reduce((sum, p) => sum + p.success_rate * p.sample_size, 0) / totalSampleSize
+      : 0;
+  const avgTimeToPromotion =
+    patterns.length > 0
+      ? patterns.reduce((sum, p) => sum + p.avg_time_to_promotion_years, 0) / patterns.length
+      : 0;
+
+  // Aggregate skills from all patterns
+  const skillCounts: Record<string, number> = {};
+  patterns.forEach((p) => {
+    p.common_skills.forEach((skill) => {
+      skillCounts[skill] = (skillCounts[skill] || 0) + 1;
+    });
+  });
+
+  const skillFrequency: SkillFrequency[] = Object.entries(skillCounts)
+    .map(([skill, count]) => ({
+      skill,
+      frequency: Math.round((count / patterns.length) * 100),
+    }))
+    .sort((a, b) => b.frequency - a.frequency)
+    .slice(0, 10);
+
+  const topSkills = skillFrequency.slice(0, 4).map((s) => s.skill);
+
+  // Aggregate by department/service line
+  const deptCounts: Record<string, number> = {};
+  patterns.forEach((p) => {
+    const dept = p.service_line || 'Other';
+    deptCounts[dept] = (deptCounts[dept] || 0) + p.sample_size;
+  });
+
+  const departmentDistribution: DepartmentData[] = Object.entries(deptCounts).map(([name, value]) => ({
+    name,
+    value,
+    color: DEPARTMENT_COLORS[name] || '#888888',
+  }));
+
+  // Build time to promotion data grouped by service line and role level
+  // This aggregates avg_time_to_promotion_years by role
+  const roleTimeMap: Record<string, Record<string, { totalYears: number; count: number }>> = {};
+  patterns.forEach((p) => {
+    const dept = p.service_line || 'General';
+    if (!roleTimeMap[dept]) roleTimeMap[dept] = {};
+
+    // Track source role time
+    if (!roleTimeMap[dept][p.source_role]) {
+      roleTimeMap[dept][p.source_role] = { totalYears: 0, count: 0 };
+    }
+
+    // Track target role time (source time + avg transition time)
+    if (!roleTimeMap[dept][p.target_role]) {
+      roleTimeMap[dept][p.target_role] = { totalYears: p.avg_time_to_promotion_years, count: 1 };
+    } else {
+      roleTimeMap[dept][p.target_role].totalYears += p.avg_time_to_promotion_years;
+      roleTimeMap[dept][p.target_role].count += 1;
+    }
+  });
+
+  const timeToPromotion: Record<string, StageData[]> = {};
+  Object.entries(roleTimeMap).forEach(([dept, roles]) => {
+    const stages: StageData[] = Object.entries(roles)
+      .map(([stage, data]) => ({
+        stage,
+        avgYears: data.count > 0 ? data.totalYears / data.count : 0,
+      }))
+      .sort((a, b) => a.avgYears - b.avgYears);
+    timeToPromotion[dept] = stages;
+  });
+
+  return {
+    metrics: {
+      avgTimeToPromotion: Math.round(avgTimeToPromotion * 10) / 10,
+      overallSuccessRate: Math.round(weightedSuccessRate * 100) / 100,
+      totalSampleSize,
+      topSkills,
+    },
+    successRateByTransition,
+    timeToPromotion,
+    skillFrequency,
+    departmentDistribution,
+  };
+}
+
+// Fetch success patterns from the backend API
+export const getSuccessPatterns = async (filters: FilterOptions = {}): Promise<SuccessPatternsData> => {
+  try {
+    const params: Record<string, string | number> = {};
+
+    if (filters.department) {
+      params.service_line = filters.department;
+    }
+    if (filters.minSuccessRate !== undefined) {
+      params.min_success_rate = filters.minSuccessRate;
+    }
+    // Note: roleLevel filter is applied client-side since API doesn't support it directly
+
+    const response = await api.get<ApiTransitionPattern[]>('/patterns/transitions', { params });
+    let patterns = response.data;
+
+    // Apply role level filter client-side if specified
+    if (filters.roleLevel) {
+      const roleLevel = filters.roleLevel.toLowerCase();
+      patterns = patterns.filter(
+        (p) =>
+          p.source_role.toLowerCase().includes(roleLevel) ||
+          p.target_role.toLowerCase().includes(roleLevel)
+      );
+    }
+
+    return transformApiResponse(patterns);
+  } catch (error) {
+    console.error('Failed to fetch success patterns:', error);
+    // Return empty data structure on error (graceful degradation)
+    return {
+      metrics: {
+        avgTimeToPromotion: 0,
+        overallSuccessRate: 0,
+        totalSampleSize: 0,
+        topSkills: [],
+      },
+      successRateByTransition: [],
+      timeToPromotion: {},
+      skillFrequency: [],
+      departmentDistribution: [],
+    };
+  }
 };
 
 export const getMetrics = async (filters: FilterOptions = {}): Promise<SuccessPatternMetrics> => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return applyFilters(mockSuccessPatterns, filters).metrics;
+  const data = await getSuccessPatterns(filters);
+  return data.metrics;
 };

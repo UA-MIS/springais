@@ -73,7 +73,7 @@ SKILL_MATCH_THRESHOLDS: Dict[MatchMode, SkillMatchThreshold] = {
         description="Moderate skill overlap (70-85%)"
     ),
     MatchMode.EXPLORATORY: SkillMatchThreshold(
-        min_score=0.50,
+        min_score=0.0,
         max_score=0.70,
         description="Lower skill overlap (50-70%)"
     ),
