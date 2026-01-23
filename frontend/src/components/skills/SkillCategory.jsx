@@ -3,7 +3,7 @@
 
 import SkillCard from './SkillCard';
 
-export default function SkillCategory({ category, skills, onSkillClick, theme, progressColors }) {
+export default function SkillCategory({ category, skills, onSkillClick, onMarkComplete, theme, progressColors }) {
   // Calculate category progress from skills
   const calculateCategoryProgress = () => {
     if (skills.length === 0) return 0;
@@ -78,6 +78,7 @@ export default function SkillCategory({ category, skills, onSkillClick, theme, p
               key={skill.id}
               skill={skill}
               onClick={() => onSkillClick?.(skill)}
+              onMarkComplete={onMarkComplete}
               theme={theme}
               progressColors={progressColors}
             />

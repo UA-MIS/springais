@@ -190,6 +190,13 @@ class SkillRecommendationsResponse(BaseModel):
     recommendations: List[SkillRecommendationItem] = Field(default_factory=list)
 
 
+class UserSkillsResponse(BaseModel):
+    """Response for user's saved skills endpoint."""
+
+    skills: List[Skill] = Field(default_factory=list)
+    total_count: int = Field(..., description="Total number of saved skills")
+
+
 # ============================================
 # Job Skill Extraction Models
 # ============================================

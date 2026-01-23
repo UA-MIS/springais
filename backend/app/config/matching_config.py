@@ -63,19 +63,19 @@ MODE_WEIGHTS: Dict[MatchMode, ModeWeights] = {
 # Skill match thresholds per mode
 SKILL_MATCH_THRESHOLDS: Dict[MatchMode, SkillMatchThreshold] = {
     MatchMode.BEST_FIT: SkillMatchThreshold(
-        min_score=0.90,
+        min_score=0.70,
         max_score=1.0,
-        description="High skill overlap (90-100%)"
+        description="High skill overlap (70-100%)"
     ),
     MatchMode.STRETCH: SkillMatchThreshold(
-        min_score=0.70,
-        max_score=0.85,
-        description="Moderate skill overlap (70-85%)"
+        min_score=0.55,
+        max_score=0.75,
+        description="Moderate skill overlap (55-75%)"
     ),
     MatchMode.EXPLORATORY: SkillMatchThreshold(
         min_score=0.0,
-        max_score=0.70,
-        description="Lower skill overlap (50-70%)"
+        max_score=0.55,
+        description="Lower skill overlap (0-55%)"
     ),
 }
 

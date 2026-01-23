@@ -3,10 +3,10 @@
 
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { mockExtractSkills } from '../../mocks/mockSkills';
+import api from '../../services/api';
 import SkillExtractionPreview from './SkillExtractionPreview';
 
-export default function ResumeUpload({ onSkillsExtracted, theme }) {
+export default function ResumeUpload({ onSkillsExtracted, clearSkills, theme }) {
   const [uploadStatus, setUploadStatus] = useState('idle'); // idle, uploading, success, error
   const [uploadedFile, setUploadedFile] = useState(null);
   const [extractedSkills, setExtractedSkills] = useState(null);
@@ -21,16 +21,42 @@ export default function ResumeUpload({ onSkillsExtracted, theme }) {
     setUploadStatus('uploading');
 
     try {
-      // Simulate skill extraction
-      const result = await mockExtractSkills(file.name);
+      // Create FormData and upload file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post('/skills/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Map backend response to frontend format
+      const backendSkills = response.data?.skills || [];
+
+      // Map proficiency levels to confidence scores
+      const proficiencyToConfidence = {
+        beginner: 0.25,
+        intermediate: 0.50,
+        advanced: 0.75,
+        expert: 0.95,
+      };
+
+      const extractedSkillsList = backendSkills.map((skill) => ({
+        name: skill.name || skill,
+        category: skill.category || 'programming',
+        confidence: proficiencyToConfidence[skill.proficiency] || 0.5,
+        source: 'resume',
+      }));
+
+      const result = {
+        success: true,
+        extractedSkills: extractedSkillsList,
+      };
       
-      if (result.success) {
-        setUploadStatus('success');
-        setExtractedSkills(result);
-        setIsPreviewOpen(true);
-      } else {
-        setUploadStatus('error');
-      }
+      setUploadStatus('success');
+      setExtractedSkills(result);
+      setIsPreviewOpen(true);
     } catch (error) {
       console.error('Error extracting skills:', error);
       setUploadStatus('error');
@@ -49,6 +75,9 @@ export default function ResumeUpload({ onSkillsExtracted, theme }) {
   });
 
   const handleConfirmSkills = (selectedSkills) => {
+    // Clear existing skills before adding new ones from resume
+    // This prevents old mock/bootstrap skills from persisting
+    clearSkills?.();
     onSkillsExtracted?.(selectedSkills);
     setIsPreviewOpen(false);
     setUploadStatus('idle');
@@ -64,9 +93,9 @@ export default function ResumeUpload({ onSkillsExtracted, theme }) {
   };
 
   const getBorderColor = () => {
-    if (isDragActive) return theme?.uploadHoverBorder || '#64748b';
-    if (isHovered) return theme?.uploadHoverBorder || '#64748b';
-    return theme?.uploadBorder || '#cbd5e1';
+    if (isDragActive) return theme?.cardHoverBorder || theme?.uploadHoverBorder || '#64748b';
+    if (isHovered) return theme?.cardHoverBorder || theme?.uploadHoverBorder || '#64748b';
+    return theme?.cardBorder || theme?.uploadBorder || '#cbd5e1';
   };
 
   return (
@@ -78,7 +107,7 @@ export default function ResumeUpload({ onSkillsExtracted, theme }) {
         className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-300"
         style={{
           borderColor: getBorderColor(),
-          backgroundColor: theme?.uploadBg || '#ffffff',
+          backgroundColor: theme?.cardBg || theme?.uploadBg || '#ffffff',
           opacity: uploadStatus === 'uploading' ? 0.5 : 1,
           boxShadow: isDragActive || isHovered ? (theme?.cardShadow || '0 4px 12px rgba(0,0,0,0.08)') : 'none',
         }}
@@ -87,11 +116,11 @@ export default function ResumeUpload({ onSkillsExtracted, theme }) {
         
         {uploadStatus === 'uploading' ? (
           <div className="flex flex-col items-center gap-3">
-            <div 
+            <div
               className="animate-spin rounded-full h-8 w-8 border-b-2"
-              style={{ borderColor: theme?.categoryText || '#1e293b' }}
+              style={{ borderColor: theme?.textPrimary || theme?.categoryText || '#1e293b' }}
             />
-            <p className="text-sm" style={{ color: theme?.headerSubtext || '#64748b' }}>
+            <p className="text-sm" style={{ color: theme?.textMuted || theme?.headerSubtext || '#64748b' }}>
               Extracting skills...
             </p>
           </div>
@@ -100,10 +129,10 @@ export default function ResumeUpload({ onSkillsExtracted, theme }) {
             <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <p className="text-sm font-semibold" style={{ color: theme?.categoryText || '#1e293b' }}>
+            <p className="text-sm font-semibold" style={{ color: theme?.textPrimary || theme?.categoryText || '#1e293b' }}>
               {uploadedFile?.name}
             </p>
-            <p className="text-xs" style={{ color: theme?.headerSubtext || '#64748b' }}>
+            <p className="text-xs" style={{ color: theme?.textMuted || theme?.headerSubtext || '#64748b' }}>
               Skills extracted successfully!
             </p>
           </div>
@@ -112,24 +141,24 @@ export default function ResumeUpload({ onSkillsExtracted, theme }) {
             <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-            <p className="text-sm text-red-600">Upload failed. Please try again.</p>
+            <p className="text-sm text-red-400">Upload failed. Please try again.</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
-            <svg 
-              className="w-10 h-10 transition-colors duration-200" 
-              style={{ color: isHovered ? theme?.categoryText : theme?.headerSubtext || '#64748b' }}
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-10 h-10 transition-colors duration-200"
+              style={{ color: isHovered ? (theme?.textPrimary || theme?.categoryText) : (theme?.textMuted || theme?.headerSubtext || '#64748b') }}
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
             <div>
-              <p className="text-sm font-semibold mb-1" style={{ color: theme?.categoryText || '#1e293b' }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: theme?.textPrimary || theme?.categoryText || '#1e293b' }}>
                 {isDragActive ? 'Drop your resume here' : 'Upload Resume'}
               </p>
-              <p className="text-xs" style={{ color: theme?.headerSubtext || '#64748b' }}>
+              <p className="text-xs" style={{ color: theme?.textMuted || theme?.headerSubtext || '#64748b' }}>
                 Drag and drop or click to upload (PDF, DOCX, TXT)
               </p>
             </div>

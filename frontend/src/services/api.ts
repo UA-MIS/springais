@@ -58,6 +58,10 @@ class APIClient {
   delete<T = any>(url: string, config?: object) {
     return this.client.delete<T>(url, config);
   }
+
+  patch<T = any>(url: string, data?: unknown, config?: object) {
+    return this.client.patch<T>(url, data, config);
+  }
 }
 
 const api = new APIClient();

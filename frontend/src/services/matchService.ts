@@ -99,7 +99,6 @@ export async function getMatchDetails(matchId: string): Promise<Match | null> {
 
 export async function saveMatch(match: Match, mode: MatchMode): Promise<void> {
   await api.post('/matches/save', {
-    employee_id: String(DEFAULT_EMPLOYEE_ID),
     job_posting_id: match.job_id,
     match_mode: mode,
     scores: {
@@ -112,4 +111,54 @@ export async function saveMatch(match: Match, mode: MatchMode): Promise<void> {
     matched_skills: match.matched_skills,
     explanation: match.explanation,
   });
+}
+
+export interface DeepAnalysis {
+  overall_fit_assessment: string;
+  skill_impacts: {
+    skill_name: string;
+    impact_description: string;
+    importance: 'critical' | 'high' | 'medium' | 'low';
+    is_gap: boolean;
+    gap_severity?: 'blocker' | 'significant' | 'moderate' | 'minor';
+  }[];
+  success_factors: string[];
+  risk_factors: string[];
+  ramp_up_time_estimate: string;
+  comparable_roles: string[];
+  recommended_learning_path: string[];
+}
+
+export async function getDeepAnalysis(jobId: string): Promise<DeepAnalysis> {
+  const response = await api.get(`/matches/job/${jobId}/deep-analysis`);
+  return response.data;
+}
+
+export interface SavedMatch {
+  match_id: string;
+  job_id: string;
+  job_title: string;
+  department: string;
+  service_line: string;
+  location: string;
+  match_mode: MatchMode;
+  scores: {
+    skill_match: number;
+    experience_match: number;
+    growth_potential: number;
+    overall: number;
+  };
+  skill_gaps: string[];
+  matched_skills: string[];
+  explanation: string | null;
+  saved_at: string;
+}
+
+export async function getSavedMatches(): Promise<SavedMatch[]> {
+  const response = await api.get('/matches/saved');
+  return response.data.matches || [];
+}
+
+export async function deleteSavedMatch(matchId: string): Promise<void> {
+  await api.delete(`/matches/saved/${matchId}`);
 }
