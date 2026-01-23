@@ -145,6 +145,7 @@ SEED_SKILLS = [
     {"canonical_name": "Data Analysis", "category": "technical", "aliases": ["Data Analytics", "data analysis", "Analytics"]},
     {"canonical_name": "Natural Language Processing", "category": "technical", "aliases": ["NLP", "nlp", "Text Mining"]},
     {"canonical_name": "Computer Vision", "category": "technical", "aliases": ["CV", "Image Processing", "computer vision"]},
+    {"canonical_name": "LLM Development", "category": "technical", "aliases": ["LLM", "LLM integration", "langchain", "LangChain", "large language models", "GPT integration", "prompt engineering", "RAG"]},
 
     # Technical Skills - Tools & Version Control
     {"canonical_name": "Git", "category": "technical", "aliases": ["git", "Version Control", "GitHub", "GitLab", "Bitbucket"]},
@@ -155,7 +156,7 @@ SEED_SKILLS = [
     {"canonical_name": "IntelliJ IDEA", "category": "technical", "aliases": ["IntelliJ", "intellij", "IDEA"]},
 
     # Technical Skills - APIs & Protocols
-    {"canonical_name": "REST API", "category": "technical", "aliases": ["REST", "RESTful", "RESTful API", "rest api"]},
+    {"canonical_name": "REST API", "category": "technical", "aliases": ["REST", "RESTful", "RESTful API", "rest api", "API Development", "Web APIs"]},
     {"canonical_name": "GraphQL", "category": "technical", "aliases": ["graphql", "Graph QL"]},
     {"canonical_name": "gRPC", "category": "technical", "aliases": ["grpc", "GRPC"]},
     {"canonical_name": "WebSocket", "category": "technical", "aliases": ["WebSockets", "websocket", "WS"]},
@@ -170,8 +171,8 @@ SEED_SKILLS = [
     {"canonical_name": "JUnit", "category": "technical", "aliases": ["junit", "JUnit5"]},
 
     # Soft Skills
-    {"canonical_name": "Leadership", "category": "soft", "aliases": ["leadership", "Team Leadership", "Leading Teams", "Team Lead"]},
-    {"canonical_name": "Communication", "category": "soft", "aliases": ["communication", "Communication Skills", "Verbal Communication", "Written Communication"]},
+    {"canonical_name": "Leadership", "category": "soft", "aliases": ["leadership", "Team Leadership", "Leading Teams", "Team Lead", "mentoring", "coaching", "people management"]},
+    {"canonical_name": "Communication", "category": "soft", "aliases": ["communication", "Communication Skills", "Verbal Communication", "Written Communication", "client engagement", "cross-functional collaboration", "stakeholder engagement"]},
     {"canonical_name": "Problem Solving", "category": "soft", "aliases": ["Problem-Solving", "problem solving", "Analytical Thinking"]},
     {"canonical_name": "Teamwork", "category": "soft", "aliases": ["teamwork", "Team Player", "Collaboration", "Team Collaboration"]},
     {"canonical_name": "Time Management", "category": "soft", "aliases": ["time management", "Time-Management", "Prioritization"]},
@@ -188,7 +189,7 @@ SEED_SKILLS = [
     # Domain Skills
     {"canonical_name": "Agile", "category": "domain", "aliases": ["agile", "Agile Methodology", "Agile Development", "Agile/Scrum"]},
     {"canonical_name": "Scrum", "category": "domain", "aliases": ["scrum", "Scrum Master", "Scrum Framework"]},
-    {"canonical_name": "Project Management", "category": "domain", "aliases": ["project management", "PM", "Project Manager"]},
+    {"canonical_name": "Project Management", "category": "domain", "aliases": ["project management", "PM", "Project Manager", "vendor management", "stakeholder management", "program management"]},
     {"canonical_name": "Product Management", "category": "domain", "aliases": ["product management", "Product Manager", "Product Owner"]},
     {"canonical_name": "Business Analysis", "category": "domain", "aliases": ["business analysis", "BA", "Business Analyst"]},
     {"canonical_name": "Financial Analysis", "category": "domain", "aliases": ["financial analysis", "Finance", "Financial Modeling"]},

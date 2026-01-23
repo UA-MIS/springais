@@ -1,11 +1,12 @@
 // Main container component for Skills Dashboard
 // This will render inside MainLayout from Block H (when available)
 
-import { useSkills } from '../../hooks/useSkills';
+import { useSkillsContext } from '../../context/SkillsContext';
 import SkillSearchBar from './SkillSearchBar';
 import SkillsPortfolio from './SkillsPortfolio';
 import SkillDetailModal from './SkillDetailModal';
 import AddSkillModal from './AddSkillModal';
+import ResumeUpload from './ResumeUpload';
 import { DARK_THEME, LIGHT_THEME, PROGRESS_COLORS } from './ThemeSwitcher';
 import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
@@ -21,10 +22,15 @@ export default function SkillsDashboard() {
     setSearchQuery,
     updateSkill,
     addSkill,
-  } = useSkills();
+    addSkills,
+    clearSkills,
+    fetchSkillsWithProgress,
+    markSkillComplete,
+  } = useSkillsContext();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [showResumeUpload, setShowResumeUpload] = useState(false);
 
   // Use global theme context
   const { isDark } = useTheme();
@@ -47,9 +53,9 @@ export default function SkillsDashboard() {
 
   // Calculate overall stats for header
   const totalSkills = skills.length;
-  const completedSkills = skills.filter(s => s.status === 'complete').length;
-  const avgProgress = skills.length > 0 
-    ? Math.round(skills.reduce((sum, s) => sum + s.proficiency, 0) / skills.length)
+  const completedSkills = skills.filter(s => s.status === 'completed').length;
+  const avgProgress = skills.length > 0
+    ? Math.round(skills.reduce((sum, s) => sum + (s.progress?.percentage ?? s.proficiency), 0) / skills.length)
     : 0;
 
   return (
@@ -228,23 +234,108 @@ export default function SkillsDashboard() {
         </div>
       </div>
 
-      {/* Search and Filter Bar */}
-      <SkillSearchBar
-        filterTab={filterTab}
-        onFilterChange={setFilterTab}
-        onSearchChange={setSearchQuery}
-        theme={theme}
-      />
+      {/* Empty State - Prompt to upload resume */}
+      {skills.length === 0 && !showResumeUpload && (
+        <div
+          className="rounded-2xl p-8 text-center"
+          style={{
+            backgroundColor: theme.cardBg,
+            border: `2px dashed ${theme.cardBorder}`,
+          }}
+        >
+          <div className="max-w-md mx-auto">
+            <svg
+              className="w-16 h-16 mx-auto mb-4 opacity-50"
+              fill="none"
+              stroke={theme.categoryText}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3
+              className="text-xl font-semibold mb-2"
+              style={{ color: theme.categoryText }}
+            >
+              No Skills Yet
+            </h3>
+            <p
+              className="mb-6"
+              style={{ color: theme.headerSubtext }}
+            >
+              Upload your resume to automatically extract and track your professional skills.
+            </p>
+            <button
+              onClick={() => setShowResumeUpload(true)}
+              className="font-semibold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] shadow-lg"
+              style={{
+                backgroundColor: theme.primaryBtn.bg,
+                color: theme.primaryBtn.text,
+                border: `2px solid ${theme.primaryBtn.border}`,
+              }}
+            >
+              Upload Resume
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Skills Portfolio */}
-      <SkillsPortfolio
-        skills={skills}
-        filterTab={filterTab}
-        searchQuery={searchQuery}
-        onSkillClick={handleSkillClick}
-        theme={theme}
-        progressColors={PROGRESS_COLORS}
-      />
+      {/* Resume Upload Modal */}
+      {showResumeUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div
+            className="w-full max-w-2xl rounded-2xl p-6"
+            style={{ backgroundColor: theme.cardBg }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2
+                className="text-xl font-semibold"
+                style={{ color: theme.categoryText }}
+              >
+                Upload Your Resume
+              </h2>
+              <button
+                onClick={() => setShowResumeUpload(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <svg className="w-5 h-5" fill="none" stroke={theme.categoryText} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <ResumeUpload
+              onSkillsExtracted={(extractedSkills) => {
+                clearSkills();
+                addSkills(extractedSkills);
+                setShowResumeUpload(false);
+              }}
+              theme={theme}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Search and Filter Bar - only show if there are skills */}
+      {skills.length > 0 && (
+        <SkillSearchBar
+          filterTab={filterTab}
+          onFilterChange={setFilterTab}
+          onSearchChange={setSearchQuery}
+          theme={theme}
+        />
+      )}
+
+      {/* Skills Portfolio - only show if there are skills */}
+      {skills.length > 0 && (
+        <SkillsPortfolio
+          skills={skills}
+          filterTab={filterTab}
+          searchQuery={searchQuery}
+          onSkillClick={handleSkillClick}
+          onMarkComplete={markSkillComplete}
+          theme={theme}
+          progressColors={PROGRESS_COLORS}
+        />
+      )}
 
       {/* Modals */}
       {isDetailModalOpen && selectedSkill && (
@@ -252,6 +343,8 @@ export default function SkillsDashboard() {
           skill={selectedSkill}
           onClose={handleCloseDetailModal}
           onUpdate={handleUpdateSkill}
+          onRefresh={fetchSkillsWithProgress}
+          onMarkComplete={markSkillComplete}
           theme={theme}
         />
       )}

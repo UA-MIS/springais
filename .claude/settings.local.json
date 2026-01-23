@@ -17,7 +17,9 @@
       "Bash(docker compose exec:*)",
       "Bash(docker compose:*)",
       "Bash(curl:*)",
-      "WebFetch(domain:careers.ey.com)"
+      "WebFetch(domain:careers.ey.com)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose restart:*)"
     ]
   }
 }

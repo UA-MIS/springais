@@ -1,11 +1,26 @@
 import { useTheme, themeColors } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import SkillsDashboard from '../components/skills/SkillsDashboard'
+import ResumeUpload from '../components/skills/ResumeUpload'
+import { useSkillsContext } from '../context/SkillsContext'
+import { DARK_THEME, LIGHT_THEME } from '../components/skills/ThemeSwitcher'
 
 export default function ProfilePage() {
   const { isDark } = useTheme()
   const colors = isDark ? themeColors.dark : themeColors.light
   const { user } = useAuth()
+  const { refreshAllSkills, clearSkills } = useSkillsContext()
+
+  // Theme object for ResumeUpload component
+  const theme = isDark ? DARK_THEME : LIGHT_THEME
+
+  // Handle skills extracted from resume upload
+  const handleSkillsExtracted = async () => {
+    // Skills are already saved to backend by the upload endpoint
+    // Just refresh the skills list to show them
+    console.log('Skills extraction complete, refreshing skills list...')
+    await refreshAllSkills()
+  }
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-6">
@@ -71,23 +86,10 @@ export default function ProfilePage() {
         <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
           Resume
         </h3>
-        <div
-          className="border-2 border-dashed rounded-lg p-8 text-center"
-          style={{ borderColor: colors.border }}
-        >
-          <p style={{ color: colors.textMuted }} className="mb-4">
-            Upload your resume to get better match recommendations
-          </p>
-          <button
-            className="px-6 py-2 rounded-md font-semibold transition-colors"
-            style={{
-              backgroundColor: colors.accent,
-              color: '#2E2E38',
-            }}
-          >
-            Upload Resume
-          </button>
-        </div>
+        <p style={{ color: colors.textMuted }} className="mb-4">
+          Upload your resume to extract skills and get better match recommendations
+        </p>
+        <ResumeUpload onSkillsExtracted={handleSkillsExtracted} clearSkills={clearSkills} theme={theme} />
       </div>
 
       {/* Skills Dashboard */}

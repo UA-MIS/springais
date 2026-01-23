@@ -4,8 +4,10 @@ Match Results API Routes.
 Endpoints for job matching:
 - GET /api/matches/employee/{employee_id} - Get top matches for employee
 - GET /api/matches/employee/{employee_id}/job/{job_id} - Get detailed match
+- GET /api/matches/job/{job_id}/deep-analysis - Get AI-powered deep analysis
 """
 
+import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -13,16 +15,24 @@ from sqlalchemy.orm import Session
 from ..config.matching_config import MatchMode
 from ..schemas.match_result import (
     MatchModeEnum,
+    MatchScores,
     EmployeeMatchesResponse,
     DetailedMatchResponse,
     MatchSaveRequest,
+    SavedMatchesResponse,
+    SavedMatchResponse,
 )
+from ..schemas.analysis import ComplexAnalysis
 from ..services.matching_service import MatchingService
+from ..services.analysis_service import DeepAnalysisService
 from ..utils.security import get_current_user_from_token
 from ..database import get_db
 from ..models.match import Match
 from ..models.user_profile import UserProfile
+from ..models.job_posting import JobPosting
 from ..services.recommendation_service import SkillRecommendationService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/matches",
@@ -256,3 +266,175 @@ async def save_match(
     await service.compute_recommendations(current_user.id)
 
     return {"saved": True, "match_id": str(match.id)}
+
+
+@router.get(
+    "/saved",
+    response_model=SavedMatchesResponse,
+    summary="Get saved matches for current user",
+    description="Retrieve all saved matches for the authenticated user.",
+)
+async def get_saved_matches(
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Get all saved matches for the current user.
+    
+    Returns matches with job details, scores, and skill analysis.
+    Results are sorted by overall score (descending) and saved date (newest first).
+    """
+    try:
+        # Query saved matches for the current user
+        matches = (
+            db.query(Match)
+            .join(JobPosting, Match.job_posting_id == JobPosting.id)
+            .filter(Match.user_id == current_user.id)
+            .order_by(Match.overall_score.desc(), Match.created_at.desc())
+            .all()
+        )
+        
+        saved_matches = []
+        for match in matches:
+            job = match.job_posting
+            # Build MatchScores with correct field names for the API schema
+            scores = MatchScores(
+                skill_match=float(match.skill_match_score),
+                experience_match=float(match.experience_score),
+                growth_potential=float(match.growth_potential_score),
+                overall=float(match.overall_score),
+            )
+            saved_matches.append(SavedMatchResponse(
+                match_id=str(match.id),
+                job_id=str(match.job_posting_id),
+                job_title=job.title if job else "Unknown",
+                department=job.department if job else "",
+                service_line=job.service_line if job else "",
+                location=job.location if job else "",
+                match_mode=MatchModeEnum(match.match_mode),
+                scores=scores,
+                skill_gaps=match.skill_gaps or [],
+                matched_skills=match.matched_skills or [],
+                explanation=match.explanation,
+                saved_at=match.created_at.isoformat() if match.created_at else "",
+            ))
+        
+        return SavedMatchesResponse(
+            matches=saved_matches,
+            total_count=len(saved_matches)
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve saved matches: {str(e)}"
+        )
+
+
+@router.get(
+    "/job/{job_id}/deep-analysis",
+    response_model=ComplexAnalysis,
+    summary="Get AI-powered deep analysis of candidate-job fit",
+    description="""
+    Get a comprehensive AI-generated analysis of how well the current user
+    fits a specific job posting using GPT-5.2 with reasoning.
+
+    Returns:
+    - Multi-paragraph narrative assessment of overall fit
+    - Detailed skill impact analysis for matched and gap skills
+    - Critical success factors and risk factors
+    - Estimated ramp-up time
+    - Comparable roles and recommended learning path
+
+    Note: This endpoint uses GPT-5.2 with reasoning, which may take 10-30 seconds.
+    """,
+)
+async def get_deep_analysis(
+    job_id: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Get AI-powered deep analysis of candidate-job fit.
+
+    Uses GPT-5.2 with reasoning_effort="medium" to provide thoughtful,
+    nuanced analysis including narratives, skill impacts, and recommendations.
+    """
+    try:
+        logger.info(f"Starting deep analysis for user {current_user.id} and job {job_id}")
+
+        service = DeepAnalysisService(db)
+        analysis = await service.analyze_candidate_job_fit(
+            user=current_user,
+            job_id=job_id,
+        )
+
+        logger.info(f"Deep analysis complete for job {job_id}")
+        return analysis
+
+    except ValueError as e:
+        logger.warning(f"Deep analysis failed - not found: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Deep analysis failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Deep analysis failed: {str(e)}"
+        )
+
+
+@router.delete(
+    "/saved/{match_id}",
+    summary="Delete a saved match",
+    description="Remove a saved match by ID.",
+)
+async def delete_saved_match(
+    match_id: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete a saved match.
+    
+    Only the user who saved the match can delete it.
+    """
+    try:
+        from uuid import UUID
+        
+        # Parse UUID
+        try:
+            match_uuid = UUID(match_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid match ID format"
+            )
+        
+        # Find the match
+        match = db.query(Match).filter(
+            Match.id == match_uuid,
+            Match.user_id == current_user.id
+        ).first()
+        
+        if not match:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Saved match not found"
+            )
+        
+        # Delete the match
+        db.delete(match)
+        db.commit()
+        
+        return {"deleted": True, "match_id": match_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete saved match: {str(e)}"
+        )

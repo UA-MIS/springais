@@ -318,7 +318,10 @@ class MatchingService:
         ]
 
         if not employee_embeddings:
-            # Fallback to exact string matching
+            # Fallback to fuzzy matching, then exact string matching
+            fuzzy_score = self._fuzzy_token_match_score(employee.skills, required_skills)
+            if fuzzy_score > 0:
+                return fuzzy_score
             return self._exact_skill_match_score(employee.skills, required_skills)
 
         matches = []
@@ -506,7 +509,7 @@ class MatchingService:
                 miss_embedding = job.skill_embeddings.get(miss_skill)
                 if miss_embedding is not None:
                     similarity = self._cosine_similarity(emp_embedding, miss_embedding)
-                    if similarity > 0.7 and emp_skill not in transferable:
+                    if similarity > 0.55 and emp_skill not in transferable:
                         transferable.append(emp_skill)
                         break
 
@@ -608,6 +611,55 @@ class MatchingService:
 
         return matches / len(job_skills)
 
+    def _fuzzy_token_match_score(
+        self,
+        employee_skills: List[str],
+        job_skills: List[str],
+    ) -> float:
+        """
+        Fuzzy matching using Jaccard similarity on word tokens.
+
+        Computes token-based similarity between employee skills and job skills.
+        For each job skill, finds the best matching employee skill using
+        Jaccard similarity on word tokens.
+
+        Args:
+            employee_skills: List of employee skills
+            job_skills: List of required job skills
+
+        Returns:
+            Average of best Jaccard similarities for each job skill
+        """
+        if not job_skills:
+            return 1.0
+        if not employee_skills:
+            return 0.0
+
+        def tokenize(skill: str) -> set:
+            """Tokenize a skill into lowercase words."""
+            return set(skill.lower().split())
+
+        def jaccard_similarity(set1: set, set2: set) -> float:
+            """Calculate Jaccard similarity between two sets."""
+            if not set1 or not set2:
+                return 0.0
+            intersection = len(set1 & set2)
+            union = len(set1 | set2)
+            return intersection / union if union > 0 else 0.0
+
+        employee_tokens = [tokenize(s) for s in employee_skills]
+        matches = []
+
+        for job_skill in job_skills:
+            job_tokens = tokenize(job_skill)
+            best_similarity = 0.0
+            for emp_tokens in employee_tokens:
+                similarity = jaccard_similarity(job_tokens, emp_tokens)
+                best_similarity = max(best_similarity, similarity)
+            matches.append(best_similarity)
+
+        return sum(matches) / len(matches) if matches else 0.0
+
     def _get_filtered_jobs(
         self,
         department: Optional[str] = None,
@@ -666,44 +718,16 @@ class MatchingService:
                 skill_embeddings=self._build_skill_embeddings(self.user_profile.skills or []),
             )
 
-        employee = get_mock_employee(employee_id)
-        if not employee:
-            return None
-        return EmployeeProfile(
-            id=str(employee.id),
-            name=employee.name,
-            current_role=employee.current_role,
-            role_level=employee.role_level,
-            experience_years=employee.experience_years,
-            service_line=employee.service_line,
-            skills=employee.skills,
-            skill_embeddings=employee.skill_embeddings,
-        )
+        # No mock data fallback - require database or user profile
+        return None
 
     def _get_job_by_id(self, job_id: str) -> Optional["JobPostingData"]:
         if self.db:
             job = self.db.query(JobPosting).filter(JobPosting.id == job_id).first()
             if job:
                 return self._to_job_posting_data(job)
-        job = get_mock_job_posting(job_id)
-        if not job:
-            return None
-        return JobPostingData(
-            id=str(job.id),
-            title=job.title,
-            department=job.department,
-            service_line=job.service_line,
-            location=job.location,
-            description=job.description,
-            required_skills=job.required_skills,
-            preferred_skills=job.preferred_skills,
-            experience_years_min=job.experience_years_min,
-            experience_years_max=job.experience_years_max,
-            salary_range=getattr(job, "salary_range", None),
-            posting_url=getattr(job, "posting_url", None),
-            role_level=getattr(job, "role_level", 3),
-            skill_embeddings=job.skill_embeddings,
-        )
+        # No mock data fallback - require database
+        return None
 
     def _to_job_posting_data(self, job: JobPosting) -> JobPostingData:
         # Use LLM-extracted skills if available, fall back to regex-extracted

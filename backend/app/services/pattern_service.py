@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import logging
+from difflib import SequenceMatcher
 
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -820,6 +821,70 @@ class SuccessPatternService:
             level_counts[level] += 1
         
         return positions
+    
+    def _fuzzy_match_roles(self, role1: str, role2: str, threshold: float = 0.7) -> bool:
+        """
+        Fuzzy string matching for role names using sequence similarity.
+        
+        Args:
+            role1: First role name
+            role2: Second role name
+            threshold: Similarity threshold (0.0-1.0), default 0.7 (70%)
+            
+        Returns:
+            True if roles are similar enough (above threshold)
+        """
+        if not role1 or not role2:
+            return False
+        
+        # Normalize role names
+        r1 = role1.lower().strip()
+        r2 = role2.lower().strip()
+        
+        # Exact match (case-insensitive)
+        if r1 == r2:
+            return True
+        
+        # Calculate similarity ratio
+        similarity = SequenceMatcher(None, r1, r2).ratio()
+        
+        # Also check if one role contains the other (for cases like "Senior Consultant" vs "Consultant")
+        if r1 in r2 or r2 in r1:
+            # If one is a substring, require higher threshold
+            return similarity >= max(threshold, 0.6)
+        
+        return similarity >= threshold
+    
+    def find_similar_roles(self, target_role: str, threshold: float = 0.7) -> List[str]:
+        """
+        Find all roles similar to the target role.
+        
+        Args:
+            target_role: The role to find matches for
+            threshold: Similarity threshold (default: 0.7)
+            
+        Returns:
+            List of similar role names
+        """
+        employees = self._get_employees()
+        similar_roles = set()
+        
+        for emp in employees:
+            current_role = emp.get("current_role", "") if isinstance(emp, dict) else emp.current_role
+            career_history = emp.get("career_history", []) if isinstance(emp, dict) else emp.career_history
+            
+            # Check current role
+            if current_role and self._fuzzy_match_roles(current_role, target_role, threshold):
+                similar_roles.add(current_role)
+            
+            # Check career history roles
+            if career_history:
+                for entry in career_history:
+                    role = entry.get("role", "") if isinstance(entry, dict) else getattr(entry, "role", "")
+                    if role and self._fuzzy_match_roles(role, target_role, threshold):
+                        similar_roles.add(role)
+        
+        return list(similar_roles)
 
 
 # ============================================

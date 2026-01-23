@@ -2,6 +2,11 @@
 Skills API routes for skill extraction and management.
 
 Endpoints:
+- GET /api/skills/me - Get current user's saved skills
+- GET /api/skills/me/progress - Get user's skills with module progress
+- POST /api/skills/{skill_name}/start - Start learning a skill
+- PATCH /api/skills/{skill_name}/modules/{module_id}/progress - Update module progress
+- POST /api/skills/{skill_name}/modules/{module_id}/complete - Complete a module
 - POST /api/skills/extract - Extract skills from text
 - POST /api/skills/upload - Upload resume file and extract skills
 - GET /api/skills/taxonomy - Get full skill taxonomy
@@ -12,8 +17,9 @@ Endpoints:
 
 import logging
 from typing import List
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, Body
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -26,6 +32,7 @@ from app.schemas.skill import (
     SkillTaxonomyEntry,
     SkillTaxonomyResponse,
     SkillRecommendationsResponse,
+    UserSkillsResponse,
 )
 from app.services.resume_parser import parse_resume, validate_file_type
 from app.services.skill_extractor import extract_skills_from_text
@@ -39,7 +46,11 @@ from app.services.skill_normalizer import (
 from app.models.skill_taxonomy import SkillTaxonomy
 from app.models.skill_recommendation import UserSkillRecommendation
 from app.services.recommendation_service import SkillRecommendationService
+from app.services.embedding_integration import vectorize_user_skills_and_resume
+from app.services.skill_progress_service import SkillProgressService
 from app.utils.security import get_current_user_from_token
+from app.schemas.skill_progress import UserSkillsWithProgressResponse
+from app.utils.skill_categorizer import categorize_skill
 from app.models.user_profile import UserProfile
 
 logger = logging.getLogger(__name__)
@@ -49,6 +60,128 @@ router = APIRouter(prefix="/skills", tags=["skills"])
 
 class RecommendationStatusUpdate(BaseModel):
     status: str = Field(..., description="New status: recommended, in_progress, dismissed")
+
+
+# ============================================
+# User Skills Endpoints
+# ============================================
+
+@router.get(
+    "/me",
+    response_model=UserSkillsResponse,
+    summary="Get current user's saved skills",
+    description="Returns the skills saved in the user's profile.",
+)
+async def get_user_skills(
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Get the current user's saved skills.
+
+    Returns skills that have been extracted from resume or manually added.
+    """
+    user_skills = current_user.skills or []
+
+    # Convert string skill names to Skill objects with category inference
+    skills = []
+    for skill_name in user_skills:
+        if not skill_name:
+            continue
+        # Infer category from skill name
+        category = _infer_skill_category(skill_name)
+        skills.append(Skill(
+            name=skill_name,
+            category=category,
+            proficiency="intermediate",  # Default proficiency
+        ))
+
+    return UserSkillsResponse(
+        skills=skills,
+        total_count=len(skills),
+    )
+
+
+def _infer_skill_category(skill_name: str) -> str:
+    """Infer skill category from skill name. Delegates to shared categorize_skill."""
+    return categorize_skill(skill_name)
+
+
+# ============================================
+# Module Tracking Endpoints
+# ============================================
+
+@router.get("/me/progress", response_model=UserSkillsWithProgressResponse)
+async def get_user_skills_with_progress(
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Get user's skills with real module progress tracking."""
+    service = SkillProgressService(db)
+    skills = service.get_user_skills_with_progress(current_user.id)
+    return UserSkillsWithProgressResponse(skills=skills, total_count=len(skills))
+
+
+@router.post("/{skill_name}/start")
+async def start_skill(
+    skill_name: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Start learning a skill - initializes modules."""
+    service = SkillProgressService(db)
+    user_skill = service.start_skill(current_user.id, skill_name)
+    return {"status": "started", "skill_id": str(user_skill.id)}
+
+
+@router.patch("/{skill_name}/modules/{module_id}/progress")
+async def update_module_progress(
+    skill_name: str,
+    module_id: str,
+    progress: int = Body(..., ge=0, le=100, embed=True),
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Update progress percentage on a module."""
+    service = SkillProgressService(db)
+    try:
+        result = service.update_module_progress(
+            current_user.id, skill_name, UUID(module_id), progress
+        )
+        return {"status": result.status, "progress": result.progress_percentage}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{skill_name}/modules/{module_id}/complete")
+async def complete_module(
+    skill_name: str,
+    module_id: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Mark a module as complete."""
+    service = SkillProgressService(db)
+    try:
+        result = service.complete_module(current_user.id, skill_name, UUID(module_id))
+        return {"status": "completed", "completed_at": result.completed_at.isoformat()}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{skill_name}/complete")
+async def complete_skill(
+    skill_name: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Mark an entire skill as complete (all modules)."""
+    service = SkillProgressService(db)
+    try:
+        result = service.complete_skill(current_user.id, skill_name)
+        return {"status": "completed", "completed_at": result.completed_at.isoformat()}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 # ============================================
@@ -75,10 +208,13 @@ async def extract_skills(
     """
     try:
         # Extract skills using LLM
-        skills, usage = await extract_skills_from_text(request.text)
+        result = await extract_skills_from_text(request.text)
+
+        # Combine listed and inferred skills
+        all_skills = result.listed_skills + result.inferred_skills
 
         # Normalize and deduplicate
-        normalized_skills = normalize_and_deduplicate(skills, db)
+        normalized_skills = normalize_and_deduplicate(all_skills, db)
 
         # Categorize
         categories = categorize_skills(normalized_skills)
@@ -86,6 +222,16 @@ async def extract_skills(
         # Persist extracted skills to user profile
         _current_user.skills = [skill.name for skill in normalized_skills]
         db.commit()
+
+        # Vectorize skills for semantic matching
+        skill_names = [skill.name for skill in normalized_skills]
+        embedding_result = await vectorize_user_skills_and_resume(
+            db=db,
+            user=_current_user,
+            skills=skill_names,
+            resume_text=request.text,  # Also vectorize the input text
+        )
+        logger.info(f"Embedding result: {embedding_result}")
 
         # Refresh recommendations after skill update
         service = SkillRecommendationService(db)
@@ -95,8 +241,8 @@ async def extract_skills(
             skills=normalized_skills,
             total_count=len(normalized_skills),
             categories=categories,
-            tokens_used=usage.get("total_tokens"),
-            cost_usd=usage.get("cost_usd")
+            tokens_used=result.tokens_used,
+            cost_usd=result.cost_usd
         )
 
     except ValueError as e:
@@ -145,10 +291,13 @@ async def upload_resume(
         text, file_type = parse_resume(content, file.filename, file.content_type)
 
         # Extract skills
-        skills, usage = await extract_skills_from_text(text)
+        result = await extract_skills_from_text(text)
+
+        # Combine listed and inferred skills
+        all_skills = result.listed_skills + result.inferred_skills
 
         # Normalize and deduplicate
-        normalized_skills = normalize_and_deduplicate(skills, db)
+        normalized_skills = normalize_and_deduplicate(all_skills, db)
 
         # Categorize
         categories = categorize_skills(normalized_skills)
@@ -156,6 +305,16 @@ async def upload_resume(
         # Persist extracted skills to user profile
         _current_user.skills = [skill.name for skill in normalized_skills]
         db.commit()
+
+        # Vectorize skills and resume for semantic matching
+        skill_names = [skill.name for skill in normalized_skills]
+        embedding_result = await vectorize_user_skills_and_resume(
+            db=db,
+            user=_current_user,
+            skills=skill_names,
+            resume_text=text,  # Vectorize the full resume text
+        )
+        logger.info(f"Resume embedding result: {embedding_result}")
 
         # Refresh recommendations after skill update
         service = SkillRecommendationService(db)

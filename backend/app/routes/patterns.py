@@ -120,8 +120,11 @@ async def get_patterns_by_role(
             min_sample_size=min_sample_size
         )
         
-        # Filter by source role
-        transitions = [p for p in patterns if p.source_role.lower() == role_name.lower()]
+        # Filter by source role using fuzzy matching
+        transitions = [
+            p for p in patterns 
+            if service._fuzzy_match_roles(p.source_role, role_name, threshold=0.7)
+        ]
         
         # Apply additional filters
         if min_success_rate is not None:
@@ -163,11 +166,11 @@ async def get_transition_detail(
     try:
         patterns = service.analyze_transitions(service_line=service_line, min_sample_size=1)
         
-        # Find the specific transition
+        # Find the specific transition using fuzzy matching
         pattern = next(
             (p for p in patterns 
-             if p.source_role.lower() == source_role.lower() 
-             and p.target_role.lower() == target_role.lower()),
+             if service._fuzzy_match_roles(p.source_role, source_role, threshold=0.7)
+             and service._fuzzy_match_roles(p.target_role, target_role, threshold=0.7)),
             None
         )
         

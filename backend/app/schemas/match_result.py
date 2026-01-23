@@ -123,7 +123,7 @@ class MatchResult(BaseModel):
 class MatchSaveRequest(BaseModel):
     """Request to save a match for a user."""
 
-    employee_id: str = Field(..., description="Employee identifier")
+    employee_id: Optional[str] = Field(default=None, description="Employee identifier (optional for user-based saves)")
     job_posting_id: str = Field(..., description="Job posting identifier")
     match_mode: MatchModeEnum = Field(..., description="Match mode used")
     scores: MatchScores = Field(..., description="Score breakdown")
@@ -234,5 +234,60 @@ class DetailedMatchResponse(BaseModel):
                     "role_level_delta": 1,
                     "success_pattern_insights": "85% of similar transitions were successful."
                 }
+            }
+        }
+
+
+class SavedMatchResponse(BaseModel):
+    """Response for a saved match."""
+
+    match_id: str = Field(description="Match ID (UUID)")
+    job_id: str = Field(description="Job posting ID")
+    job_title: str = Field(description="Job title")
+    department: str = Field(description="Department name")
+    service_line: str = Field(description="Service line")
+    location: str = Field(description="Job location")
+    match_mode: MatchModeEnum = Field(description="Match mode used")
+    scores: MatchScores = Field(description="Match score breakdown")
+    skill_gaps: List[str] = Field(default_factory=list, description="Missing skills")
+    matched_skills: List[str] = Field(default_factory=list, description="Matched skills")
+    explanation: Optional[str] = Field(default=None, description="Match explanation")
+    saved_at: str = Field(description="ISO timestamp when match was saved")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "match_id": "123e4567-e89b-12d3-a456-426614174000",
+                "job_id": "42",
+                "job_title": "Senior Data Scientist",
+                "department": "Technology",
+                "service_line": "Consulting",
+                "location": "New York",
+                "match_mode": "best_fit",
+                "scores": {
+                    "skill_match": 0.85,
+                    "experience_match": 0.92,
+                    "growth_potential": 0.65,
+                    "overall": 0.83
+                },
+                "skill_gaps": ["Kubernetes"],
+                "matched_skills": ["Python", "AWS"],
+                "explanation": "This role is an excellent fit.",
+                "saved_at": "2024-01-15T10:30:00Z"
+            }
+        }
+
+
+class SavedMatchesResponse(BaseModel):
+    """Response for GET /api/matches/saved."""
+
+    matches: List[SavedMatchResponse] = Field(description="List of saved matches")
+    total_count: int = Field(description="Total number of saved matches")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "matches": [],
+                "total_count": 0
             }
         }

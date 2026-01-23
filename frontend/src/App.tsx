@@ -10,21 +10,28 @@ import RoleDetailPage from './pages/RoleDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import SavedRolesPage from './pages/SavedRolesPage';
 import { MatchesProvider } from './context/MatchesContext';
+import { SavedRolesProvider } from './context/SavedRolesContext';
+import { SkillsProvider } from './context/SkillsContext';
 
 function App() {
   return (
-    <MatchesProvider>
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-      {/* Protected routes */}
+      {/* Protected routes - wrapped with providers that require auth */}
       <Route
         element={
           <ProtectedRoute>
-            <MainLayout />
+            <MatchesProvider>
+              <SavedRolesProvider>
+                <SkillsProvider>
+                  <MainLayout />
+                </SkillsProvider>
+              </SavedRolesProvider>
+            </MatchesProvider>
           </ProtectedRoute>
         }
       >
@@ -41,7 +48,6 @@ function App() {
       {/* Default redirect - Match Results is the starting point */}
       <Route path="/" element={<Navigate to="/matches" replace />} />
     </Routes>
-    </MatchesProvider>
   );
 }
 

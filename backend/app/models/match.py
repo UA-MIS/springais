@@ -27,10 +27,10 @@ class Match(Base, TimestampMixin):
         default=uuid4,
         server_default=text("gen_random_uuid()"),
     )
-    employee_id: Mapped[str] = mapped_column(
+    employee_id: Mapped[str | None] = mapped_column(
         String,
         ForeignKey("employees.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,  # Nullable for user-based saves (not tied to employee)
     )
     job_posting_id: Mapped[str] = mapped_column(
         String,

@@ -5,6 +5,7 @@ from .job_posting import JobPosting
 from .match import Match
 from .schemas import MatchScores, PerformanceMetrics, ReactFlowGraph
 from .skill_embedding import SkillEmbedding
+from .skill_progress import SkillModule, UserModuleProgress, UserSkill
 from .skill_recommendation import UserSkillRecommendation
 from .skill_taxonomy import SEED_SKILLS, SkillTaxonomy, get_seed_skills
 from .user_profile import UserProfile
@@ -19,7 +20,10 @@ __all__ = [
     "JobPosting",
     "Match",
     "SkillEmbedding",
+    "SkillModule",
+    "UserModuleProgress",
     "UserProfile",
+    "UserSkill",
     "CareerPath",
     "SkillTaxonomy",
     "get_seed_skills",

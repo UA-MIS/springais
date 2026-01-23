@@ -4,13 +4,14 @@
 import SkillCategory from './SkillCategory';
 import { SKILL_CATEGORIES } from '../../mocks/mockSkills';
 
-export default function SkillsPortfolio({ 
-  skills, 
-  filterTab, 
-  searchQuery, 
+export default function SkillsPortfolio({
+  skills,
+  filterTab,
+  searchQuery,
   onSkillClick,
+  onMarkComplete,
   theme,
-  progressColors 
+  progressColors
 }) {
   // Filter skills based on active tab
   const filterByTab = (skillsList) => {
@@ -81,6 +82,7 @@ export default function SkillsPortfolio({
           category={category}
           skills={category.skills}
           onSkillClick={onSkillClick}
+          onMarkComplete={onMarkComplete}
           theme={theme}
           progressColors={progressColors}
         />

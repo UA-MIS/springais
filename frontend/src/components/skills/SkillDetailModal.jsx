@@ -3,12 +3,18 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import SkillProgressRing from './SkillProgressRing';
-import { SKILL_CATEGORIES, generateDefaultTimeline, generateDefaultLearningResources } from '../../mocks/mockSkills';
+import { SKILL_CATEGORIES, generateDefaultLearningResources } from '../../mocks/mockSkills';
+import { completeModule, updateModuleProgress, completeSkill } from '../../services/skillProgressService';
 
-export default function SkillDetailModal({ skill, onClose, onUpdate }) {
+export default function SkillDetailModal({ skill, onClose, onUpdate, onRefresh, onMarkComplete }) {
   const modalRef = useRef(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedSkill, setEditedSkill] = useState(skill);
+  const [moduleLoading, setModuleLoading] = useState(null);
+  const [completingSkill, setCompletingSkill] = useState(false);
+
+  // Use real modules from skill prop (from API) or empty array
+  const modules = skill?.modules || [];
 
   // Handle Escape key
   useEffect(() => {
@@ -44,13 +50,66 @@ export default function SkillDetailModal({ skill, onClose, onUpdate }) {
     setEditedSkill({ ...editedSkill, [field]: value });
   };
 
+  // Handle starting a module (set progress to start)
+  const handleStartModule = async (moduleId) => {
+    setModuleLoading(moduleId);
+    try {
+      await updateModuleProgress(skill.name, moduleId, 1);
+      onRefresh?.();
+    } catch (error) {
+      console.error('Failed to start module:', error);
+    } finally {
+      setModuleLoading(null);
+    }
+  };
+
+  // Handle completing a module
+  const handleCompleteModule = async (moduleId) => {
+    setModuleLoading(moduleId);
+    try {
+      await completeModule(skill.name, moduleId);
+      onRefresh?.();
+    } catch (error) {
+      console.error('Failed to complete module:', error);
+    } finally {
+      setModuleLoading(null);
+    }
+  };
+
+  // Handle marking entire skill as complete
+  const handleMarkSkillComplete = async () => {
+    setCompletingSkill(true);
+    try {
+      await completeSkill(skill.name);
+      // Also update local state via callback
+      if (onMarkComplete) {
+        onMarkComplete(skill.id, skill.name);
+      }
+      onRefresh?.();
+      onClose();
+    } catch (error) {
+      console.error('Failed to complete skill:', error);
+    } finally {
+      setCompletingSkill(false);
+    }
+  };
+
+  // Get status badge styling for modules
+  const getModuleStatusStyle = (status) => {
+    switch (status) {
+      case 'completed':
+        return { bg: '#d1fae5', text: '#065f46', label: 'Completed' };
+      case 'in_progress':
+        return { bg: '#fef3c7', text: '#92400e', label: 'In Progress' };
+      case 'not_started':
+      default:
+        return { bg: '#f3f4f6', text: '#6b7280', label: 'Not Started' };
+    }
+  };
+
   const categoryName = SKILL_CATEGORIES.find(c => c.id === skill.category)?.name || skill.category;
 
-  // Generate timeline and learning resources if not present
-  const timeline = useMemo(() => {
-    return skill.timeline || generateDefaultTimeline(skill);
-  }, [skill]);
-
+  // Learning resources (fallback to generated if not provided)
   const learningResources = useMemo(() => {
     return skill.learningResources || generateDefaultLearningResources(skill);
   }, [skill]);
@@ -70,6 +129,15 @@ export default function SkillDetailModal({ skill, onClose, onUpdate }) {
             {isEditMode ? 'Edit Skill' : skill.name}
           </h2>
           <div className="flex items-center gap-2">
+            {!isEditMode && skill.status !== 'completed' && (
+              <button
+                onClick={handleMarkSkillComplete}
+                disabled={completingSkill}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+              >
+                {completingSkill ? 'Completing...' : 'Mark Complete'}
+              </button>
+            )}
             {!isEditMode && (
               <button
                 onClick={() => setIsEditMode(true)}
@@ -157,7 +225,7 @@ export default function SkillDetailModal({ skill, onClose, onUpdate }) {
             <div className="space-y-6">
               {/* Progress Ring */}
               <div className="flex justify-center">
-                <SkillProgressRing percentage={skill.proficiency} size="large" />
+                <SkillProgressRing percentage={skill.progress?.percentage ?? skill.proficiency} size="large" />
               </div>
 
               {/* Skill Info */}
@@ -214,36 +282,92 @@ export default function SkillDetailModal({ skill, onClose, onUpdate }) {
                 )}
               </div>
 
-              {/* Timeline / Progress History */}
-              {timeline && timeline.length > 0 && (
+              {/* Modules Section - Real module tracking */}
+              {modules && modules.length > 0 && (
                 <div>
-                  <label className="text-xs font-medium text-ey-gray uppercase mb-3 block">Progress Timeline</label>
+                  <label className="text-xs font-medium text-ey-gray uppercase mb-3 block">
+                    Learning Modules ({modules.filter(m => m.status === 'completed').length} of {modules.length} completed)
+                  </label>
                   <div className="space-y-3">
-                    {timeline.map((entry, idx) => (
-                      <div key={idx} className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-2 h-2 rounded-full bg-ey-yellow mt-1" />
-                          {idx < timeline.length - 1 && (
-                            <div className="w-px h-full min-h-[40px] bg-ey-gray-light mt-1" />
+                    {modules.map((module) => {
+                      const statusStyle = getModuleStatusStyle(module.status);
+                      const isLoading = moduleLoading === module.id;
+
+                      return (
+                        <div
+                          key={module.id}
+                          className="p-4 border border-ey-gray-light rounded-lg hover:border-ey-yellow/50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-bold text-ey-gray">
+                                  Module {module.number}
+                                </span>
+                                <span
+                                  className="px-2 py-0.5 rounded text-xs font-medium"
+                                  style={{
+                                    backgroundColor: statusStyle.bg,
+                                    color: statusStyle.text
+                                  }}
+                                >
+                                  {statusStyle.label}
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-semibold text-ey-confident-black">
+                                {module.title}
+                              </h4>
+                              {module.description && (
+                                <p className="text-xs text-ey-gray mt-1">{module.description}</p>
+                              )}
+                            </div>
+
+                            {/* Module Actions */}
+                            <div className="flex-shrink-0">
+                              {module.status === 'not_started' && (
+                                <button
+                                  onClick={() => handleStartModule(module.id)}
+                                  disabled={isLoading}
+                                  className="px-3 py-1.5 text-xs font-medium bg-ey-yellow text-ey-confident-black rounded-lg hover:bg-ey-yellow-dark transition-colors disabled:opacity-50"
+                                >
+                                  {isLoading ? 'Starting...' : 'Start'}
+                                </button>
+                              )}
+                              {module.status === 'in_progress' && (
+                                <button
+                                  onClick={() => handleCompleteModule(module.id)}
+                                  disabled={isLoading}
+                                  className="px-3 py-1.5 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+                                >
+                                  {isLoading ? 'Completing...' : 'Complete'}
+                                </button>
+                              )}
+                              {module.status === 'completed' && (
+                                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Progress bar for in-progress modules */}
+                          {module.status === 'in_progress' && (
+                            <div className="mt-2">
+                              <div className="flex justify-between text-xs text-ey-gray mb-1">
+                                <span>Progress</span>
+                                <span>{module.progress}%</span>
+                              </div>
+                              <div className="w-full h-2 bg-ey-gray-light rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-ey-yellow rounded-full transition-all duration-300"
+                                  style={{ width: `${module.progress}%` }}
+                                />
+                              </div>
+                            </div>
                           )}
                         </div>
-                        <div className="flex-1 pb-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-semibold text-ey-confident-black">
-                              {new Date(entry.date).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </span>
-                            <span className="text-xs font-medium text-ey-yellow">
-                              {entry.event}
-                            </span>
-                          </div>
-                          <p className="text-sm text-ey-gray">{entry.description}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

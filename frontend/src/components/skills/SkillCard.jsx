@@ -4,12 +4,19 @@
 import { useState } from 'react';
 import SkillProgressRing from './SkillProgressRing';
 
-export default function SkillCard({ skill, onClick, theme, progressColors }) {
+export default function SkillCard({ skill, onClick, onMarkComplete, theme, progressColors }) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleMarkComplete = (e) => {
+    e.stopPropagation();
+    if (onMarkComplete && skill.status !== 'completed') {
+      onMarkComplete(skill.id, skill.name);
+    }
+  };
 
   // Format progress metadata
   const getProgressText = () => {
-    if (skill.status === 'complete') {
+    if (skill.status === 'completed') {
       return skill.completedDate 
         ? `Certified ${new Date(skill.completedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
         : 'Complete';
@@ -29,7 +36,7 @@ export default function SkillCard({ skill, onClick, theme, progressColors }) {
     };
     
     switch (skill.status) {
-      case 'complete':
+      case 'completed':
         return { backgroundColor: badges.complete.bg, color: badges.complete.text };
       case 'active':
         return { backgroundColor: badges.active.bg, color: badges.active.text };
@@ -43,7 +50,7 @@ export default function SkillCard({ skill, onClick, theme, progressColors }) {
   // Get badge text
   const getBadgeText = () => {
     switch (skill.status) {
-      case 'complete':
+      case 'completed':
         return 'Complete';
       case 'active':
         return skill.proficiency < 30 ? 'Starting' : 
@@ -75,8 +82,8 @@ export default function SkillCard({ skill, onClick, theme, progressColors }) {
       <div className="flex items-start gap-4">
         {/* Progress Ring - GREEN GRADIENT */}
         <div className="flex-shrink-0">
-          <SkillProgressRing 
-            percentage={skill.proficiency} 
+          <SkillProgressRing
+            percentage={skill.progress?.percentage ?? skill.proficiency}
             size="small"
             progressColors={progressColors}
           />
@@ -85,25 +92,40 @@ export default function SkillCard({ skill, onClick, theme, progressColors }) {
         {/* Skill Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 
+            <h3
               className="text-sm font-semibold truncate"
               style={{ color: theme?.categoryText || '#1e293b' }}
             >
               {skill.name}
             </h3>
-            <span 
+            <span
               className="px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap"
               style={badgeStyles}
             >
               {getBadgeText()}
             </span>
           </div>
-          <p 
-            className="text-xs"
-            style={{ color: theme?.headerSubtext || '#64748b' }}
-          >
-            {getProgressText()}
-          </p>
+          <div className="flex items-center justify-between">
+            <p
+              className="text-xs"
+              style={{ color: theme?.headerSubtext || '#64748b' }}
+            >
+              {getProgressText()}
+            </p>
+            {/* Mark Complete button - show on hover for non-completed skills */}
+            {isHovered && skill.status !== 'completed' && onMarkComplete && (
+              <button
+                onClick={handleMarkComplete}
+                className="text-xs px-2 py-0.5 rounded font-medium transition-colors"
+                style={{
+                  backgroundColor: '#22c55e',
+                  color: '#ffffff',
+                }}
+              >
+                Mark Done
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

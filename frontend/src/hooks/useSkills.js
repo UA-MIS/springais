@@ -1,34 +1,138 @@
 // Custom hook for skills state management
 // Centralizes skills data and operations
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../services/api';
 import { SKILL_CATEGORIES } from '../mocks/mockSkills';
+import { useSavedRoles } from '../context/SavedRolesContext';
+import {
+  getUserSkillsWithProgress,
+  startSkill as startSkillApi,
+  completeSkill as completeSkillApi,
+} from '../services/skillProgressService';
 
 const normalizeName = (value) => value?.trim().toLowerCase();
 
 const isKnownCategory = (categoryId) =>
   SKILL_CATEGORIES.some((category) => category.id === categoryId);
 
+// Category keywords matching backend/app/utils/skill_categorizer.py
+const CATEGORY_KEYWORDS = {
+  programming: [
+    'python', 'java', 'javascript', 'typescript', 'c#', 'c++',
+    'go', 'rust', 'ruby', 'php', 'swift', 'kotlin', 'scala',
+    'react', 'angular', 'vue', 'node', 'django', 'flask', 'spring',
+    'html', 'css', 'sql', 'nosql', 'mongodb', 'postgresql', '.net', 'asp.net'
+  ],
+  cloud_infrastructure: [
+    'aws', 'azure', 'gcp', 'cloud', 'terraform', 'devops',
+    'ci/cd', 'jenkins', 'docker', 'kubernetes', 'k8s'
+  ],
+  data_analytics: [
+    'data', 'analytics', 'machine learning', 'ml', 'ai',
+    'statistics', 'etl', 'spark', 'hadoop', 'tableau',
+    'power bi', 'visualization', 'pandas', 'numpy'
+  ],
+  leadership_management: [
+    'leadership', 'management', 'team lead', 'director',
+    'mentoring', 'coaching', 'supervision', 'people management'
+  ],
+  soft: [
+    'communication', 'teamwork', 'collaboration', 'presentation',
+    'negotiation', 'problem solving', 'critical thinking',
+    'interpersonal', 'public speaking'
+  ],
+  business_acumen: [
+    'marketing', 'branding', 'content creation', 'seo',
+    'advertising', 'campaign', 'sales', 'business development',
+    'strategy', 'planning', 'budgeting', 'forecasting', 'outreach'
+  ],
+  domain: [
+    'audit', 'tax', 'advisory', 'consulting', 'financial',
+    'compliance', 'regulatory', 'accounting', 'risk', 'legal',
+    'procurement', 'vendor', 'supply chain', 'recruitment'
+  ],
+  tools: [
+    'excel', 'powerpoint', 'word', 'google suite', 'jira',
+    'confluence', 'git', 'github', 'slack', 'teams',
+    'salesforce', 'sap', 'oracle', 'vs code', 'cursor'
+  ],
+  research: [
+    'research', 'surveys', 'analysis', 'studies', 'methodology',
+    'qualitative', 'quantitative', 'user research', 'market research'
+  ],
+};
+
 const getFallbackCategory = (skillName) => {
   const value = normalizeName(skillName);
-  if (!value) return 'programming';
-  if (value.includes('aws') || value.includes('azure') || value.includes('cloud')) return 'cloud_infrastructure';
-  if (value.includes('lead') || value.includes('mentor') || value.includes('management')) return 'leadership_management';
-  if (value.includes('data') || value.includes('sql') || value.includes('python') || value.includes('analytics')) return 'data_analytics';
-  if (value.includes('client') || value.includes('stakeholder') || value.includes('consult')) return 'consulting_excellence';
-  if (value.includes('security') || value.includes('owasp') || value.includes('risk')) return 'security';
-  if (value.includes('business') || value.includes('agile') || value.includes('finance')) return 'business_acumen';
-  return 'programming';
+  if (!value) return 'business_acumen';
+
+  // Check against category keywords
+  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (keywords.some((kw) => value.includes(kw))) {
+      return category;
+    }
+  }
+
+  // Smart fallback
+  if (['manage', 'lead', 'direct', 'head'].some((word) => value.includes(word))) {
+    return 'leadership_management';
+  }
+  if (['develop', 'engineer', 'code', 'program'].some((word) => value.includes(word))) {
+    return 'programming';
+  }
+
+  return 'business_acumen'; // Better default than programming
+};
+
+// Extract skills from saved roles
+const extractSkillsFromSavedRoles = (savedRoles) => {
+  if (!savedRoles || savedRoles.length === 0) return [];
+  
+  const skillMap = new Map();
+  
+  savedRoles.forEach((saved) => {
+    // Extract from matched_skills (skills user has)
+    (saved.matched_skills || []).forEach((skillName) => {
+      if (!skillMap.has(normalizeName(skillName))) {
+        skillMap.set(normalizeName(skillName), {
+          name: skillName,
+          source: 'saved_role',
+          sourceRole: saved.job_title,
+          type: 'matched',
+        });
+      }
+    });
+    
+    // Extract from skill_gaps (skills needed)
+    (saved.skill_gaps || []).forEach((skillName) => {
+      const normalized = normalizeName(skillName);
+      if (!skillMap.has(normalized)) {
+        skillMap.set(normalized, {
+          name: skillName,
+          source: 'saved_role',
+          sourceRole: saved.job_title,
+          type: 'gap',
+        });
+      }
+    });
+  });
+  
+  return Array.from(skillMap.values());
 };
 
 export function useSkills() {
+  // Get saved roles context (may be undefined if not wrapped in SavedRolesProvider)
+  const savedRolesContext = useSavedRoles();
+  const savedRolesState = savedRolesContext?.state || { savedRoles: [] };
+
   const [skills, setSkills] = useState([]);
   const [selectedSkill, setSelectedSkill] = useState(null);
   const [filterTab, setFilterTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [userSkillsLoaded, setUserSkillsLoaded] = useState(false);
 
   // Add a new skill
   const addSkill = (newSkill) => {
@@ -61,9 +165,13 @@ export function useSkills() {
     setSkills([...skills, ...skillsWithIds]);
   };
 
-  const mergeRecommendations = (recommendations) => {
-    const existingNames = new Set(skills.map((skill) => normalizeName(skill.name)));
+  // Clear all skills (used before loading fresh data)
+  const clearSkills = useCallback(() => {
+    setSkills([]);
+    setUserSkillsLoaded(false);
+  }, []);
 
+  const mergeRecommendations = (recommendations) => {
     const normalizedRecommendations = recommendations
       .filter((rec) => rec?.skill)
       .map((rec) => {
@@ -82,11 +190,88 @@ export function useSkills() {
           relatedRoles: rec.related_roles || [],
           priority: rec.priority,
         };
-      })
-      .filter((rec) => !existingNames.has(normalizeName(rec.name)));
+      });
 
     if (normalizedRecommendations.length > 0) {
-      setSkills((prev) => [...prev, ...normalizedRecommendations]);
+      setSkills((prev) => {
+        // Check against current state to avoid duplicates
+        const existingNames = new Set(prev.map((skill) => normalizeName(skill.name)));
+        const newSkills = normalizedRecommendations.filter(
+          (rec) => !existingNames.has(normalizeName(rec.name))
+        );
+        return newSkills.length > 0 ? [...prev, ...newSkills] : prev;
+      });
+    }
+  };
+
+  // Merge skills from saved roles
+  const mergeSavedRolesSkills = () => {
+    const savedSkills = extractSkillsFromSavedRoles(savedRolesState.savedRoles);
+    if (savedSkills.length === 0) return;
+
+    const normalizedSavedSkills = savedSkills.map((savedSkill) => {
+      const category = getFallbackCategory(savedSkill.name);
+      const status = savedSkill.type === 'matched' ? 'active' : 'recommended';
+
+      return {
+        id: `saved-${normalizeName(savedSkill.name)}`,
+        name: savedSkill.name,
+        category,
+        proficiency: savedSkill.type === 'matched' ? 50 : 0,
+        status,
+        progress: { current: savedSkill.type === 'matched' ? 2 : 0, total: 4, unit: 'modules' },
+        notes: `From saved role: ${savedSkill.sourceRole}`,
+        relatedRoles: [savedSkill.sourceRole],
+        priority: savedSkill.type === 'gap' ? 'high' : 'medium',
+      };
+    });
+
+    if (normalizedSavedSkills.length > 0) {
+      setSkills((prev) => {
+        // Check against current state to avoid duplicates
+        const existingNames = new Set(prev.map((skill) => normalizeName(skill.name)));
+        const newSkills = normalizedSavedSkills.filter(
+          (skill) => !existingNames.has(normalizeName(skill.name))
+        );
+        return newSkills.length > 0 ? [...prev, ...newSkills] : prev;
+      });
+    }
+  };
+
+  // Fetch user's saved skills from profile
+  // IMPORTANT: This REPLACES all skills, not merges them
+  const fetchUserSkills = async () => {
+    try {
+      const response = await api.get('/skills/me');
+      const userSkills = response?.data?.skills || [];
+
+      if (userSkills.length > 0) {
+        const normalizedUserSkills = userSkills.map((skill) => {
+          const category = isKnownCategory(skill.category)
+            ? skill.category
+            : getFallbackCategory(skill.name);
+
+          return {
+            id: `user-${normalizeName(skill.name)}`,
+            name: skill.name,
+            category,
+            proficiency: skill.proficiency === 'beginner' ? 25 :
+                         skill.proficiency === 'intermediate' ? 50 :
+                         skill.proficiency === 'advanced' ? 75 :
+                         skill.proficiency === 'expert' ? 95 : 50,
+            status: 'active',
+            progress: { current: 2, total: 4, unit: 'modules' },
+            source: 'profile',
+          };
+        });
+
+        // REPLACE skills instead of merging - fixes issue where old mock/bootstrap skills persist
+        setSkills(normalizedUserSkills);
+      }
+      setUserSkillsLoaded(true);
+    } catch (err) {
+      console.error('Failed to fetch user skills:', err);
+      setUserSkillsLoaded(true);
     }
   };
 
@@ -126,7 +311,75 @@ export function useSkills() {
   };
 
   useEffect(() => {
-    refreshRecommendations(false);
+    // Only fetch user's saved skills - no auto-recommendations
+    // Users should upload a resume to populate their skills
+    fetchUserSkills();
+  }, []);
+
+  // Merge skills from saved roles when they're loaded
+  useEffect(() => {
+    if (savedRolesState.savedRoles.length > 0 && skills.length > 0) {
+      mergeSavedRolesSkills();
+    }
+  }, [savedRolesState.savedRoles]);
+
+  // Refresh all skills (user skills + recommendations)
+  const refreshAllSkills = async () => {
+    setSkills([]);
+    setUserSkillsLoaded(false);
+    await fetchUserSkills();
+    await refreshRecommendations(true);
+  };
+
+  // Fetch skills with real progress tracking (modules)
+  const fetchSkillsWithProgress = useCallback(async () => {
+    try {
+      const response = await getUserSkillsWithProgress();
+      const skillsWithProgress = response.skills.map(skill => ({
+        ...skill,
+        source: 'tracked',
+      }));
+      setSkills(skillsWithProgress);
+      setUserSkillsLoaded(true);
+    } catch (error) {
+      console.error('Failed to fetch skills with progress:', error);
+    }
+  }, []);
+
+  // Start tracking a skill
+  const startSkillTracking = useCallback(async (skillName) => {
+    try {
+      await startSkillApi(skillName);
+      await fetchSkillsWithProgress();
+    } catch (error) {
+      console.error('Failed to start skill:', error);
+    }
+  }, [fetchSkillsWithProgress]);
+
+  // Mark a skill as complete (updates local state immediately, then syncs)
+  const markSkillComplete = useCallback(async (skillId, skillName) => {
+    // Optimistic update
+    setSkills((prev) =>
+      prev.map((skill) =>
+        skill.id === skillId
+          ? {
+              ...skill,
+              status: 'completed',
+              proficiency: 100,
+              progress: { ...skill.progress, current: skill.progress?.total || 4, percentage: 100 },
+              completedDate: new Date().toISOString(),
+            }
+          : skill
+      )
+    );
+
+    // Try to sync with backend if skill is being tracked
+    try {
+      await completeSkillApi(skillName);
+    } catch (error) {
+      // If backend fails, still keep local state updated
+      console.warn('Could not sync skill completion to backend:', error);
+    }
   }, []);
 
   return {
@@ -143,7 +396,13 @@ export function useSkills() {
     addSkill,
     updateSkill,
     addSkills,
+    clearSkills,
+    fetchUserSkills,
     refreshRecommendations,
+    refreshAllSkills,
     updateRecommendationStatus,
+    fetchSkillsWithProgress,
+    startSkillTracking,
+    markSkillComplete,
   };
 }

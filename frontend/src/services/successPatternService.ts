@@ -118,6 +118,58 @@ function includesNormalized(haystack: string, needle: string): boolean {
   return haystack.toLowerCase().includes(needle.toLowerCase());
 }
 
+// Levenshtein distance for fuzzy string matching
+function levenshteinDistance(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase();
+  const s2 = str2.toLowerCase();
+  const matrix: number[][] = Array(s2.length + 1)
+    .fill(null)
+    .map(() => Array(s1.length + 1).fill(0));
+
+  for (let i = 0; i <= s1.length; i++) matrix[0][i] = i;
+  for (let j = 0; j <= s2.length; j++) matrix[j][0] = j;
+
+  for (let j = 1; j <= s2.length; j++) {
+    for (let i = 1; i <= s1.length; i++) {
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1,
+        matrix[j - 1][i] + 1,
+        matrix[j - 1][i - 1] + cost
+      );
+    }
+  }
+
+  return matrix[s2.length][s1.length];
+}
+
+// Fuzzy match function using similarity ratio
+function fuzzyMatch(str1: string, str2: string, threshold: number = 0.7): boolean {
+  if (!str1 || !str2) return false;
+  
+  const s1 = str1.toLowerCase().trim();
+  const s2 = str2.toLowerCase().trim();
+  
+  // Exact match
+  if (s1 === s2) return true;
+  
+  // Substring match (one contains the other)
+  if (s1.includes(s2) || s2.includes(s1)) {
+    const longer = s1.length > s2.length ? s1 : s2;
+    const shorter = s1.length > s2.length ? s2 : s1;
+    const similarity = shorter.length / longer.length;
+    return similarity >= Math.max(threshold, 0.6);
+  }
+  
+  // Calculate similarity using Levenshtein distance
+  const longer = s1.length > s2.length ? s1 : s2;
+  const shorter = s1.length > s2.length ? s2 : s1;
+  const editDistance = levenshteinDistance(longer, shorter);
+  const similarity = (longer.length - editDistance) / longer.length;
+  
+  return similarity >= threshold;
+}
+
 function roleLevelKey(roleLevel?: string): string | undefined {
   if (!roleLevel) return undefined;
   const k = roleLevel.trim().toLowerCase();
@@ -257,10 +309,17 @@ function applyFilters(base: SuccessPatternsData, filters: FilterOptions): Succes
   }
 
   // Role filter: narrow transitions and (optionally) stage lines to the selected role.
+  // Use fuzzy matching to find similar role names
   if (role) {
-    next.successRateByTransition = next.successRateByTransition.filter((t) =>
-      includesNormalized(t.transition, role)
-    );
+    next.successRateByTransition = next.successRateByTransition.filter((t) => {
+      // Try fuzzy match first (more lenient)
+      const transitionParts = t.transition.split(' → ');
+      const matchesSource = transitionParts[0] && fuzzyMatch(transitionParts[0], role, 0.7);
+      const matchesTarget = transitionParts[1] && fuzzyMatch(transitionParts[1], role, 0.7);
+      
+      // Fallback to substring match if fuzzy doesn't match
+      return matchesSource || matchesTarget || includesNormalized(t.transition, role);
+    });
 
     // Keep stages up to the selected role (so lines don’t show irrelevant later stages).
     const order = ['analyst', 'sr. analyst', 'consultant', 'sr. consultant', 'manager', 'sr. manager', 'director'];
