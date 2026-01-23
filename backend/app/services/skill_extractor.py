@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 # Model configuration - GPT-5 nano for fast, cheap extraction
 OPENAI_MODEL = "gpt-5-nano"
-MAX_TOKENS = 1000
+MAX_TOKENS = 4000  # Increased to handle 40+ skills
 TEMPERATURE = 0.3  # Low temperature for consistent extractions
 
 # Retry configuration
@@ -62,35 +62,46 @@ class SkillExtractionResult(BaseModel):
 # Prompt Template
 # ============================================
 
-SKILL_EXTRACTION_PROMPT = """You are a skill extraction assistant. Analyze the resume and extract:
+SKILL_EXTRACTION_PROMPT = """You are a comprehensive skill extraction assistant. Your goal is to extract EVERY skill from this resume - be EXHAUSTIVE.
 
-1. LISTED SKILLS: Skills explicitly mentioned by name in the resume (e.g., "Proficient in Python", "Skills: Java, SQL")
-2. INFERRED SKILLS: Skills implied by experience, projects, or responsibilities but not explicitly listed (e.g., if they led a team of 10, infer "Team Leadership"; if they built REST APIs, infer "API Design")
+## EXTRACTION TYPES:
+1. LISTED SKILLS: Skills explicitly mentioned by name (e.g., "Skills: Python, Java", "Proficient in AWS")
+2. INFERRED SKILLS: Skills implied by experience but not explicitly listed (e.g., led a team → "Team Leadership", built APIs → "API Design")
 
-For each skill, provide:
-- name: Normalized skill name (e.g., "Javascript" → "JavaScript", "ML" → "Machine Learning")
-- category: One of "technical", "soft", "domain", or "certification"
-- proficiency: One of "beginner", "intermediate", "advanced", or "expert" based on:
-   - beginner: <1 year or just learning
-   - intermediate: 1-3 years or working knowledge
-   - advanced: 3-5 years or strong proficiency
-   - expert: 5+ years or deep expertise
+## EXTRACTION RULES:
+1. Be EXHAUSTIVE - extract EVERY skill, tool, technology, framework, methodology, and certification
+2. Be SPECIFIC - use exact names (e.g., "PostgreSQL" not "SQL databases", "React" not "frontend frameworks")
+3. Extract EACH item separately - if they list "Python, Java, JavaScript", that's 3 separate skills
+4. Include ALL soft skills mentioned or demonstrated
+5. Include ALL certifications with their full names
+6. AIM FOR 30-60 SKILLS for a detailed resume - most professionals have many skills
 
-Categories:
-- technical: programming languages, tools, frameworks, databases, cloud platforms
-- soft: communication, leadership, teamwork, problem-solving
-- domain: industry-specific expertise like financial analysis, marketing
-- certification: professional certifications like AWS Certified, PMP, CPA
+## CATEGORIES (use the most specific one):
+- technical: programming languages, algorithms, system design
+- tool: specific software, platforms, IDEs (e.g., Docker, Kubernetes, VS Code, Jira)
+- soft: communication, leadership, teamwork, problem-solving, mentoring
+- domain: industry expertise (e.g., "Financial Analysis", "Healthcare IT", "E-commerce")
+- certification: professional certifications (e.g., "AWS Solutions Architect", "PMP", "CKA")
+- methodology: processes and frameworks (e.g., "Agile", "Scrum", "DevOps", "CI/CD")
 
-Return ONLY valid JSON in this exact format (no markdown, no explanation):
+## PROFICIENCY LEVELS:
+- beginner: <1 year or just learning
+- intermediate: 1-3 years or working knowledge
+- advanced: 3-5 years or strong proficiency
+- expert: 5+ years or demonstrated deep expertise
+
+## OUTPUT FORMAT:
+Return ONLY valid JSON (no markdown, no explanation):
 {{
   "listed_skills": [
-    {{"name": "Python", "category": "technical", "proficiency": "advanced"}},
-    {{"name": "AWS", "category": "technical", "proficiency": "intermediate"}}
+    {{"name": "Python", "category": "technical", "proficiency": "expert"}},
+    {{"name": "Docker", "category": "tool", "proficiency": "advanced"}},
+    {{"name": "AWS Solutions Architect", "category": "certification", "proficiency": "expert"}},
+    {{"name": "Agile", "category": "methodology", "proficiency": "advanced"}}
   ],
   "inferred_skills": [
-    {{"name": "CI/CD", "category": "technical", "proficiency": "intermediate"}},
-    {{"name": "Team Leadership", "category": "soft", "proficiency": "advanced"}}
+    {{"name": "Team Leadership", "category": "soft", "proficiency": "advanced"}},
+    {{"name": "System Design", "category": "technical", "proficiency": "advanced"}}
   ]
 }}
 
@@ -239,8 +250,6 @@ class SkillExtractor:
                     "content": prompt
                 }
             ],
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
             response_format={"type": "json_object"}
         )
 

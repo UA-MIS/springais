@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ============================================
 
 # Model configuration - GPT-4o mini for fast, cheap extraction
-OPENAI_MODEL = "gpt-4o-mini"
+OPENAI_MODEL = "gpt-5-nano"
 MAX_TOKENS = 4000  # Higher limit for batch job extraction
 TEMPERATURE = 0.3  # Low temperature for consistent extractions
 
@@ -87,7 +87,7 @@ JOB_SKILL_EXTRACTION_PROMPT = """You are a comprehensive skill extraction assist
 ## OUTPUT FORMAT:
 For each skill provide:
 - name: Specific skill name (be precise, not generic)
-- category: "technical", "soft", "domain", "tool", "certification", or "methodology"
+- category: "technical", "soft", "domain", "tool", "certification", "methodology", or "programming"
 - confidence: 0.0-1.0
 
 Return valid JSON array:
@@ -462,8 +462,6 @@ class JobSkillExtractorService:
                     "content": prompt
                 }
             ],
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
             response_format={"type": "json_object"}
         )
 
