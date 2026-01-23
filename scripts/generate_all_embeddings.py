@@ -163,7 +163,7 @@ async def generate_skill_embeddings(session: Session, skills: list[str], batch_s
     return processed
 
 
-async def generate_job_embeddings(session: Session, jobs: list, batch_size: int = 10):
+async def generate_job_embeddings(session: Session, jobs: list, batch_size: int = 10, concurrency: int = 10):
     """Generate and store embeddings for job descriptions and titles."""
     from app.services.embedding_service import EmbeddingService
     from app.config import get_openai_client, get_redis_client
@@ -174,30 +174,39 @@ async def generate_job_embeddings(session: Session, jobs: list, batch_size: int 
 
     total = len(jobs)
     processed = 0
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def embed_single_job(job):
+        """Embed a single job with semaphore for rate limiting."""
+        async with semaphore:
+            desc_text = job.description[:8000] if job.description else ""
+            desc_embedding = None
+            if desc_text:
+                desc_embedding = await embedding_service.embed_skill(desc_text)
+            title_embedding = await embedding_service.embed_skill(job.title)
+            return job.id, desc_embedding, title_embedding
 
     for i in range(0, len(jobs), batch_size):
         batch = jobs[i:i + batch_size]
 
         try:
-            for job in batch:
-                # Generate description embedding (truncate to ~8k chars for token limit)
-                desc_text = job.description[:8000] if job.description else ""
-                if desc_text:
-                    desc_embedding = await embedding_service.embed_skill(desc_text)
+            # Process batch concurrently
+            results = await asyncio.gather(*[embed_single_job(job) for job in batch])
 
+            # Store results
+            for job_id, desc_embedding, title_embedding in results:
+                if desc_embedding:
                     session.execute(text("""
                         UPDATE job_postings
                         SET description_embedding = :embedding
                         WHERE id = :job_id
-                    """), {"embedding": desc_embedding, "job_id": job.id})
+                    """), {"embedding": desc_embedding, "job_id": job_id})
 
-                # Generate title embedding
-                title_embedding = await embedding_service.embed_skill(job.title)
                 session.execute(text("""
                     UPDATE job_postings
                     SET title_embedding = :embedding
                     WHERE id = :job_id
-                """), {"embedding": title_embedding, "job_id": job.id})
+                """), {"embedding": title_embedding, "job_id": job_id})
 
             session.commit()
             processed += len(batch)
@@ -214,6 +223,7 @@ async def main():
     parser = argparse.ArgumentParser(description="Generate embeddings for skills and jobs")
     parser.add_argument("--type", choices=["skills", "jobs", "all"], default="all", help="What to embed")
     parser.add_argument("--batch-size", type=int, default=50, help="Batch size for embedding")
+    parser.add_argument("--concurrency", type=int, default=10, help="Concurrent API requests")
     parser.add_argument("--limit", type=int, help="Max items to process")
     parser.add_argument("--dry-run", action="store_true", help="Preview only")
     args = parser.parse_args()
@@ -254,7 +264,7 @@ async def main():
                 if len(jobs) > 10:
                     logger.info(f"  ... and {len(jobs) - 10} more")
             elif jobs:
-                processed = await generate_job_embeddings(session, jobs, args.batch_size)
+                processed = await generate_job_embeddings(session, jobs, args.batch_size, args.concurrency)
                 logger.info(f"Embedded {processed} jobs")
 
         logger.info("Done!")
