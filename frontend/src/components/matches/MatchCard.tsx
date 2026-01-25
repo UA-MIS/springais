@@ -74,6 +74,7 @@ export default function MatchCard({ match, onViewDetails, onSave, isDark, colors
       <div className="mb-4">
         <SkillGapDisplay
           matched_skills={match.matched_skills}
+          transferable_skills={match.transferable_skills}
           skill_gaps={match.skill_gaps}
           skill_match_score={match.skill_match_score}
           isDark={isDark}

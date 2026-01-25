@@ -270,51 +270,76 @@ class SuccessPatternService:
     def analyze_transitions(
         self,
         service_line: Optional[str] = None,
-        min_sample_size: int = None
+        min_sample_size: int = None,
+        use_fuzzy_matching: bool = True,
+        fuzzy_threshold: float = 0.65
     ) -> List[TransitionPattern]:
         """
         Analyze career transitions from employee history data.
-        
+
         Parses career_history JSONB field, groups by (previous_role, current_role),
         and calculates success metrics. Results are cached in Redis for 24 hours.
-        
+
         Args:
             service_line: Optional filter by service line
             min_sample_size: Minimum transitions to include (default: 2)
-            
+            use_fuzzy_matching: Enable fuzzy role name matching (default: True)
+            fuzzy_threshold: Similarity threshold for fuzzy matching (default: 0.65)
+
         Returns:
             List of TransitionPattern sorted by sample_size descending
         """
         min_sample_size = min_sample_size or self.MIN_SAMPLE_SIZE
-        
+
         # Check cache first
-        cache_key = self._get_cache_key("transitions", service_line=service_line, min_sample=min_sample_size)
+        cache_key = self._get_cache_key("transitions", service_line=service_line, min_sample=min_sample_size, fuzzy=use_fuzzy_matching)
         cached = self._get_cached(cache_key)
         if cached:
             return [TransitionPattern(**p) for p in cached]
-        
+
         # Try database first, fall back to mock
         employees = self._get_employees(service_line)
-        
+
+        # First pass: collect all role names for fuzzy grouping
+        role_clusters: Dict[str, str] = {}
+        if use_fuzzy_matching:
+            all_roles = set()
+            for emp in employees:
+                current_role = emp.get("current_role", "") if isinstance(emp, dict) else emp.current_role
+                career_history = emp.get("career_history", []) if isinstance(emp, dict) else emp.career_history
+                if current_role:
+                    all_roles.add(current_role)
+                for entry in (career_history or []):
+                    role = entry.get("role", "") if isinstance(entry, dict) else getattr(entry, "role", "")
+                    if role:
+                        all_roles.add(role)
+
+            # Build role clusters using fuzzy matching
+            role_clusters = self._build_role_clusters(list(all_roles), fuzzy_threshold)
+
         # Build transition counts
         transitions: Dict[Tuple[str, str, str], List[Dict]] = defaultdict(list)
-        
+
         for emp in employees:
             career_history = emp.get("career_history", []) if isinstance(emp, dict) else emp.career_history
             current_role = emp.get("current_role", "") if isinstance(emp, dict) else emp.current_role
             emp_service_line = emp.get("service_line", "") if isinstance(emp, dict) else emp.service_line
             skills = emp.get("skills", []) if isinstance(emp, dict) else emp.skills
-            
+
             if not career_history:
                 continue
-                
+
+            # Normalize role names using clusters
+            current_role_normalized = role_clusters.get(current_role, current_role) if use_fuzzy_matching else current_role
+
             # The most recent role in history is what they transitioned FROM to current
             if len(career_history) > 0:
                 prev_role = career_history[0].get("role", "")
+                prev_role_normalized = role_clusters.get(prev_role, prev_role) if use_fuzzy_matching else prev_role
                 years_in_prev = career_history[0].get("years", 0)
-                
-                if prev_role and current_role:
-                    key = (prev_role, current_role, emp_service_line)
+
+                if prev_role_normalized and current_role_normalized:
+                    key = (prev_role_normalized, current_role_normalized, emp_service_line)
                     transitions[key].append({
                         "years_in_prev": years_in_prev,
                         "skills": skills if isinstance(skills, list) else list(skills.keys()) if isinstance(skills, dict) else [],
@@ -822,6 +847,39 @@ class SuccessPatternService:
         
         return positions
     
+    def _build_role_clusters(self, roles: List[str], threshold: float = 0.65) -> Dict[str, str]:
+        """
+        Build clusters of similar role names, mapping each role to a canonical representative.
+
+        Args:
+            roles: List of all unique role names
+            threshold: Similarity threshold for clustering
+
+        Returns:
+            Dict mapping each role name to its canonical (most common) form
+        """
+        clusters: Dict[str, List[str]] = {}
+        role_to_cluster: Dict[str, str] = {}
+
+        for role in sorted(roles, key=lambda r: -len(r)):  # Process longer names first
+            # Check if this role matches any existing cluster
+            matched_cluster = None
+            for canonical, members in clusters.items():
+                if self._fuzzy_match_roles(role, canonical, threshold):
+                    matched_cluster = canonical
+                    break
+
+            if matched_cluster:
+                clusters[matched_cluster].append(role)
+                role_to_cluster[role] = matched_cluster
+            else:
+                # Start new cluster with this role as canonical
+                clusters[role] = [role]
+                role_to_cluster[role] = role
+
+        logger.debug(f"Built {len(clusters)} role clusters from {len(roles)} roles")
+        return role_to_cluster
+
     def _fuzzy_match_roles(self, role1: str, role2: str, threshold: float = 0.7) -> bool:
         """
         Fuzzy string matching for role names using sequence similarity.

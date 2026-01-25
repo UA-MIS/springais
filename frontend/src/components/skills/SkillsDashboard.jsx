@@ -167,13 +167,13 @@ export default function SkillsDashboard() {
                     </svg>
                   </div>
                   <div>
-                    <p 
+                    <p
                       className="text-xl font-bold leading-none"
                       style={{ color: theme.headerText }}
                     >
-                      {skills.filter(s => s.status === 'active').length}
+                      {skills.filter(s => s.status === 'active' || s.status === 'in_progress').length}
                     </p>
-                    <p 
+                    <p
                       className="text-xs uppercase tracking-wide mt-0.5"
                       style={{ color: theme.headerSubtext }}
                     >

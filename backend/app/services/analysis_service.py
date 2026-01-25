@@ -79,7 +79,7 @@ Experience Required: {experience_required}
 Overall Match Score: {overall_score}%
 Skill Match Score: {skill_score}%
 Experience Match Score: {experience_score}%
-Growth Potential Score: {growth_score}%
+Role Fit Score: {role_fit_score}%
 
 Overlapping Skills: {overlapping_skills}
 Missing Skills: {missing_skills}
@@ -258,7 +258,7 @@ class DeepAnalysisService:
             overall_score = round(match_detail.scores.overall * 100, 1)
             skill_score = round(match_detail.scores.skill_match * 100, 1)
             experience_score = round(match_detail.scores.experience_match * 100, 1)
-            growth_score = round(match_detail.scores.growth_potential * 100, 1)
+            role_fit_score = round(match_detail.scores.role_fit * 100, 1)
             overlapping_skills = match_detail.gap_analysis.overlapping_skills
             missing_skills = match_detail.gap_analysis.missing_skills
             transferable_skills = match_detail.gap_analysis.transferable_skills
@@ -266,7 +266,7 @@ class DeepAnalysisService:
             overall_score = "N/A"
             skill_score = "N/A"
             experience_score = "N/A"
-            growth_score = "N/A"
+            role_fit_score = "N/A"
             overlapping_skills = []
             missing_skills = required_skills
             transferable_skills = []
@@ -300,7 +300,7 @@ class DeepAnalysisService:
             overall_score=overall_score,
             skill_score=skill_score,
             experience_score=experience_score,
-            growth_score=growth_score,
+            role_fit_score=role_fit_score,
             overlapping_skills=", ".join(overlapping_skills) or "None",
             missing_skills=", ".join(missing_skills) or "None",
             transferable_skills=", ".join(transferable_skills) or "None",

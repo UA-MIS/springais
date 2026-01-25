@@ -2,27 +2,31 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveMatch } from '../../services/matchService';
 import MatchCard from './MatchCard';
-import MatchModeToggle, { MatchMode } from './MatchModeToggle';
 import MatchFilters, { FilterState } from './MatchFilters';
 import MatchSortDropdown, { SortOption } from './MatchSortDropdown';
 import EmptyMatchState from './EmptyMatchState';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useMatches } from '../../context/MatchesContext';
-import { Match } from '../../services/mockMatchData';
+import { useToast } from '../../context/ToastContext';
+import { useSkillsContext } from '../../context/SkillsContext';
 
 export default function MatchResultsPage() {
   const { isDark } = useTheme();
   const colors = isDark ? themeColors.dark : themeColors.light;
   const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  // Check if user has uploaded a resume (has skills)
+  const { skills } = useSkillsContext();
+  const hasResume = skills.length > 0;
 
   // Use cached matches from context
   const { state: matchesState, fetchMatches } = useMatches();
 
-  const [mode, setMode] = useState<MatchMode>(matchesState.mode);
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
     locations: [],
-    min_score: 0,  // Not used anymore - mode controls this
+    min_score: 0,
     experience_levels: [],
     usOnly: true,  // Default to US only
   });
@@ -34,20 +38,6 @@ export default function MatchResultsPage() {
   const matches = matchesState.matches;
   const loading = matchesState.loading;
   const error = matchesState.error;
-
-  // Get score range based on mode
-  const getScoreRange = (mode: MatchMode): { min: number; max: number } => {
-    switch (mode) {
-      case 'best_fit':
-        return { min: 0.90, max: 1.0 };
-      case 'stretch':
-        return { min: 0.70, max: 0.90 };
-      case 'exploratory':
-        return { min: 0, max: 0.70 };
-      default:
-        return { min: 0, max: 1.0 };
-    }
-  };
 
   // US locations/cities for filtering
   const US_LOCATION_PATTERNS = [
@@ -80,23 +70,15 @@ export default function MatchResultsPage() {
   };
 
   useEffect(() => {
-    // Fetch matches using cached context - won't refetch if cache is valid
-    fetchMatches(mode, filters);
-  }, [mode, filters, fetchMatches]);
+    // Only fetch matches if user has uploaded a resume
+    if (hasResume) {
+      fetchMatches(filters);
+    }
+  }, [filters, fetchMatches, hasResume]);
 
   // Filter matches
   const filteredMatches = useMemo(() => {
-    const scoreRange = getScoreRange(mode);
-
     return matches.filter((match) => {
-      // Filter by score range based on mode
-      if (match.overall_score < scoreRange.min || match.overall_score >= scoreRange.max) {
-        // Special case: exploratory shows everything below 70%, including 0
-        if (mode !== 'exploratory' || match.overall_score >= scoreRange.max) {
-          return false;
-        }
-      }
-
       // Filter by US only
       if (filters.usOnly && !isUSLocation(match.location)) {
         return false;
@@ -125,7 +107,7 @@ export default function MatchResultsPage() {
       }
       return true;
     });
-  }, [matches, filters, mode]);
+  }, [matches, filters]);
 
   // Sort matches
   const sortedMatches = useMemo(() => {
@@ -148,11 +130,6 @@ export default function MatchResultsPage() {
   const endIndex = startIndex + matchesPerPage;
   const paginatedMatches = sortedMatches.slice(startIndex, endIndex);
 
-  const handleModeChange = (newMode: MatchMode) => {
-    setMode(newMode);
-    setCurrentPage(1);
-  };
-
   const handleFiltersChange = (newFilters: FilterState) => {
     setFilters(newFilters);
     setCurrentPage(1);
@@ -167,9 +144,11 @@ export default function MatchResultsPage() {
     const match = matches.find((item) => item.id === matchId);
     if (!match) return;
     try {
-      await saveMatch(match, mode);
+      await saveMatch(match, 'best_fit');  // Default mode for saved matches
+      showToast('Match saved successfully!', 'success');
     } catch (err) {
       console.error('Failed to save match', err);
+      showToast('Failed to save match', 'error');
     }
   };
 
@@ -182,6 +161,70 @@ export default function MatchResultsPage() {
     });
     setCurrentPage(1);
   };
+
+  // Show upload resume prompt if no skills
+  if (!hasResume) {
+    return (
+      <div className="max-w-7xl mx-auto transition-colors duration-200">
+        <h1
+          className="text-4xl font-bold mb-2"
+          style={{ color: colors.textPrimary }}
+        >
+          Match Results
+        </h1>
+        <p
+          className="text-lg mb-6"
+          style={{ color: colors.textMuted }}
+        >
+          Discover job opportunities matched to your skills and career goals
+        </p>
+
+        <div
+          className="rounded-lg p-12 text-center"
+          style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.border}` }}
+        >
+          <div className="mb-6">
+            <svg
+              className="w-20 h-20 mx-auto mb-4"
+              fill="none"
+              stroke={colors.textMuted}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <h2
+              className="text-2xl font-semibold mb-2"
+              style={{ color: colors.textPrimary }}
+            >
+              Upload Your Resume to Get Started
+            </h2>
+            <p
+              className="text-base max-w-md mx-auto mb-6"
+              style={{ color: colors.textMuted }}
+            >
+              We need to understand your skills and experience to find the best job matches for you.
+              Upload your resume and we'll analyze it to provide personalized recommendations.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/profile')}
+            className="px-6 py-3 font-semibold rounded-sm transition-colors"
+            style={{
+              backgroundColor: '#FFE600',
+              color: '#000',
+            }}
+          >
+            Go to My Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto transition-colors duration-200">
@@ -197,9 +240,6 @@ export default function MatchResultsPage() {
       >
         Discover job opportunities matched to your skills and career goals
       </p>
-
-      {/* Mode Toggle */}
-      <MatchModeToggle mode={mode} onModeChange={handleModeChange} isDark={isDark} colors={colors} />
 
       {/* Filters and Sort */}
       <div className="mb-6">

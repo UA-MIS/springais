@@ -16,7 +16,7 @@ Endpoints:
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, Body
@@ -117,7 +117,8 @@ async def get_user_skills_with_progress(
     db: Session = Depends(get_db),
 ):
     """Get user's skills with real module progress tracking."""
-    service = SkillProgressService(db)
+    # Pass user_profile so service can access AI skill_groupings for module counts
+    service = SkillProgressService(db, user_profile=current_user)
     skills = service.get_user_skills_with_progress(current_user.id)
     return UserSkillsWithProgressResponse(skills=skills, total_count=len(skills))
 
@@ -128,8 +129,8 @@ async def start_skill(
     current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db),
 ):
-    """Start learning a skill - initializes modules."""
-    service = SkillProgressService(db)
+    """Start learning a skill - initializes modules from AI groupings or defaults."""
+    service = SkillProgressService(db, user_profile=current_user)
     user_skill = service.start_skill(current_user.id, skill_name)
     return {"status": "started", "skill_id": str(user_skill.id)}
 
@@ -143,7 +144,7 @@ async def update_module_progress(
     db: Session = Depends(get_db),
 ):
     """Update progress percentage on a module."""
-    service = SkillProgressService(db)
+    service = SkillProgressService(db, user_profile=current_user)
     try:
         result = service.update_module_progress(
             current_user.id, skill_name, UUID(module_id), progress
@@ -161,7 +162,7 @@ async def complete_module(
     db: Session = Depends(get_db),
 ):
     """Mark a module as complete."""
-    service = SkillProgressService(db)
+    service = SkillProgressService(db, user_profile=current_user)
     try:
         result = service.complete_module(current_user.id, skill_name, UUID(module_id))
         return {"status": "completed", "completed_at": result.completed_at.isoformat()}
@@ -176,7 +177,7 @@ async def complete_skill(
     db: Session = Depends(get_db),
 ):
     """Mark an entire skill as complete (all modules)."""
-    service = SkillProgressService(db)
+    service = SkillProgressService(db, user_profile=current_user)
     try:
         result = service.complete_skill(current_user.id, skill_name)
         return {"status": "completed", "completed_at": result.completed_at.isoformat()}
@@ -841,3 +842,375 @@ async def get_stats(
             "entries": len(cache._cache) if cache.is_initialized else 0
         }
     }
+
+
+# ============================================
+# AI Skill Grouping Endpoints
+# ============================================
+
+class SkillGroupingRequest(BaseModel):
+    skills: List[str] = Field(..., description="List of skill names to group")
+    career_context: Optional[str] = Field(None, description="Optional career goals context")
+
+
+class SkillEnhanceRequest(BaseModel):
+    existing_groupings: dict = Field(..., description="Current skill groupings structure")
+    new_skills: List[str] = Field(..., description="New skills to integrate")
+
+
+@router.post(
+    "/group",
+    summary="Generate AI-powered skill groupings",
+    description="Group extracted skills into categories with learning modules using GPT-5.2."
+)
+async def group_skills(
+    request: SkillGroupingRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate AI-powered skill groupings with learning modules.
+
+    Sends extracted skills to GPT-5.2-chat-latest for intelligent categorization.
+    Results are saved to user profile for persistence.
+    Also creates/updates progress tracking for all skills.
+    """
+    from app.services.skill_grouping_service import generate_skill_groupings
+
+    result = await generate_skill_groupings(
+        skills=request.skills,
+        context=request.career_context
+    )
+
+    # Save groupings to user profile for persistence
+    current_user.skill_groupings = result
+    db.add(current_user)
+    db.flush()  # Flush so skill_groupings is available for progress service
+
+    # Create UserSkill tracking records for all skills using AI-generated modules
+    service = SkillProgressService(db, user_profile=current_user)
+    for skill_name in request.skills:
+        try:
+            service.start_skill(current_user.id, skill_name)
+        except Exception as e:
+            logger.debug(f"Skill tracking for {skill_name}: {e}")
+
+    db.commit()
+    logger.info(f"Generated groupings with {len(result.get('categories', []))} categories and created tracking")
+
+    return result
+
+
+@router.post(
+    "/enhance",
+    summary="Enhance skill groupings with new skills",
+    description="Intelligently merge new skills from saved roles into existing groupings."
+)
+async def enhance_skills(
+    request: SkillEnhanceRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Enhance existing skill groupings with new skills from saved roles.
+
+    Uses GPT-5.2-chat-latest to intelligently merge new skills into
+    existing categories or create new ones as needed.
+    Also adds new skills to user's skill list and creates progress tracking.
+    """
+    from app.services.skill_grouping_service import enhance_skill_groupings
+
+    result = await enhance_skill_groupings(
+        existing_groupings=request.existing_groupings,
+        new_skills=request.new_skills
+    )
+
+    # Save updated groupings to user profile
+    current_user.skill_groupings = result
+
+    # Also add new skills to user's main skills list (avoid duplicates)
+    existing_skills = set(s.lower() for s in (current_user.skills or []))
+    new_skills_to_add = [s for s in request.new_skills if s.lower() not in existing_skills]
+
+    if new_skills_to_add:
+        current_user.skills = (current_user.skills or []) + new_skills_to_add
+        logger.info(f"Added {len(new_skills_to_add)} new skills to user profile: {new_skills_to_add}")
+
+        # Create UserSkill tracking records for new skills
+        # Pass the updated user_profile so service can access new groupings
+        db.add(current_user)
+        db.flush()  # Flush so user_profile.skill_groupings is available
+
+        service = SkillProgressService(db, user_profile=current_user)
+        for skill_name in new_skills_to_add:
+            try:
+                service.start_skill(current_user.id, skill_name)
+                logger.info(f"Created progress tracking for skill: {skill_name}")
+            except Exception as e:
+                logger.warning(f"Could not create tracking for {skill_name}: {e}")
+
+    db.commit()
+
+    return result
+
+
+@router.get(
+    "/groupings",
+    summary="Get user's skill groupings",
+    description="Get the user's saved AI-generated skill groupings."
+)
+async def get_skill_groupings(
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Get the user's saved skill groupings.
+
+    Returns the AI-generated skill categories and modules.
+    """
+    groupings = current_user.skill_groupings or {"categories": []}
+    return groupings
+
+
+# ============================================
+# CRUD for Skill Categories and Modules
+# ============================================
+
+class CategoryCreateRequest(BaseModel):
+    name: str = Field(..., description="Category name")
+    emoji: str = Field(default="star", description="Emoji for the category")
+    description: Optional[str] = Field(None, description="Category description")
+    skills: List[str] = Field(default_factory=list, description="Skills in this category")
+
+
+class CategoryUpdateRequest(BaseModel):
+    name: Optional[str] = Field(None, description="New category name")
+    emoji: Optional[str] = Field(None, description="New emoji")
+    description: Optional[str] = Field(None, description="New description")
+
+
+class ModuleCreateRequest(BaseModel):
+    name: str = Field(..., description="Module name")
+    description: str = Field(default="", description="Module description")
+
+
+class ModuleUpdateRequest(BaseModel):
+    name: Optional[str] = Field(None, description="New module name")
+    description: Optional[str] = Field(None, description="New description")
+
+
+@router.post(
+    "/groupings/categories",
+    summary="Create a new skill category",
+    description="Add a new skill category with optional skills and modules."
+)
+async def create_category(
+    request: CategoryCreateRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Create a new skill category."""
+    import uuid
+
+    groupings = current_user.skill_groupings or {"categories": []}
+    categories = groupings.get("categories", [])
+
+    # Generate unique ID
+    cat_id = f"cat_{uuid.uuid4().hex[:8]}"
+
+    new_category = {
+        "id": cat_id,
+        "name": request.name,
+        "emoji": request.emoji,
+        "description": request.description or f"Skills related to {request.name}",
+        "skills": request.skills,
+        "modules": [
+            {"id": f"{cat_id}_mod_1", "name": "Fundamentals", "description": "Core concepts", "order": 1},
+            {"id": f"{cat_id}_mod_2", "name": "Intermediate", "description": "Building expertise", "order": 2},
+            {"id": f"{cat_id}_mod_3", "name": "Advanced", "description": "Advanced level", "order": 3},
+            {"id": f"{cat_id}_mod_4", "name": "Mastery", "description": "Expert level", "order": 4},
+        ]
+    }
+
+    categories.append(new_category)
+    groupings["categories"] = categories
+    current_user.skill_groupings = groupings
+    db.add(current_user)
+    db.commit()
+
+    return {"created": True, "category": new_category}
+
+
+@router.put(
+    "/groupings/categories/{category_id}",
+    summary="Update a skill category",
+    description="Update category name, emoji, or description."
+)
+async def update_category(
+    category_id: str,
+    request: CategoryUpdateRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Update an existing skill category."""
+    groupings = current_user.skill_groupings or {"categories": []}
+    categories = groupings.get("categories", [])
+
+    cat_idx = next((i for i, c in enumerate(categories) if c.get("id") == category_id), None)
+    if cat_idx is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    if request.name is not None:
+        categories[cat_idx]["name"] = request.name
+    if request.emoji is not None:
+        categories[cat_idx]["emoji"] = request.emoji
+    if request.description is not None:
+        categories[cat_idx]["description"] = request.description
+
+    groupings["categories"] = categories
+    current_user.skill_groupings = groupings
+    db.add(current_user)
+    db.commit()
+
+    return {"updated": True, "category": categories[cat_idx]}
+
+
+@router.delete(
+    "/groupings/categories/{category_id}",
+    summary="Delete a skill category",
+    description="Remove a skill category and all its modules."
+)
+async def delete_category(
+    category_id: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Delete a skill category."""
+    groupings = current_user.skill_groupings or {"categories": []}
+    categories = groupings.get("categories", [])
+
+    cat_idx = next((i for i, c in enumerate(categories) if c.get("id") == category_id), None)
+    if cat_idx is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    deleted_cat = categories.pop(cat_idx)
+    groupings["categories"] = categories
+    current_user.skill_groupings = groupings
+    db.add(current_user)
+    db.commit()
+
+    return {"deleted": True, "category_id": category_id}
+
+
+@router.post(
+    "/groupings/categories/{category_id}/modules",
+    summary="Add a module to a category",
+    description="Create a new learning module within a skill category."
+)
+async def create_module(
+    category_id: str,
+    request: ModuleCreateRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Add a new module to a category."""
+    import uuid
+
+    groupings = current_user.skill_groupings or {"categories": []}
+    categories = groupings.get("categories", [])
+
+    cat_idx = next((i for i, c in enumerate(categories) if c.get("id") == category_id), None)
+    if cat_idx is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    modules = categories[cat_idx].get("modules", [])
+    max_order = max([m.get("order", 0) for m in modules], default=0)
+
+    new_module = {
+        "id": f"{category_id}_mod_{uuid.uuid4().hex[:6]}",
+        "name": request.name,
+        "description": request.description,
+        "order": max_order + 1,
+    }
+
+    modules.append(new_module)
+    categories[cat_idx]["modules"] = modules
+    groupings["categories"] = categories
+    current_user.skill_groupings = groupings
+    db.add(current_user)
+    db.commit()
+
+    return {"created": True, "module": new_module}
+
+
+@router.put(
+    "/groupings/categories/{category_id}/modules/{module_id}",
+    summary="Update a module",
+    description="Update module name or description."
+)
+async def update_module(
+    category_id: str,
+    module_id: str,
+    request: ModuleUpdateRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Update an existing module."""
+    groupings = current_user.skill_groupings or {"categories": []}
+    categories = groupings.get("categories", [])
+
+    cat_idx = next((i for i, c in enumerate(categories) if c.get("id") == category_id), None)
+    if cat_idx is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    modules = categories[cat_idx].get("modules", [])
+    mod_idx = next((i for i, m in enumerate(modules) if m.get("id") == module_id), None)
+    if mod_idx is None:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    if request.name is not None:
+        modules[mod_idx]["name"] = request.name
+    if request.description is not None:
+        modules[mod_idx]["description"] = request.description
+
+    categories[cat_idx]["modules"] = modules
+    groupings["categories"] = categories
+    current_user.skill_groupings = groupings
+    db.add(current_user)
+    db.commit()
+
+    return {"updated": True, "module": modules[mod_idx]}
+
+
+@router.delete(
+    "/groupings/categories/{category_id}/modules/{module_id}",
+    summary="Delete a module",
+    description="Remove a learning module from a category."
+)
+async def delete_module(
+    category_id: str,
+    module_id: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Delete a module from a category."""
+    groupings = current_user.skill_groupings or {"categories": []}
+    categories = groupings.get("categories", [])
+
+    cat_idx = next((i for i, c in enumerate(categories) if c.get("id") == category_id), None)
+    if cat_idx is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    modules = categories[cat_idx].get("modules", [])
+    mod_idx = next((i for i, m in enumerate(modules) if m.get("id") == module_id), None)
+    if mod_idx is None:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    modules.pop(mod_idx)
+    categories[cat_idx]["modules"] = modules
+    groupings["categories"] = categories
+    current_user.skill_groupings = groupings
+    db.add(current_user)
+    db.commit()
+
+    return {"deleted": True, "module_id": module_id}

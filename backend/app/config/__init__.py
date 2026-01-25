@@ -9,8 +9,8 @@ from .matching_config import (
     MatchMode,
     MatchingConfig,
     get_matching_config,
-    MODE_WEIGHTS,
-    SKILL_MATCH_THRESHOLDS,
+    SCORING_WEIGHTS,
+    ScoringWeights,
 )
 
 # Load environment variables
@@ -74,8 +74,8 @@ __all__ = [
     "MatchMode",
     "MatchingConfig",
     "get_matching_config",
-    "MODE_WEIGHTS",
-    "SKILL_MATCH_THRESHOLDS",
+    "SCORING_WEIGHTS",
+    "ScoringWeights",
     "get_openai_client",
     "get_redis_client",
     "get_settings",

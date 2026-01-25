@@ -9,9 +9,11 @@ import MatchResultsPage from './components/matches/MatchResultsPage';
 import RoleDetailPage from './pages/RoleDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import SavedRolesPage from './pages/SavedRolesPage';
+import RoadmapPage from './pages/RoadmapPage';
 import { MatchesProvider } from './context/MatchesContext';
 import { SavedRolesProvider } from './context/SavedRolesContext';
 import { SkillsProvider } from './context/SkillsContext';
+import { ToastProvider } from './context/ToastContext';
 
 function App() {
   return (
@@ -25,13 +27,15 @@ function App() {
       <Route
         element={
           <ProtectedRoute>
-            <MatchesProvider>
-              <SavedRolesProvider>
-                <SkillsProvider>
-                  <MainLayout />
-                </SkillsProvider>
-              </SavedRolesProvider>
-            </MatchesProvider>
+            <ToastProvider>
+              <MatchesProvider>
+                <SavedRolesProvider>
+                  <SkillsProvider>
+                    <MainLayout />
+                  </SkillsProvider>
+                </SavedRolesProvider>
+              </MatchesProvider>
+            </ToastProvider>
           </ProtectedRoute>
         }
       >
@@ -39,6 +43,7 @@ function App() {
         <Route path="/matches" element={<MatchResultsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/saved" element={<SavedRolesPage />} />
+        <Route path="/roadmap" element={<RoadmapPage />} />
         <Route path="/success-patterns" element={<SuccessPatternPage />} />
 
         {/* Role detail page - accessed when clicking a match */}

@@ -34,11 +34,12 @@ export default function SkillCard({ skill, onClick, onMarkComplete, theme, progr
       complete: { bg: '#d1fae5', text: '#065f46' },
       recommended: { bg: '#dbeafe', text: '#1e40af' },
     };
-    
+
     switch (skill.status) {
       case 'completed':
         return { backgroundColor: badges.complete.bg, color: badges.complete.text };
       case 'active':
+      case 'in_progress': // Backend uses 'in_progress'
         return { backgroundColor: badges.active.bg, color: badges.active.text };
       case 'recommended':
         return { backgroundColor: badges.recommended.bg, color: badges.recommended.text };
@@ -53,7 +54,8 @@ export default function SkillCard({ skill, onClick, onMarkComplete, theme, progr
       case 'completed':
         return 'Complete';
       case 'active':
-        return skill.proficiency < 30 ? 'Starting' : 
+      case 'in_progress': // Backend uses 'in_progress'
+        return skill.proficiency < 30 ? 'Starting' :
                skill.proficiency >= 85 ? 'Near Done' : 'Active';
       case 'recommended':
         return 'Recommended';

@@ -9,6 +9,7 @@ interface ThemeColors {
 
 interface SkillGapDisplayProps {
   matched_skills: string[];
+  transferable_skills?: string[];  // Skills with partial semantic match
   skill_gaps: string[];
   skill_match_score: number;
   isDark?: boolean;
@@ -17,6 +18,7 @@ interface SkillGapDisplayProps {
 
 export default function SkillGapDisplay({
   matched_skills,
+  transferable_skills = [],
   skill_gaps,
   skill_match_score,
   isDark = true,
@@ -27,7 +29,7 @@ export default function SkillGapDisplay({
     border: 'rgba(255, 255, 255, 0.15)',
   }
 }: SkillGapDisplayProps) {
-  const totalSkills = matched_skills.length + skill_gaps.length;
+  const totalSkills = matched_skills.length + transferable_skills.length + skill_gaps.length;
   const matchPercentage = Math.round(skill_match_score * 100);
 
   return (
@@ -44,6 +46,23 @@ export default function SkillGapDisplay({
           <div className="flex flex-wrap gap-2">
             {matched_skills.map((skill) => (
               <SkillTag key={skill} skill={skill} variant="matched" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Transferable/Related Skills */}
+      {transferable_skills.length > 0 && (
+        <div>
+          <div
+            className="text-sm font-medium mb-2"
+            style={{ color: colors.textMuted }}
+          >
+            Related Skills ({transferable_skills.length}/{totalSkills}):
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {transferable_skills.map((skill) => (
+              <SkillTag key={skill} skill={skill} variant="transferable" />
             ))}
           </div>
         </div>
@@ -76,7 +95,7 @@ export default function SkillGapDisplay({
           <span className="font-semibold" style={{ color: colors.textPrimary }}>
             {matchPercentage}%
           </span>
-          {' '}({matched_skills.length} of {totalSkills} required skills)
+          {' '}({matched_skills.length + transferable_skills.length} of {totalSkills} required skills)
         </div>
       </div>
     </div>

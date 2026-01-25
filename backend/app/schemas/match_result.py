@@ -48,31 +48,44 @@ class SkillGapAnalysis(BaseModel):
 
 
 class MatchScores(BaseModel):
-    """Individual score components for a match."""
+    """
+    Individual score components for a match.
+
+    Scoring weights based on hiring research:
+    - skill_match: 80% (strongest predictor of job success)
+    - experience_match: 10% (low but useful validity)
+    - role_fit: 10% (holistic alignment via embedding similarity)
+    """
 
     skill_match: float = Field(
         ge=0.0, le=1.0,
-        description="Semantic skill similarity score (0-1)"
+        description="Semantic skill similarity score (0-1) - 80% weight"
     )
     experience_match: float = Field(
         ge=0.0, le=1.0,
-        description="Experience level alignment score (0-1)"
+        description="Experience level alignment score (0-1) - 10% weight"
     )
-    growth_potential: float = Field(
+    role_fit: float = Field(
         ge=0.0, le=1.0,
-        description="Career growth opportunity score (0-1)"
+        description="Holistic resume-to-job embedding similarity (0-1) - 10% weight"
     )
     overall: float = Field(
         ge=0.0, le=1.0,
         description="Weighted overall match score (0-1)"
     )
 
+    # Keep growth_potential as alias for backwards compatibility
+    @property
+    def growth_potential(self) -> float:
+        """Backwards compatibility alias for role_fit."""
+        return self.role_fit
+
     class Config:
         json_schema_extra = {
             "example": {
                 "skill_match": 0.85,
                 "experience_match": 0.92,
-                "growth_potential": 0.65,
+                "role_fit": 0.65,
                 "overall": 0.83
             }
         }

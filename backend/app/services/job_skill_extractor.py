@@ -1,5 +1,5 @@
 """
-Job Skill Extraction Service using OpenAI GPT-5 nano.
+Job Skill Extraction Service using OpenAI GPT-5.2 chat.
 
 Extracts structured skills from job posting descriptions including:
 - Required skills (explicitly mentioned)
@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ============================================
 
-# Model configuration - GPT-4o mini for fast, cheap extraction
-OPENAI_MODEL = "gpt-5-nano"
+# Model configuration - GPT-5.2 chat for quality extraction
+OPENAI_MODEL = "gpt-5.2-chat-latest"
 MAX_TOKENS = 4000  # Higher limit for batch job extraction
 TEMPERATURE = 0.3  # Low temperature for consistent extractions
 
@@ -37,9 +37,9 @@ TEMPERATURE = 0.3  # Low temperature for consistent extractions
 MAX_RETRIES = 3
 RETRY_DELAYS = [1, 2, 4]  # Exponential backoff in seconds
 
-# Cost tracking (GPT-4o mini pricing)
-COST_PER_1M_INPUT = 0.15   # $0.15 per 1M input tokens
-COST_PER_1M_OUTPUT = 0.60  # $0.60 per 1M output tokens
+# Cost tracking (GPT-5.2 pricing)
+COST_PER_1M_INPUT = 1.75   # $1.75 per 1M input tokens
+COST_PER_1M_OUTPUT = 14.00  # $14.00 per 1M output tokens
 
 # Cache configuration
 CACHE_PREFIX = "job_skill_extraction"
@@ -147,7 +147,7 @@ class JobSkillExtractorService:
         Initialize job skill extractor.
 
         Args:
-            model: OpenAI model to use (default: gpt-5-nano)
+            model: OpenAI model to use (default: gpt-5.2-chat-latest)
             temperature: Sampling temperature (default: 0.3)
             max_tokens: Maximum tokens in response (default: 4000)
         """
@@ -462,6 +462,7 @@ class JobSkillExtractorService:
                     "content": prompt
                 }
             ],
+            max_completion_tokens=self.max_tokens,
             response_format={"type": "json_object"}
         )
 

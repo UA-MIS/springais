@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTheme, themeColors } from '../context/ThemeContext'
+import { useSkillsContext } from '../context/SkillsContext'
 import { getMatchDetails } from '../services/matchService'
 import { Match } from '../services/mockMatchData'
 import RoleOverview from '../components/role-detail/RoleOverview'
@@ -27,8 +28,12 @@ export default function RoleDetailPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Check if user has uploaded a resume
+  const { skills } = useSkillsContext()
+  const hasResume = skills.length > 0
+
   useEffect(() => {
-    if (!roleId) return
+    if (!roleId || !hasResume) return
     let isMounted = true
     const fetchDetail = async () => {
       setLoading(true)
@@ -53,7 +58,34 @@ export default function RoleDetailPage() {
     return () => {
       isMounted = false
     }
-  }, [roleId])
+  }, [roleId, hasResume])
+
+  // Redirect to profile if no resume uploaded
+  if (!hasResume) {
+    return (
+      <div
+        className="max-w-7xl mx-auto py-10 px-6"
+        style={{ color: colors.textPrimary }}
+      >
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Upload Your Resume First</h1>
+          <p className="mb-6" style={{ color: colors.textMuted }}>
+            To see personalized match scores and role analysis, please upload your resume.
+          </p>
+          <button
+            onClick={() => navigate('/profile')}
+            className="px-6 py-2 rounded-md font-semibold transition-colors"
+            style={{
+              backgroundColor: colors.accent,
+              color: '#2E2E38',
+            }}
+          >
+            Go to My Profile
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (

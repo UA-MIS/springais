@@ -1,5 +1,7 @@
+import { useState, useMemo } from 'react'
 import { useTheme, themeColors } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
+import { useSavedRoles } from '../context/SavedRolesContext'
 import SkillsDashboard from '../components/skills/SkillsDashboard'
 import ResumeUpload from '../components/skills/ResumeUpload'
 import { useSkillsContext } from '../context/SkillsContext'
@@ -9,17 +11,70 @@ export default function ProfilePage() {
   const { isDark } = useTheme()
   const colors = isDark ? themeColors.dark : themeColors.light
   const { user } = useAuth()
-  const { refreshAllSkills, clearSkills } = useSkillsContext()
+  const {
+    refreshAllSkills,
+    clearSkills,
+    skills,
+    skillCategories,
+    enhanceSkillGroupings,
+    fetchSkillGroupings
+  } = useSkillsContext()
+
+  // Get saved roles
+  const savedRolesContext = useSavedRoles()
+  const savedRoles = savedRolesContext?.state.savedRoles || []
+
+  // State for enhance button
+  const [isEnhancing, setIsEnhancing] = useState(false)
+
+  // Collect all skills from saved roles that user doesn't have yet
+  const savedRoleSkills = useMemo(() => {
+    const userSkillNames = new Set(skills.map((s: any) => s.name?.toLowerCase()))
+    const skillSet = new Set<string>()
+
+    savedRoles.forEach((role: any) => {
+      // Add skill gaps (skills user needs)
+      (role.skill_gaps || []).forEach((skill: string) => {
+        if (!userSkillNames.has(skill.toLowerCase())) {
+          skillSet.add(skill)
+        }
+      })
+    })
+
+    return Array.from(skillSet)
+  }, [savedRoles, skills])
 
   // Theme object for ResumeUpload component
   const theme = isDark ? DARK_THEME : LIGHT_THEME
 
   // Handle skills extracted from resume upload
+  // ResumeUpload already generates groupings, so we just need to refresh the UI
   const handleSkillsExtracted = async () => {
-    // Skills are already saved to backend by the upload endpoint
-    // Just refresh the skills list to show them
     console.log('Skills extraction complete, refreshing skills list...')
+    // Refresh groupings first (ResumeUpload already generated them)
+    await fetchSkillGroupings()
+    // Then refresh all skills to update the UI
     await refreshAllSkills()
+  }
+
+  // Handle enhance skills button click
+  const handleEnhanceSkills = async () => {
+    if (savedRoleSkills.length === 0) return
+
+    setIsEnhancing(true)
+    try {
+      const existingGroupings = { categories: skillCategories }
+      // Backend now adds skills to profile AND creates tracking records
+      await enhanceSkillGroupings(existingGroupings, savedRoleSkills)
+      // Refresh groupings first (to get updated categories)
+      await fetchSkillGroupings()
+      // Then refresh skills to show them in UI
+      await refreshAllSkills()
+    } catch (err) {
+      console.error('Failed to enhance skills:', err)
+    } finally {
+      setIsEnhancing(false)
+    }
   }
 
   return (
@@ -91,6 +146,66 @@ export default function ProfilePage() {
         </p>
         <ResumeUpload onSkillsExtracted={handleSkillsExtracted} clearSkills={clearSkills} theme={theme} />
       </div>
+
+      {/* Skills from Saved Roles Section */}
+      {savedRoleSkills.length > 0 && (
+        <div
+          className="p-6 rounded-lg mb-8"
+          style={{
+            backgroundColor: isDark ? 'rgba(255, 230, 0, 0.08)' : 'rgba(255, 230, 0, 0.1)',
+            border: `1px solid ${isDark ? 'rgba(255, 230, 0, 0.3)' : 'rgba(255, 230, 0, 0.4)'}`,
+          }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                Skills from Your Saved Roles
+              </h3>
+              <p className="text-sm" style={{ color: colors.textMuted }}>
+                These {savedRoleSkills.length} skills are required by roles you're interested in
+              </p>
+            </div>
+            <button
+              onClick={handleEnhanceSkills}
+              disabled={isEnhancing}
+              className="px-4 py-2 rounded-md font-semibold transition-all active:scale-95"
+              style={{
+                backgroundColor: colors.accent,
+                color: '#2E2E38',
+                opacity: isEnhancing ? 0.7 : 1,
+              }}
+            >
+              {isEnhancing ? 'Enhancing...' : 'Add to My Goals'}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {savedRoleSkills.slice(0, 20).map((skill, i) => (
+              <span
+                key={i}
+                className="px-3 py-1 rounded-full text-sm"
+                style={{
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  color: colors.textPrimary,
+                }}
+              >
+                {skill}
+              </span>
+            ))}
+            {savedRoleSkills.length > 20 && (
+              <span
+                className="px-3 py-1 rounded-full text-sm"
+                style={{
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  color: colors.textMuted,
+                }}
+              >
+                +{savedRoleSkills.length - 20} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Skills Dashboard */}
       <div>

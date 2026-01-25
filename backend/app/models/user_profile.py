@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from .career_path import CareerPath
     from .employee import Employee
     from .match import Match
+    from .roadmap import SavedRoadmap
 
 
 class UserProfile(Base, TimestampMixin):
@@ -50,6 +51,9 @@ class UserProfile(Base, TimestampMixin):
     llm_listed_skills: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
     llm_inferred_skills: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
 
+    # AI-generated skill groupings with modules
+    skill_groupings: Mapped[dict[str, Any] | None] = mapped_column(JSONB, default=dict)
+
     # Embedding column
     resume_embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
 
@@ -64,6 +68,12 @@ class UserProfile(Base, TimestampMixin):
         "CareerPath",
         back_populates="user_profile",
         uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    saved_roadmaps: Mapped[list["SavedRoadmap"]] = relationship(
+        "SavedRoadmap",
+        back_populates="user_profile",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )

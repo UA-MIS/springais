@@ -5,8 +5,11 @@ import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import api from '../../services/api';
 import SkillExtractionPreview from './SkillExtractionPreview';
+import { useSkillsContext } from '../../context/SkillsContext';
 
 export default function ResumeUpload({ onSkillsExtracted, clearSkills, theme }) {
+  // Get AI grouping function from context
+  const { generateSkillGroupings } = useSkillsContext();
   const [uploadStatus, setUploadStatus] = useState('idle'); // idle, uploading, success, error
   const [uploadedFile, setUploadedFile] = useState(null);
   const [extractedSkills, setExtractedSkills] = useState(null);
@@ -74,11 +77,25 @@ export default function ResumeUpload({ onSkillsExtracted, clearSkills, theme }) 
     maxFiles: 1,
   });
 
-  const handleConfirmSkills = (selectedSkills) => {
+  const handleConfirmSkills = async (selectedSkills) => {
     // Clear existing skills before adding new ones from resume
     // This prevents old mock/bootstrap skills from persisting
     clearSkills?.();
-    onSkillsExtracted?.(selectedSkills);
+
+    // Generate AI-powered skill groupings with personalized learning modules
+    // Do this BEFORE notifying parent, so groupings exist when skills are refreshed
+    const skillNames = selectedSkills.map(s => s.name);
+    if (skillNames.length > 0 && generateSkillGroupings) {
+      try {
+        await generateSkillGroupings(skillNames);
+      } catch (err) {
+        console.error('Failed to generate skill groupings:', err);
+      }
+    }
+
+    // Pass the skill names to parent so it can refresh properly
+    onSkillsExtracted?.(skillNames);
+
     setIsPreviewOpen(false);
     setUploadStatus('idle');
     setUploadedFile(null);
