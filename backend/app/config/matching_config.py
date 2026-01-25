@@ -1,10 +1,12 @@
 """
 Matching Engine Configuration.
 
-Defines weights, thresholds, and settings for the three matching modes:
-- Best Fit: Conservative matches (90%+ skill match)
-- Stretch: Ambitious matches (70-85% skill match)
-- Exploratory: Career pivot opportunities (50-70% skill match)
+Simplified single-formula scoring based on research:
+- Skills are the strongest predictor of job success (80%)
+- Experience has low predictive validity but is still useful (10%)
+- Role fit via embedding similarity captures holistic alignment (10%)
+
+Reference: TestGorilla State of Skills-Based Hiring 2025, MSPB Research
 """
 
 from enum import Enum
@@ -13,125 +15,81 @@ from typing import Dict
 
 
 class MatchMode(str, Enum):
-    """Match mode determines scoring weights and thresholds."""
+    """Match mode - kept for backwards compatibility but all use same weights."""
     BEST_FIT = "best_fit"
     STRETCH = "stretch"
     EXPLORATORY = "exploratory"
 
 
 @dataclass
-class ModeWeights:
-    """Weights for each scoring component in a match mode."""
-    skill: float
-    experience: float
-    growth: float
+class ScoringWeights:
+    """
+    Weights for scoring components based on hiring research.
+
+    - skill: 80% - Strongest predictor of job success
+    - experience: 10% - Low validity (0.18 coefficient) but contextually useful
+    - role_fit: 10% - Holistic alignment via embedding similarity
+    """
+    skill: float = 0.80
+    experience: float = 0.10
+    role_fit: float = 0.10
 
     def __post_init__(self):
         """Validate weights sum to 1.0."""
-        total = self.skill + self.experience + self.growth
+        total = self.skill + self.experience + self.role_fit
         if abs(total - 1.0) > 0.001:
             raise ValueError(f"Weights must sum to 1.0, got {total}")
 
 
-@dataclass
-class SkillMatchThreshold:
-    """Skill match score thresholds for a match mode."""
-    min_score: float
-    max_score: float
-    description: str
-
-
-# Mode weights as defined in CONTEXT.md
-MODE_WEIGHTS: Dict[MatchMode, ModeWeights] = {
-    MatchMode.BEST_FIT: ModeWeights(
-        skill=0.6,
-        experience=0.3,
-        growth=0.1
-    ),
-    MatchMode.STRETCH: ModeWeights(
-        skill=0.4,
-        experience=0.3,
-        growth=0.3
-    ),
-    MatchMode.EXPLORATORY: ModeWeights(
-        skill=0.3,
-        experience=0.2,
-        growth=0.5
-    ),
-}
-
-# Skill match thresholds per mode
-SKILL_MATCH_THRESHOLDS: Dict[MatchMode, SkillMatchThreshold] = {
-    MatchMode.BEST_FIT: SkillMatchThreshold(
-        min_score=0.70,
-        max_score=1.0,
-        description="High skill overlap (70-100%)"
-    ),
-    MatchMode.STRETCH: SkillMatchThreshold(
-        min_score=0.55,
-        max_score=0.75,
-        description="Moderate skill overlap (55-75%)"
-    ),
-    MatchMode.EXPLORATORY: SkillMatchThreshold(
-        min_score=0.0,
-        max_score=0.55,
-        description="Lower skill overlap (0-55%)"
-    ),
-}
+# Single unified weights - no more mode-based differences
+SCORING_WEIGHTS = ScoringWeights()
 
 
 @dataclass
 class MatchingConfig:
     """
-    Complete configuration for the matching engine.
+    Configuration for the matching engine.
 
     Attributes:
-        mode: The matching mode (best_fit, stretch, exploratory)
-        weights: Score component weights for this mode
-        skill_threshold: Skill match score thresholds
+        mode: Match mode (kept for backwards compatibility, same weights used)
+        weights: Score component weights (unified across all modes)
         top_k: Number of top matches to return
         min_overall_score: Minimum overall score to include in results
         include_explanations: Whether to generate LLM explanations
         cache_ttl_seconds: Cache TTL for match results
     """
     mode: MatchMode
-    weights: ModeWeights
-    skill_threshold: SkillMatchThreshold
+    weights: ScoringWeights
     top_k: int = 10
-    min_overall_score: float = 0.5
+    min_overall_score: float = 0.0  # Show all matches, let UI filter
     include_explanations: bool = True
     cache_ttl_seconds: int = 3600  # 1 hour
 
 
 def get_matching_config(
-    mode: MatchMode = MatchMode.BEST_FIT,
+    mode: MatchMode = MatchMode.BEST_FIT,  # Kept for API compatibility
     top_k: int = 10,
-    min_overall_score: float = 0.5,
+    min_overall_score: float = 0.0,
     include_explanations: bool = True,
 ) -> MatchingConfig:
     """
-    Get matching configuration for a specific mode.
+    Get matching configuration.
+
+    Note: mode parameter is kept for backwards compatibility but all modes
+    now use the same unified scoring weights (80% skill, 10% experience, 10% role fit).
 
     Args:
-        mode: The matching mode to use
+        mode: Ignored - kept for API compatibility
         top_k: Number of top matches to return
         min_overall_score: Minimum overall score threshold
         include_explanations: Whether to include LLM explanations
 
     Returns:
-        MatchingConfig instance configured for the specified mode
-
-    Example:
-        >>> config = get_matching_config(MatchMode.STRETCH, top_k=20)
-        >>> config.weights.skill
-        0.4
-        >>> config.skill_threshold.min_score
-        0.70
+        MatchingConfig instance with unified scoring weights
     """
     return MatchingConfig(
         mode=mode,
-        weights=MODE_WEIGHTS[mode],
-        skill_threshold=SKILL_MATCH_THRESHOLDS[mode],
+        weights=SCORING_WEIGHTS,
         top_k=top_k,
         min_overall_score=min_overall_score,
         include_explanations=include_explanations,

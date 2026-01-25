@@ -2,10 +2,11 @@ import { NavLink } from 'react-router-dom';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 
 const navigation = [
-  { name: 'Skills Dashboard', href: '/dashboard' },
   { name: 'Match Results', href: '/matches' },
-  { name: 'Career Path', href: '/career-path' },
+  { name: 'Saved Roles', href: '/saved' },
+  { name: 'Career Roadmap', href: '/roadmap' },
   { name: 'Success Patterns', href: '/success-patterns' },
+  { name: 'My Profile', href: '/profile' },
 ];
 
 export default function Sidebar() {

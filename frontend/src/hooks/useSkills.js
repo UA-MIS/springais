@@ -134,6 +134,10 @@ export function useSkills() {
   const [error, setError] = useState(null);
   const [userSkillsLoaded, setUserSkillsLoaded] = useState(false);
 
+  // AI-generated skill categories
+  const [skillCategories, setSkillCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+
   // Add a new skill
   const addSkill = (newSkill) => {
     const skillWithId = {
@@ -238,36 +242,60 @@ export function useSkills() {
     }
   };
 
-  // Fetch user's saved skills from profile
-  // IMPORTANT: This REPLACES all skills, not merges them
+  // Fetch user's saved skills from profile AND progress tracking
+  // Progress tracking now includes AI grouping info (category, module count)
   const fetchUserSkills = async () => {
     try {
-      const response = await api.get('/skills/me');
-      const userSkills = response?.data?.skills || [];
+      // Fetch from both endpoints in parallel
+      const [profileResponse, progressResponse] = await Promise.all([
+        api.get('/skills/me').catch(() => ({ data: { skills: [] } })),
+        getUserSkillsWithProgress().catch(() => ({ skills: [] })),
+      ]);
 
+      const userSkills = profileResponse?.data?.skills || [];
+      const progressSkills = progressResponse?.skills || [];
+
+      // Build a map of progress-tracked skills (these have accurate status AND AI grouping info)
+      const progressMap = new Map();
+      progressSkills.forEach((skill) => {
+        progressMap.set(normalizeName(skill.name), skill);
+      });
+
+      // Start with progress-tracked skills (they have accurate status, category, and module count)
+      const mergedSkills = [...progressSkills];
+      const addedNames = new Set(progressSkills.map((s) => normalizeName(s.name)));
+
+      // Add profile skills that aren't already tracked
+      // These will show with default category until they're tracked
       if (userSkills.length > 0) {
-        const normalizedUserSkills = userSkills.map((skill) => {
-          const category = isKnownCategory(skill.category)
-            ? skill.category
-            : getFallbackCategory(skill.name);
+        userSkills.forEach((skill) => {
+          const normalizedName = normalizeName(skill.name);
+          if (!addedNames.has(normalizedName)) {
+            const category = isKnownCategory(skill.category)
+              ? skill.category
+              : getFallbackCategory(skill.name);
 
-          return {
-            id: `user-${normalizeName(skill.name)}`,
-            name: skill.name,
-            category,
-            proficiency: skill.proficiency === 'beginner' ? 25 :
-                         skill.proficiency === 'intermediate' ? 50 :
-                         skill.proficiency === 'advanced' ? 75 :
-                         skill.proficiency === 'expert' ? 95 : 50,
-            status: 'active',
-            progress: { current: 2, total: 4, unit: 'modules' },
-            source: 'profile',
-          };
+            mergedSkills.push({
+              id: `user-${normalizedName}`,
+              name: skill.name,
+              category,
+              categoryId: category,
+              categoryEmoji: 'star',
+              proficiency: skill.proficiency === 'beginner' ? 25 :
+                           skill.proficiency === 'intermediate' ? 50 :
+                           skill.proficiency === 'advanced' ? 75 :
+                           skill.proficiency === 'expert' ? 95 : 50,
+              status: 'active',
+              // Use a reasonable default - will be updated when skill is tracked
+              progress: { current: 0, total: 4, unit: 'modules', percentage: 0 },
+              source: 'profile',
+            });
+            addedNames.add(normalizedName);
+          }
         });
-
-        // REPLACE skills instead of merging - fixes issue where old mock/bootstrap skills persist
-        setSkills(normalizedUserSkills);
       }
+
+      setSkills(mergedSkills);
       setUserSkillsLoaded(true);
     } catch (err) {
       console.error('Failed to fetch user skills:', err);
@@ -310,11 +338,26 @@ export function useSkills() {
     }
   };
 
+  // Fetch user's skill groupings - defined before useEffect that uses it
+  const fetchSkillGroupings = useCallback(async () => {
+    try {
+      const response = await api.get('/skills/groupings');
+      const categories = response.data?.categories || [];
+      setSkillCategories(categories);
+      return categories;
+    } catch (err) {
+      console.error('Failed to fetch skill groupings:', err);
+      return [];
+    }
+  }, []);
+
   useEffect(() => {
     // Only fetch user's saved skills - no auto-recommendations
     // Users should upload a resume to populate their skills
     fetchUserSkills();
-  }, []);
+    // Also fetch any saved skill groupings
+    fetchSkillGroupings();
+  }, [fetchSkillGroupings]);
 
   // Merge skills from saved roles when they're loaded
   useEffect(() => {
@@ -356,12 +399,50 @@ export function useSkills() {
     }
   }, [fetchSkillsWithProgress]);
 
+  // Generate AI skill groupings from skills
+  const generateSkillGroupings = useCallback(async (skillNames, careerContext = null) => {
+    setCategoriesLoading(true);
+    try {
+      const response = await api.post('/skills/group', {
+        skills: skillNames,
+        career_context: careerContext
+      });
+      const categories = response.data?.categories || [];
+      setSkillCategories(categories);
+      return categories;
+    } catch (err) {
+      console.error('Failed to generate skill groupings:', err);
+      return [];
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, []);
+
+  // Enhance skill groupings with new skills from saved roles
+  const enhanceSkillGroupings = useCallback(async (existingGroupings, newSkills) => {
+    setCategoriesLoading(true);
+    try {
+      const response = await api.post('/skills/enhance', {
+        existing_groupings: existingGroupings,
+        new_skills: newSkills
+      });
+      const categories = response.data?.categories || [];
+      setSkillCategories(categories);
+      return categories;
+    } catch (err) {
+      console.error('Failed to enhance skill groupings:', err);
+      return existingGroupings;
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, []);
+
   // Mark a skill as complete (updates local state immediately, then syncs)
   const markSkillComplete = useCallback(async (skillId, skillName) => {
-    // Optimistic update
+    // Optimistic update - immediately show as completed
     setSkills((prev) =>
       prev.map((skill) =>
-        skill.id === skillId
+        skill.id === skillId || normalizeName(skill.name) === normalizeName(skillName)
           ? {
               ...skill,
               status: 'completed',
@@ -373,11 +454,40 @@ export function useSkills() {
       )
     );
 
-    // Try to sync with backend if skill is being tracked
+    // Sync with backend
     try {
       await completeSkillApi(skillName);
+      // After successful backend sync, fetch fresh data to ensure consistency
+      // This ensures the skill is properly persisted and shows on refresh
+      const progressResponse = await getUserSkillsWithProgress();
+      const progressSkills = progressResponse?.skills || [];
+
+      // Merge with current skills, progress data takes precedence
+      setSkills((prev) => {
+        const progressMap = new Map();
+        progressSkills.forEach((skill) => {
+          progressMap.set(normalizeName(skill.name), skill);
+        });
+
+        // Update existing skills with progress data, keep non-tracked skills
+        const updatedSkills = prev.map((skill) => {
+          const tracked = progressMap.get(normalizeName(skill.name));
+          if (tracked) {
+            progressMap.delete(normalizeName(skill.name)); // Mark as processed
+            return tracked;
+          }
+          return skill;
+        });
+
+        // Add any new tracked skills not in current list
+        progressMap.forEach((skill) => {
+          updatedSkills.push(skill);
+        });
+
+        return updatedSkills;
+      });
     } catch (error) {
-      // If backend fails, still keep local state updated
+      // If backend fails, still keep local state updated (optimistic update remains)
       console.warn('Could not sync skill completion to backend:', error);
     }
   }, []);
@@ -404,5 +514,12 @@ export function useSkills() {
     fetchSkillsWithProgress,
     startSkillTracking,
     markSkillComplete,
+    // AI skill grouping
+    skillCategories,
+    setSkillCategories,
+    categoriesLoading,
+    fetchSkillGroupings,
+    generateSkillGroupings,
+    enhanceSkillGroupings,
   };
 }

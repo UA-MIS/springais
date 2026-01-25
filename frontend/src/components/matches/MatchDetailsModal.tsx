@@ -85,7 +85,7 @@ export default function MatchDetailsModal({ match, onClose, onSave, isDark, colo
   const scorePercentage = Math.round(match.overall_score * 100);
   const skillMatchPercentage = Math.round(match.skill_match_score * 100);
   const experiencePercentage = Math.round(match.experience_score * 100);
-  const growthPercentage = Math.round(match.growth_potential_score * 100);
+  const roleFitPercentage = Math.round(match.role_fit_score * 100);
 
   const sectionBgColor = isDark ? 'rgba(30, 30, 40, 0.5)' : 'rgba(0, 0, 0, 0.03)';
   const progressBgColor = isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0';
@@ -221,8 +221,8 @@ export default function MatchDetailsModal({ match, onClose, onSave, isDark, colo
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm" style={{ color: colors.textMuted }}>Growth Potential</span>
-                  <span className="text-sm font-semibold" style={{ color: colors.textPrimary }}>{growthPercentage}%</span>
+                  <span className="text-sm" style={{ color: colors.textMuted }}>Role Fit</span>
+                  <span className="text-sm font-semibold" style={{ color: colors.textPrimary }}>{roleFitPercentage}%</span>
                 </div>
                 <div
                   className="h-2 rounded-full overflow-hidden"
@@ -230,7 +230,7 @@ export default function MatchDetailsModal({ match, onClose, onSave, isDark, colo
                 >
                   <div
                     className="h-full bg-[#3B82F6] transition-all"
-                    style={{ width: `${growthPercentage}%` }}
+                    style={{ width: `${roleFitPercentage}%` }}
                   />
                 </div>
               </div>
@@ -461,6 +461,7 @@ export default function MatchDetailsModal({ match, onClose, onSave, isDark, colo
             </h3>
             <SkillGapDisplay
               matched_skills={match.matched_skills}
+              transferable_skills={match.transferable_skills}
               skill_gaps={match.skill_gaps}
               skill_match_score={match.skill_match_score}
               isDark={isDark}

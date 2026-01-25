@@ -8,6 +8,7 @@ const navigation = [
   { name: 'Match Results', href: '/matches' },
   { name: 'My Profile', href: '/profile' },
   { name: 'Saved Roles', href: '/saved' },
+  { name: 'Career Roadmap', href: '/roadmap' },
 ];
 
 // Sun icon for light mode

@@ -1,20 +1,18 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Match } from '../services/mockMatchData';
-import { getMatches, MatchFilters, MatchMode } from '../services/matchService';
+import { getMatches, MatchFilters } from '../services/matchService';
 
 interface MatchesState {
   matches: Match[];
   loading: boolean;
   error: string | null;
-  mode: MatchMode;
   filters: MatchFilters;
   lastFetchTime: number | null;
 }
 
 interface MatchesContextType {
   state: MatchesState;
-  fetchMatches: (mode: MatchMode, filters: MatchFilters, forceRefresh?: boolean) => Promise<void>;
-  setMode: (mode: MatchMode) => void;
+  fetchMatches: (filters: MatchFilters, forceRefresh?: boolean) => Promise<void>;
   setFilters: (filters: MatchFilters) => void;
   clearCache: () => void;
 }
@@ -25,7 +23,6 @@ const defaultState: MatchesState = {
   matches: [],
   loading: false,
   error: null,
-  mode: 'best_fit',
   filters: {},
   lastFetchTime: null,
 };
@@ -36,7 +33,6 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<MatchesState>(defaultState);
 
   const fetchMatches = useCallback(async (
-    mode: MatchMode,
     filters: MatchFilters,
     forceRefresh = false
   ) => {
@@ -44,7 +40,6 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
     const now = Date.now();
     const cacheValid = state.lastFetchTime &&
       (now - state.lastFetchTime) < CACHE_TTL_MS &&
-      state.mode === mode &&
       JSON.stringify(state.filters) === JSON.stringify(filters);
 
     if (cacheValid && !forceRefresh && state.matches.length > 0) {
@@ -55,12 +50,11 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const result = await getMatches(mode, filters);
+      const result = await getMatches(filters);
       setState(prev => ({
         ...prev,
         matches: result.matches,
         loading: false,
-        mode,
         filters,
         lastFetchTime: Date.now(),
       }));
@@ -72,11 +66,7 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
         matches: [],
       }));
     }
-  }, [state.lastFetchTime, state.mode, state.filters, state.matches.length]);
-
-  const setMode = useCallback((mode: MatchMode) => {
-    setState(prev => ({ ...prev, mode }));
-  }, []);
+  }, [state.lastFetchTime, state.filters, state.matches.length]);
 
   const setFilters = useCallback((filters: MatchFilters) => {
     setState(prev => ({ ...prev, filters }));
@@ -87,7 +77,7 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <MatchesContext.Provider value={{ state, fetchMatches, setMode, setFilters, clearCache }}>
+    <MatchesContext.Provider value={{ state, fetchMatches, setFilters, clearCache }}>
       {children}
     </MatchesContext.Provider>
   );

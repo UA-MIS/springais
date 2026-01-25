@@ -27,8 +27,9 @@ const mapMatchResult = (item: any): Match => {
     overall_score: item.scores?.overall ?? 0,
     skill_match_score: item.scores?.skill_match ?? 0,
     experience_score: item.scores?.experience_match ?? 0,
-    growth_potential_score: item.scores?.growth_potential ?? 0,
+    role_fit_score: item.scores?.role_fit ?? item.scores?.growth_potential ?? 0,
     matched_skills: gapAnalysis.overlapping_skills || [],
+    transferable_skills: gapAnalysis.transferable_skills || [],
     skill_gaps: gapAnalysis.missing_skills || [],
     explanation: item.explanation || '',
     salary_range: item.salary_range,
@@ -54,8 +55,9 @@ const mapMatchDetail = (item: any): Match => {
     overall_score: item.scores?.overall ?? 0,
     skill_match_score: item.scores?.skill_match ?? 0,
     experience_score: item.scores?.experience_match ?? 0,
-    growth_potential_score: item.scores?.growth_potential ?? 0,
+    role_fit_score: item.scores?.role_fit ?? item.scores?.growth_potential ?? 0,
     matched_skills: gapAnalysis.overlapping_skills || [],
+    transferable_skills: gapAnalysis.transferable_skills || [],
     skill_gaps: gapAnalysis.missing_skills || [],
     explanation: item.explanation || '',
     salary_range: item.salary_range,
@@ -67,15 +69,12 @@ const mapMatchDetail = (item: any): Match => {
 };
 
 export async function getMatches(
-  mode: MatchMode,
   filters?: MatchFilters
 ): Promise<{ matches: Match[]; total: number }> {
   // Fetch all matches in one request for client-side filtering
-  // Client-side filtering handles mode-based score ranges and US-only filter
   const params: Record<string, string | number> = {
-    mode: 'exploratory',  // Use exploratory to get ALL matches (lowest threshold)
     limit: DEFAULT_MATCH_LIMIT,
-    min_score: 0,  // Get all matches, filter client-side
+    min_score: 0,  // Get all matches, filter/sort client-side
   };
 
   const response = await api.get(`/matches/employee/${DEFAULT_EMPLOYEE_ID}`, { params });
@@ -104,7 +103,7 @@ export async function saveMatch(match: Match, mode: MatchMode): Promise<void> {
     scores: {
       skill_match: match.skill_match_score,
       experience_match: match.experience_score,
-      growth_potential: match.growth_potential_score,
+      role_fit: match.role_fit_score,
       overall: match.overall_score,
     },
     skill_gaps: match.skill_gaps,
@@ -145,7 +144,7 @@ export interface SavedMatch {
   scores: {
     skill_match: number;
     experience_match: number;
-    growth_potential: number;
+    role_fit: number;
     overall: number;
   };
   skill_gaps: string[];

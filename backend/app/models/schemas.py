@@ -22,7 +22,7 @@ class MatchScores(BaseModel):
     overall_score: float = Field(ge=0.0, le=1.0)
     skill_match_score: float = Field(ge=0.0, le=1.0)
     experience_score: float = Field(ge=0.0, le=1.0)
-    growth_potential_score: float = Field(ge=0.0, le=1.0)
+    role_fit_score: float = Field(ge=0.0, le=1.0)
 
 
 class ReactFlowNode(BaseModel):

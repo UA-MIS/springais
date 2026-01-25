@@ -54,7 +54,7 @@ export default function SavedRolesPage() {
       overall_score: saved.scores.overall,
       skill_match_score: saved.scores.skill_match,
       experience_score: saved.scores.experience_match,
-      growth_potential_score: saved.scores.growth_potential,
+      role_fit_score: saved.scores.role_fit,
       matched_skills: saved.matched_skills,
       skill_gaps: saved.skill_gaps,
       explanation: saved.explanation || '',

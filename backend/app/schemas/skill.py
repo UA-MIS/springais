@@ -8,7 +8,12 @@ from pydantic import BaseModel, Field, ConfigDict
 # Skill Categories and Proficiency Levels
 # ============================================
 
-SkillCategory = Literal["technical", "soft", "domain", "certification", "tool", "methodology", "programming"]
+SkillCategory = Literal[
+    "technical", "soft", "domain", "certification", "tool", "methodology", "programming",
+    # Extended categories from skill_categorizer
+    "cloud_infrastructure", "data_analytics", "leadership_management", "business_acumen",
+    "tools", "research", "consulting_excellence", "security"
+]
 ProficiencyLevel = Literal["beginner", "intermediate", "advanced", "expert"]
 RecommendationStatus = Literal["recommended", "in_progress", "dismissed"]
 
@@ -205,7 +210,7 @@ class ExtractedSkill(BaseModel):
     """A skill extracted from a job posting with confidence score."""
 
     name: str = Field(..., description="Normalized skill name")
-    category: Literal["technical", "soft", "domain", "certification", "tool", "methodology", "programming"] = Field(
+    category: SkillCategory = Field(
         ..., description="Skill category"
     )
     confidence: float = Field(

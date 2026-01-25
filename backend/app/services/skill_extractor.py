@@ -1,5 +1,5 @@
 """
-Skill extraction service using OpenAI GPT-5 nano.
+Skill extraction service using OpenAI GPT-5.2 chat.
 
 Extracts structured skills from resume text including:
 - Technical skills (programming languages, tools, frameworks)
@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ============================================
 
-# Model configuration - GPT-5 nano for fast, cheap extraction
-OPENAI_MODEL = "gpt-5-nano"
+# Model configuration - GPT-5.2 chat for quality extraction
+OPENAI_MODEL = "gpt-5.2-chat-latest"
 MAX_TOKENS = 4000  # Increased to handle 40+ skills
 TEMPERATURE = 0.3  # Low temperature for consistent extractions
 
@@ -40,9 +40,9 @@ TEMPERATURE = 0.3  # Low temperature for consistent extractions
 MAX_RETRIES = 3
 RETRY_DELAYS = [1, 2, 4]  # Exponential backoff in seconds
 
-# Cost tracking (GPT-5 nano pricing)
-COST_PER_1M_INPUT = 0.05   # $0.05 per 1M input tokens
-COST_PER_1M_OUTPUT = 0.40  # $0.40 per 1M output tokens
+# Cost tracking (GPT-5.2 pricing)
+COST_PER_1M_INPUT = 1.75   # $1.75 per 1M input tokens
+COST_PER_1M_OUTPUT = 14.00  # $14.00 per 1M output tokens
 
 
 # ============================================
@@ -76,13 +76,24 @@ SKILL_EXTRACTION_PROMPT = """You are a comprehensive skill extraction assistant.
 5. Include ALL certifications with their full names
 6. AIM FOR 30-60 SKILLS for a detailed resume - most professionals have many skills
 
-## CATEGORIES (use the most specific one):
-- technical: programming languages, algorithms, system design
+## CATEGORIES (use ONLY these exact values - no other categories allowed):
+- technical: programming languages, algorithms, system design, frameworks (React, .NET, Next.js, etc.)
+- programming: same as technical, use for coding languages
 - tool: specific software, platforms, IDEs (e.g., Docker, Kubernetes, VS Code, Jira)
-- soft: communication, leadership, teamwork, problem-solving, mentoring
+- tools: same as tool
+- soft: communication, teamwork, problem-solving, mentoring
+- leadership_management: leadership, management, people skills
 - domain: industry expertise (e.g., "Financial Analysis", "Healthcare IT", "E-commerce")
 - certification: professional certifications (e.g., "AWS Solutions Architect", "PMP", "CKA")
 - methodology: processes and frameworks (e.g., "Agile", "Scrum", "DevOps", "CI/CD")
+- cloud_infrastructure: AWS, Azure, GCP, cloud services
+- data_analytics: data science, ML, analytics, visualization
+- business_acumen: business strategy, finance, marketing
+- research: research methodologies, analysis
+- security: cybersecurity, compliance
+- consulting_excellence: client management, consulting skills
+
+IMPORTANT: Do NOT use any category not listed above. For frameworks like React, Next.js, .NET, use "technical".
 
 ## PROFICIENCY LEVELS:
 - beginner: <1 year or just learning
@@ -115,7 +126,7 @@ Resume text:
 
 class SkillExtractor:
     """
-    Extracts structured skills from resume text using GPT-5 nano.
+    Extracts structured skills from resume text using GPT-5.2 chat.
 
     Usage:
         extractor = SkillExtractor()
@@ -132,9 +143,9 @@ class SkillExtractor:
         Initialize skill extractor.
 
         Args:
-            model: OpenAI model to use (default: gpt-5-nano)
+            model: OpenAI model to use (default: gpt-5.2-chat-latest)
             temperature: Sampling temperature (default: 0.3)
-            max_tokens: Maximum tokens in response (default: 1000)
+            max_tokens: Maximum tokens in response (default: 4000)
         """
         self.model = model
         self.temperature = temperature
@@ -250,6 +261,7 @@ class SkillExtractor:
                     "content": prompt
                 }
             ],
+            max_completion_tokens=self.max_tokens,
             response_format={"type": "json_object"}
         )
 
@@ -318,12 +330,35 @@ class SkillExtractor:
 
         return listed_skills, inferred_skills
 
+    # Map invalid categories to valid ones
+    CATEGORY_FALLBACK = {
+        "framework": "technical",
+        "language": "programming",
+        "library": "technical",
+        "database": "technical",
+        "cloud": "cloud_infrastructure",
+        "devops": "cloud_infrastructure",
+        "data": "data_analytics",
+        "analytics": "data_analytics",
+        "management": "leadership_management",
+        "leadership": "leadership_management",
+        "business": "business_acumen",
+        "communication": "soft",
+        "interpersonal": "soft",
+        "other": "technical",
+    }
+
     def _parse_skill_item(self, item: dict) -> Optional[Skill]:
         """Parse a single skill item from LLM response."""
         try:
+            category = item.get("category", "technical")
+            # Map invalid categories to valid ones
+            if category in self.CATEGORY_FALLBACK:
+                category = self.CATEGORY_FALLBACK[category]
+
             skill = Skill(
                 name=item.get("name", "").strip(),
-                category=item.get("category", "technical"),
+                category=category,
                 proficiency=item.get("proficiency", "intermediate")
             )
             if skill.name:

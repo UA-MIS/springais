@@ -22,6 +22,7 @@ from app.models.employee import Employee
 from app.models.user_profile import UserProfile
 from app.models.skill_embedding import SkillEmbedding
 from app.utils.text import normalize_skill_text
+from app.services.skill_taxonomy import get_taxonomy_service
 
 from ..config.matching_config import (
     MatchMode,
@@ -76,7 +77,7 @@ class MatchCandidate:
     job: "JobPostingData"
     skill_score: float = 0.0
     experience_score: float = 0.0
-    growth_score: float = 0.0
+    role_fit_score: float = 0.0  # Embedding similarity between resume and job
     overall_score: float = 0.0
     gap_analysis: Optional[SkillGapAnalysis] = None
 
@@ -85,14 +86,13 @@ class MatchingService:
     """
     AI-powered job matching service.
 
-    Implements semantic skill matching using cosine similarity,
-    multi-factor scoring, and three distinct matching modes.
-
-    Attributes:
-        config: Matching configuration for the current mode
+    Implements simplified scoring based on hiring research:
+    - 80% skill match (strongest predictor of job success)
+    - 10% experience fit (low but useful validity)
+    - 10% role fit (holistic alignment via embedding similarity)
 
     Example:
-        >>> service = MatchingService(mode=MatchMode.STRETCH)
+        >>> service = MatchingService(db=db, user_profile=user)
         >>> matches = service.find_matches_for_employee(employee_id=1)
         >>> print(matches[0].scores.overall)
         0.82
@@ -204,6 +204,9 @@ class MatchingService:
         Raises:
             ValueError: If employee or job not found
         """
+        # Preload embeddings for semantic matching
+        self._preload_all_embeddings()
+
         employee = self._get_employee_profile(employee_id)
         if not employee:
             raise ValueError("Employee not found")
@@ -230,6 +233,9 @@ class MatchingService:
         Returns:
             SkillGapAnalysis with overlapping, missing, and transferable skills
         """
+        # Preload embeddings for semantic matching
+        self._preload_all_embeddings()
+
         employee = self._get_employee_profile(employee_id)
         if not employee:
             raise ValueError("Employee not found")
@@ -268,16 +274,14 @@ class MatchingService:
             job.experience_years_min,
             job.experience_years_max,
         )
-        candidate.growth_score = self._calculate_growth_potential_score(
-            employee, job
-        )
+        candidate.role_fit_score = self._calculate_role_fit_score(employee, job)
 
-        # Calculate weighted overall score
+        # Calculate weighted overall score (80% skill, 10% experience, 10% role fit)
         weights = self.config.weights
         candidate.overall_score = (
             candidate.skill_score * weights.skill +
             candidate.experience_score * weights.experience +
-            candidate.growth_score * weights.growth
+            candidate.role_fit_score * weights.role_fit
         )
 
         # Calculate skill gaps
@@ -291,10 +295,10 @@ class MatchingService:
         job: "JobPostingData",
     ) -> float:
         """
-        Calculate semantic skill match score using cosine similarity.
-
-        For each required job skill, find the best matching employee skill
-        using vector similarity. Return the average of best matches.
+        Calculate semantic skill match score using:
+        1. Skill taxonomy (parent/child/alias relationships) - fast and accurate
+        2. Cosine similarity on embeddings - semantic matching
+        3. Fuzzy token matching as fallback
 
         Args:
             employee: The employee with skill embeddings
@@ -310,34 +314,40 @@ class MatchingService:
         if not employee.skills:
             return 0.0  # No skills = no match
 
-        # Get embeddings
+        # Get taxonomy service for relationship matching
+        taxonomy = get_taxonomy_service()
+
+        matches = []
+        employee_skills_lower = {s.lower() for s in employee.skills}
+
+        # Get embeddings for fallback
         employee_embeddings = [
             employee.skill_embeddings.get(skill)
             for skill in employee.skills
             if skill in employee.skill_embeddings
         ]
 
-        if not employee_embeddings:
-            # Fallback to fuzzy matching, then exact string matching
-            fuzzy_score = self._fuzzy_token_match_score(employee.skills, required_skills)
-            if fuzzy_score > 0:
-                return fuzzy_score
-            return self._exact_skill_match_score(employee.skills, required_skills)
-
-        matches = []
-        employee_skills_lower = {s.lower() for s in employee.skills}
-
         for required_skill in required_skills:
-            # First, check for exact string match (case-insensitive)
+            # 1. Check taxonomy-based coverage first (fast, accurate)
+            # This handles aliases, parent/child relationships, and implied skills
+            taxonomy_score = taxonomy.calculate_skill_coverage(
+                employee.skills, required_skill
+            )
+            if taxonomy_score > 0:
+                matches.append(taxonomy_score)
+                continue
+
+            # 2. Check for exact string match (case-insensitive)
             if required_skill.lower() in employee_skills_lower:
                 matches.append(1.0)
                 continue
 
-            # No exact match - try embedding similarity
+            # 3. Try embedding similarity
             job_embedding = job.skill_embeddings.get(required_skill)
-            if job_embedding is None:
-                # No embedding available, no match
-                matches.append(0.0)
+            if job_embedding is None or not employee_embeddings:
+                # No embedding available, try fuzzy matching
+                fuzzy_score = self._fuzzy_token_match_score(employee.skills, [required_skill])
+                matches.append(fuzzy_score)
                 continue
 
             # Find best matching employee skill using embeddings
@@ -376,10 +386,11 @@ class MatchingService:
         - Under-qualified: linear decay (-15% per year under)
         - Over-qualified: slight penalty (-5% per year over, floor at 50%)
         """
-        # If user has no experience data, return 0 (not 100%)
+        # If user has no experience data, assume entry-level (0-2 years)
+        # This ensures jobs requiring 8+ years get penalized appropriately
         if user_years is None:
-            logger.debug("No user experience data, returning 0")
-            return 0.0
+            logger.debug("No user experience data, assuming entry-level (1 year)")
+            user_years = 1.0  # Assume entry-level
 
         # If job has no experience requirements, assume entry-level friendly
         if job_min_years is None and job_max_years is None:
@@ -409,66 +420,80 @@ class MatchingService:
             logger.debug(f"Overqualified by {gap} years, score: {score}")
             return score
 
-    def _calculate_growth_potential_score(
+    def _calculate_role_fit_score(
         self,
         employee: "EmployeeProfile",
         job: "JobPostingData",
     ) -> float:
         """
-        Calculate growth potential score.
+        Calculate role fit score using embedding similarity.
 
-        Factors:
-        1. Skill gap (new skills to learn) - 50%
-        2. Role level progression - 40%
-        3. Cross-domain potential - 10%
+        Compares the user's resume embedding with the job description embedding
+        to capture holistic alignment that skill keywords might miss:
+        - Communication style and language
+        - Industry/domain familiarity
+        - Soft skills implied by experience
+        - Overall career trajectory alignment
 
         Args:
-            employee: The employee
+            employee: The employee profile
             job: The job posting
 
         Returns:
-            Growth potential score between 0.0 and 1.0
+            Role fit score between 0.0 and 1.0 (cosine similarity)
         """
-        # If user has no skills, we can't measure growth potential meaningfully
-        # Growth implies going FROM somewhere TO somewhere - with no baseline, it's meaningless
-        if not employee.skills:
-            return 0.0
+        # Get user's resume embedding from user_profile
+        resume_embedding = None
+        if self.user_profile and self.user_profile.resume_embedding is not None:
+            resume_embedding = self.user_profile.resume_embedding
 
-        # Factor 1: Skill gap (more gaps = more growth potential)
-        # But only count meaningful gaps - if user has SOME skills, gaps represent learning opportunities
-        employee_skill_set = set(employee.skills or [])
-        job_skill_set = set(self._effective_required_skills(job))
-        skill_gaps = job_skill_set - employee_skill_set
+        # Get job's description embedding
+        job_embedding = self._get_job_description_embedding(job.id)
 
-        # Normalize: growth is good if there are 1-3 skills to learn, diminishing returns beyond that
-        # Having 7 gaps isn't better than having 3 - it might mean the role is too far a stretch
-        if len(skill_gaps) == 0:
-            skill_gap_factor = 0.0  # Already qualified, no growth needed
-        elif len(skill_gaps) <= 3:
-            skill_gap_factor = len(skill_gaps) / 3  # 1-3 gaps is optimal
-        else:
-            # More than 3 gaps starts to decrease the score (too big a stretch)
-            skill_gap_factor = max(0.3, 1.0 - (len(skill_gaps) - 3) * 0.1)
+        # If either embedding is missing, return neutral score
+        if resume_embedding is None or job_embedding is None:
+            logger.debug(f"Missing embedding for role fit: resume={resume_embedding is not None}, job={job_embedding is not None}")
+            return 0.5  # Neutral score when we can't calculate
 
-        # Factor 2: Role level progression
-        role_delta = job.role_level - employee.role_level
-        role_factor = min(max(role_delta / 3, 0), 1.0)  # Normalized, 0 for lateral/down
+        # Calculate cosine similarity
+        try:
+            resume_vec = np.array(resume_embedding)
+            job_vec = np.array(job_embedding)
 
-        # Factor 3: Cross-domain potential
-        domain_factor = 0.3 if job.service_line != employee.service_line else 0.0
+            # Normalize vectors
+            resume_norm = np.linalg.norm(resume_vec)
+            job_norm = np.linalg.norm(job_vec)
 
-        # Weighted combination
-        growth_score = (
-            skill_gap_factor * 0.5 +
-            role_factor * 0.4 +
-            domain_factor * 0.1
-        )
+            if resume_norm == 0 or job_norm == 0:
+                return 0.5
 
-        return growth_score
+            # Cosine similarity
+            similarity = np.dot(resume_vec, job_vec) / (resume_norm * job_norm)
+
+            # Clamp to [0, 1] range (similarity can be negative for very different vectors)
+            return float(max(0.0, min(1.0, similarity)))
+
+        except Exception as e:
+            logger.warning(f"Error calculating role fit: {e}")
+            return 0.5
+
+    def _get_job_description_embedding(self, job_id: str) -> Optional[List[float]]:
+        """Get job description embedding from database."""
+        try:
+            job = self.db.query(JobPosting).filter(JobPosting.id == job_id).first()
+            if job and job.description_embedding is not None:
+                return list(job.description_embedding)
+        except Exception as e:
+            logger.debug(f"Error fetching job embedding: {e}")
+        return None
 
     # ============================================
     # Skill Gap Analysis
     # ============================================
+
+    # Similarity thresholds for skill matching
+    SKILL_MATCH_THRESHOLD = 0.65  # Semantic match - count as "matched"
+    SKILL_TRANSFERABLE_THRESHOLD = 0.50  # Related skill - count as "transferable"
 
     def _calculate_skill_gaps(
         self,
@@ -476,7 +501,15 @@ class MatchingService:
         job: "JobPostingData",
     ) -> SkillGapAnalysis:
         """
-        Analyze skill gaps between employee and job.
+        Analyze skill gaps between employee and job using semantic matching.
+
+        Uses embedding similarity to recognize that skills like
+        "Quantitative Data Collection" match "Quantitative Research".
+
+        Thresholds:
+        - >= 0.65: Matched (overlapping) - user has this skill
+        - >= 0.50: Transferable - user has related skill
+        - < 0.50: Gap - user needs to develop this skill
 
         Args:
             employee: The employee
@@ -486,32 +519,66 @@ class MatchingService:
             SkillGapAnalysis with categorized skills
         """
         employee_skills = set(employee.skills or [])
-        required_skills = set(self._effective_required_skills(job))
+        required_skills = list(self._effective_required_skills(job))
         preferred_skills = set(job.preferred_skills or []) if job.required_skills else set()
 
-        # Exact overlapping skills
-        overlapping = list(employee_skills & required_skills)
+        # Get taxonomy for alias/parent-child matching
+        taxonomy = get_taxonomy_service()
 
-        # Missing required skills
-        missing = list(required_skills - employee_skills)
+        overlapping = []
+        missing = []
+        transferable = []
 
-        # Transferable: employee skills that match preferred or could help
-        transferable = list(employee_skills & preferred_skills)
-
-        # Also check for semantically similar skills that could transfer
-        for emp_skill in employee_skills - required_skills - preferred_skills:
-            emp_embedding = employee.skill_embeddings.get(emp_skill)
-            if emp_embedding is None:
+        for req_skill in required_skills:
+            # 1. Check exact string match (case-insensitive)
+            if req_skill.lower() in {s.lower() for s in employee_skills}:
+                overlapping.append(req_skill)
                 continue
 
-            # Check if any missing skill is semantically close
-            for miss_skill in missing:
-                miss_embedding = job.skill_embeddings.get(miss_skill)
-                if miss_embedding is not None:
-                    similarity = self._cosine_similarity(emp_embedding, miss_embedding)
-                    if similarity > 0.55 and emp_skill not in transferable:
-                        transferable.append(emp_skill)
-                        break
+            # 2. Check taxonomy-based match (aliases, parent/child relationships)
+            taxonomy_score = taxonomy.calculate_skill_coverage(
+                list(employee_skills), req_skill
+            )
+            if taxonomy_score >= 0.70:
+                overlapping.append(req_skill)
+                continue
+
+            # 3. Check embedding similarity
+            req_embedding = job.skill_embeddings.get(req_skill)
+            if req_embedding is not None:
+                best_similarity = 0.0
+                best_matching_skill = None
+
+                for emp_skill in employee_skills:
+                    emp_embedding = employee.skill_embeddings.get(emp_skill)
+                    if emp_embedding is not None:
+                        similarity = self._cosine_similarity(emp_embedding, req_embedding)
+                        if similarity > best_similarity:
+                            best_similarity = similarity
+                            best_matching_skill = emp_skill
+
+                # Determine category based on similarity
+                if best_similarity >= self.SKILL_MATCH_THRESHOLD:
+                    # Strong semantic match - count as matched
+                    overlapping.append(req_skill)
+                    logger.debug(
+                        f"Semantic match: '{best_matching_skill}' -> '{req_skill}' "
+                        f"(similarity: {best_similarity:.3f})"
+                    )
+                    continue
+                elif best_similarity >= self.SKILL_TRANSFERABLE_THRESHOLD:
+                    # Partial match - count as transferable
+                    transferable.append(f"{req_skill} (via {best_matching_skill})")
+                    continue
+
+            # 4. No match - this is a genuine skill gap
+            missing.append(req_skill)
+
+        # Also add any preferred skills the user has
+        for pref_skill in preferred_skills:
+            if pref_skill.lower() in {s.lower() for s in employee_skills}:
+                if pref_skill not in overlapping:
+                    transferable.append(pref_skill)
 
         return SkillGapAnalysis(
             overlapping_skills=overlapping,
@@ -772,8 +839,10 @@ class MatchingService:
         This prevents N+1 query problem when processing thousands of jobs.
         Called once at the start of matching to load all embeddings in a single query.
         """
-        if not self.db or self._embedding_cache:
-            return  # Already loaded or no DB
+        if not self.db:
+            return  # No DB available
+        if len(self._embedding_cache) > 1000:
+            return  # Already fully loaded
 
         logger.info("Pre-loading all skill embeddings into cache...")
         results = self.db.query(SkillEmbedding).all()
@@ -841,47 +910,20 @@ class MatchingService:
         candidates: List[MatchCandidate],
     ) -> List[MatchCandidate]:
         """
-        Filter candidates based on mode-specific thresholds.
+        Filter candidates based on minimum score threshold.
 
-        For Best Fit: prefer high skill match (>= 0.9)
-        For Stretch: prefer moderate skill match (0.7-0.85)
-        For Exploratory: accept lower skill match, high growth (0.5-0.7)
+        With unified scoring (80% skill, 10% experience, 10% role fit),
+        all modes use the same weights. Filtering is just by min_overall_score.
 
         Args:
             candidates: List of scored candidates
 
         Returns:
-            Filtered list of candidates
+            Filtered list of candidates meeting minimum score
         """
-        threshold = self.config.skill_threshold
         min_score = self.config.min_overall_score
 
-        filtered = []
-        for c in candidates:
-            # Mode-specific skill threshold filtering
-            if self.config.mode == MatchMode.BEST_FIT:
-                # Must meet minimum overall score
-                if c.overall_score < min_score:
-                    continue
-                # Accept if skill threshold met OR overall score is very high
-                if c.skill_score >= threshold.min_score or c.overall_score >= 0.75:
-                    filtered.append(c)
-            elif self.config.mode == MatchMode.STRETCH:
-                # Must meet minimum overall score
-                if c.overall_score < min_score:
-                    continue
-                # Stretch: moderate skill match is ideal
-                if threshold.min_score <= c.skill_score <= threshold.max_score:
-                    filtered.append(c)
-                elif c.skill_score > threshold.max_score:
-                    # Also include high matches but prefer stretch range
-                    filtered.append(c)
-            else:  # Exploratory
-                # Exploratory: show all lower-skill matches (< 70%) regardless of profile strength
-                if c.skill_score < threshold.max_score:
-                    filtered.append(c)
-
-        return filtered
+        return [c for c in candidates if c.overall_score >= min_score]
 
     def _to_match_result(
         self,
@@ -901,7 +943,7 @@ class MatchingService:
         scores = MatchScores(
             skill_match=round(candidate.skill_score, 4),
             experience_match=round(candidate.experience_score, 4),
-            growth_potential=round(candidate.growth_score, 4),
+            role_fit=round(candidate.role_fit_score, 4),
             overall=round(candidate.overall_score, 4),
         )
 
