@@ -66,39 +66,23 @@
 2026-01-19 23:43:02,213 - INFO - Service lines: {'Consulting': 4923, 'Tax': 1183, 'Assurance': 803}
 2026-01-19 23:43:02,214 - INFO - Top tags: [('consulting', 2083), ('data', 1235), ('tax', 1183), ('assurance', 828), ('risk', 634), ('sap', 365), ('compliance', 354), ('gds', 308), ('parthenon', 221), ('cyber', 147), ('cloud', 126), ('forensics', 125), ('oracle', 45), ('microsoft', 40), ('grc', 33), ('independence', 27), ('devops', 13), ('sox', 11), ('appsec', 6), ('zscaler', 3)]
 2026-01-19 23:43:02,214 - INFO - Done
-2026-01-27 17:38:02,188 - INFO - Starting EY job scraper
-2026-01-27 17:38:02,190 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
-2026-01-27 17:38:02,191 - INFO - Workers: 32 | English-only: yes
-2026-01-27 17:40:59,129 - INFO - Starting EY job scraper
-2026-01-27 17:40:59,130 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
-2026-01-27 17:40:59,130 - INFO - Workers: 32 | English-only: yes
-2026-01-27 17:41:03,213 - INFO - Locale en_US: +50 links (total unique now 50)
-2026-01-27 17:41:07,280 - INFO - Locale en_GB: +50 links (total unique now 50)
-2026-01-27 17:41:10,151 - INFO - Locale en: +50 links (total unique now 50)
-2026-01-27 17:41:10,152 - INFO - Found 50 unique job links (after locale merge)
-2026-01-27 17:41:28,360 - INFO - Upsert complete: parsed=0/50 (failed=50) | 0 new, 0 updated, 0 archived
-2026-01-27 17:41:28,360 - INFO - Service lines: {}
-2026-01-27 17:41:28,361 - INFO - Top tags: []
-2026-01-27 17:41:28,362 - INFO - Done
-2026-01-27 17:42:34,759 - INFO - Starting EY job scraper
-2026-01-27 17:42:34,759 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=United States)
-2026-01-27 17:42:34,760 - INFO - Workers: 32 | English-only: yes
-2026-01-27 17:42:39,322 - INFO - Locale en_US: +100 links (total unique now 100)
-2026-01-27 17:42:42,922 - INFO - Locale en_GB: +100 links (total unique now 100)
-2026-01-27 17:42:46,398 - INFO - Locale en: +100 links (total unique now 100)
-2026-01-27 17:42:46,399 - INFO - Found 100 unique job links (after locale merge)
-2026-01-27 17:43:19,707 - INFO - Upsert complete: parsed=100/100 (failed=0) | 100 new, 0 updated, 0 archived
-2026-01-27 17:43:19,707 - INFO - Service lines: {'Consulting': 68, 'Tax': 27, 'Assurance': 5}
-2026-01-27 17:43:19,708 - INFO - Top tags: [('consulting', 34), ('tax', 27), ('data', 11), ('compliance', 10), ('parthenon', 8), ('risk', 7), ('cyber', 6), ('assurance', 5), ('microsoft', 4), ('cloud', 2), ('oracle', 1), ('sap', 1)]
-2026-01-27 17:43:19,709 - INFO - Done
-2026-01-27 19:27:43,286 - INFO - Starting EY job scraper
-2026-01-27 19:27:43,288 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=United States)
-2026-01-27 19:27:43,289 - INFO - Workers: 32 | English-only: yes
-2026-01-27 19:28:10,795 - INFO - Locale en_US: +400 links (total unique now 400)
-2026-01-27 19:28:40,886 - INFO - Locale en_GB: +400 links (total unique now 402)
-2026-01-27 19:29:07,548 - INFO - Locale en: +400 links (total unique now 402)
-2026-01-27 19:29:07,550 - INFO - Found 400 unique job links (after locale merge)
-2026-01-27 19:31:48,081 - INFO - Upsert complete: parsed=400/400 (failed=0) | 300 new, 100 updated, 0 archived
-2026-01-27 19:31:48,082 - INFO - Service lines: {'Consulting': 259, 'Tax': 119, 'Assurance': 22}
-2026-01-27 19:31:48,084 - INFO - Top tags: [('consulting', 123), ('tax', 119), ('data', 55), ('parthenon', 38), ('risk', 26), ('compliance', 23), ('assurance', 22), ('cyber', 20), ('microsoft', 12), ('sap', 11), ('oracle', 6), ('cloud', 3), ('independence', 3), ('forensics', 2), ('grc', 2), ('sox', 1)]
-2026-01-27 19:31:48,086 - INFO - Done
+2026-01-27 16:41:18,224 - INFO - Starting EY job scraper
+2026-01-27 16:41:18,225 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
+2026-01-27 16:41:18,225 - INFO - Workers: 32 | English-only: yes
+2026-01-27 16:41:21,701 - INFO - Locale en_US: +30 links (total unique now 30)
+2026-01-27 16:41:21,702 - INFO - Found 30 unique job links (after locale merge)
+2026-01-27 16:41:25,652 - INFO - Upsert complete: parsed=29/30 (failed=1) | 29 new, 0 updated, 10 archived
+2026-01-27 16:41:25,653 - INFO - Service lines: {'Consulting': 24, 'Assurance': 2, 'Tax': 3}
+2026-01-27 16:41:25,653 - INFO - Top tags: [('data', 6), ('gds', 6), ('consulting', 4), ('tax', 3), ('assurance', 2), ('sap', 2), ('grc', 1), ('parthenon', 1)]
+2026-01-27 16:41:25,653 - INFO - Done
+2026-01-27 18:51:56,670 - INFO - Starting EY job scraper
+2026-01-27 18:51:56,671 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=United States)
+2026-01-27 18:51:56,671 - INFO - Workers: 32 | English-only: yes
+2026-01-27 18:51:58,363 - INFO - Locale en_US: +25 links (total unique now 25)
+2026-01-27 18:51:59,936 - INFO - Locale en_GB: +25 links (total unique now 25)
+2026-01-27 18:52:02,610 - INFO - Locale en: +25 links (total unique now 25)
+2026-01-27 18:52:02,611 - INFO - Found 25 unique job links (after locale merge)
+2026-01-27 18:52:11,636 - INFO - Upsert complete: parsed=25/25 (failed=0) | 25 new, 0 updated, 0 archived
+2026-01-27 18:52:11,636 - INFO - Service lines: {'Consulting': 19, 'Tax': 6}
+2026-01-27 18:52:11,637 - INFO - Top tags: [('consulting', 8), ('tax', 6), ('compliance', 4), ('microsoft', 4), ('cyber', 3), ('data', 2), ('risk', 1), ('parthenon', 1)]
+2026-01-27 18:52:11,638 - INFO - Done

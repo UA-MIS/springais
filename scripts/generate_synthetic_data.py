@@ -140,11 +140,10 @@ class Employee:
         themes_array = "ARRAY[" + ", ".join(f"'{t}'" for t in themes) + "]" if themes else "NULL"
         
         return (
-            f"('{self.id}', '{self.service_line}', '{self.job_title}', "
+            f"('{self.id}', '{self.service_line}', '{self.job_title}', "  # job_title maps to current_role in DB
             f"{self.role_level}, {self.years_experience:.2f}, "
             f"'{skills_json}'::jsonb, '{metrics_json}'::jsonb, "
-            f"{career_sql}, "
-            f"{themes_array}, '{achievement}')"
+            f"{themes_array}, '{achievement}')"  # Removed career_history - column doesn't exist
         )
 
     def to_dict(self) -> Dict:
@@ -448,7 +447,7 @@ def export_to_sql(employees: List[Employee], output_path: str) -> str:
         "TRUNCATE TABLE employees CASCADE;",
         "",
         "-- Insert employees",
-        'INSERT INTO employees (id, service_line, job_title, role_level, years_experience, skills, performance_metrics, career_history, feedback_themes, notable_achievement)',
+        'INSERT INTO employees (id, service_line, "current_role", role_level, years_experience, skills, performance_metrics, feedback_themes, notable_achievement)',
         "VALUES"
     ]
     
