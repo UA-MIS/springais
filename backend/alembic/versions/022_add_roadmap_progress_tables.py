@@ -26,67 +26,96 @@ depends_on = None
 
 
 def upgrade():
-    # Add new columns to saved_roadmaps
-    op.add_column(
-        "saved_roadmaps",
-        sa.Column("edit_mode", sa.String(20), nullable=False, server_default="view")
-    )
-    op.add_column(
-        "saved_roadmaps",
-        sa.Column("has_manual_edits", sa.Boolean, nullable=False, server_default="false")
-    )
-    op.add_column(
-        "saved_roadmaps",
-        sa.Column("current_phase_id", sa.String(100), nullable=True)
-    )
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    
+    # Check existing columns in saved_roadmaps
+    if "saved_roadmaps" in inspector.get_table_names():
+        existing_columns = [col["name"] for col in inspector.get_columns("saved_roadmaps")]
+        
+        # Add columns only if they don't exist
+        if "edit_mode" not in existing_columns:
+            op.add_column(
+                "saved_roadmaps",
+                sa.Column("edit_mode", sa.String(20), nullable=False, server_default="view")
+            )
+        if "has_manual_edits" not in existing_columns:
+            op.add_column(
+                "saved_roadmaps",
+                sa.Column("has_manual_edits", sa.Boolean, nullable=False, server_default="false")
+            )
+        if "current_phase_id" not in existing_columns:
+            op.add_column(
+                "saved_roadmaps",
+                sa.Column("current_phase_id", sa.String(100), nullable=True)
+            )
+    else:
+        # Table doesn't exist, but this shouldn't happen if migration 020 ran
+        op.add_column(
+            "saved_roadmaps",
+            sa.Column("edit_mode", sa.String(20), nullable=False, server_default="view")
+        )
+        op.add_column(
+            "saved_roadmaps",
+            sa.Column("has_manual_edits", sa.Boolean, nullable=False, server_default="false")
+        )
+        op.add_column(
+            "saved_roadmaps",
+            sa.Column("current_phase_id", sa.String(100), nullable=True)
+        )
 
-    # Create roadmap_milestone_progress table
-    op.create_table(
-        "roadmap_milestone_progress",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("roadmap_id", UUID(as_uuid=True), sa.ForeignKey("saved_roadmaps.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("milestone_id", sa.String(100), nullable=False),
-        sa.Column("phase_id", sa.String(100), nullable=False),
-        sa.Column("status", sa.String(20), nullable=False, server_default="not_started"),
-        sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("notes", sa.Text, nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("idx_milestone_progress_roadmap_id", "roadmap_milestone_progress", ["roadmap_id"])
-    op.create_index("idx_milestone_progress_milestone_id", "roadmap_milestone_progress", ["milestone_id"])
+    tables = inspector.get_table_names()
+    
+    # Create roadmap_milestone_progress table if it doesn't exist
+    if "roadmap_milestone_progress" not in tables:
+        op.create_table(
+            "roadmap_milestone_progress",
+            sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
+            sa.Column("roadmap_id", UUID(as_uuid=True), sa.ForeignKey("saved_roadmaps.id", ondelete="CASCADE"), nullable=False),
+            sa.Column("milestone_id", sa.String(100), nullable=False),
+            sa.Column("phase_id", sa.String(100), nullable=False),
+            sa.Column("status", sa.String(20), nullable=False, server_default="not_started"),
+            sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
+            sa.Column("notes", sa.Text, nullable=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        )
+        op.create_index("idx_milestone_progress_roadmap_id", "roadmap_milestone_progress", ["roadmap_id"])
+        op.create_index("idx_milestone_progress_milestone_id", "roadmap_milestone_progress", ["milestone_id"])
 
-    # Create roadmap_extras table
-    op.create_table(
-        "roadmap_extras",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("roadmap_id", UUID(as_uuid=True), sa.ForeignKey("saved_roadmaps.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("phase_id", sa.String(100), nullable=False),
-        sa.Column("title", sa.String(255), nullable=False),
-        sa.Column("description", sa.Text, nullable=True),
-        sa.Column("category", sa.String(50), nullable=False),
-        sa.Column("completed_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("idx_roadmap_extras_roadmap_id", "roadmap_extras", ["roadmap_id"])
-    op.create_index("idx_roadmap_extras_phase_id", "roadmap_extras", ["phase_id"])
+    # Create roadmap_extras table if it doesn't exist
+    if "roadmap_extras" not in tables:
+        op.create_table(
+            "roadmap_extras",
+            sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
+            sa.Column("roadmap_id", UUID(as_uuid=True), sa.ForeignKey("saved_roadmaps.id", ondelete="CASCADE"), nullable=False),
+            sa.Column("phase_id", sa.String(100), nullable=False),
+            sa.Column("title", sa.String(255), nullable=False),
+            sa.Column("description", sa.Text, nullable=True),
+            sa.Column("category", sa.String(50), nullable=False),
+            sa.Column("completed_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        )
+        op.create_index("idx_roadmap_extras_roadmap_id", "roadmap_extras", ["roadmap_id"])
+        op.create_index("idx_roadmap_extras_phase_id", "roadmap_extras", ["phase_id"])
 
-    # Create roadmap_edits table
-    op.create_table(
-        "roadmap_edits",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("roadmap_id", UUID(as_uuid=True), sa.ForeignKey("saved_roadmaps.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("edit_type", sa.String(20), nullable=False),
-        sa.Column("change_description", sa.Text, nullable=False),
-        sa.Column("affected_elements", JSONB, nullable=False, server_default="[]"),
-        sa.Column("original_values", JSONB, nullable=False, server_default="{}"),
-        sa.Column("new_values", JSONB, nullable=False, server_default="{}"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("idx_roadmap_edits_roadmap_id", "roadmap_edits", ["roadmap_id"])
-    op.create_index("idx_roadmap_edits_created_at", "roadmap_edits", ["created_at"])
+    # Create roadmap_edits table if it doesn't exist
+    if "roadmap_edits" not in tables:
+        op.create_table(
+            "roadmap_edits",
+            sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
+            sa.Column("roadmap_id", UUID(as_uuid=True), sa.ForeignKey("saved_roadmaps.id", ondelete="CASCADE"), nullable=False),
+            sa.Column("edit_type", sa.String(20), nullable=False),
+            sa.Column("change_description", sa.Text, nullable=False),
+            sa.Column("affected_elements", JSONB, nullable=False, server_default="[]"),
+            sa.Column("original_values", JSONB, nullable=False, server_default="{}"),
+            sa.Column("new_values", JSONB, nullable=False, server_default="{}"),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        )
+        op.create_index("idx_roadmap_edits_roadmap_id", "roadmap_edits", ["roadmap_id"])
+        op.create_index("idx_roadmap_edits_created_at", "roadmap_edits", ["created_at"])
 
 
 def downgrade():
