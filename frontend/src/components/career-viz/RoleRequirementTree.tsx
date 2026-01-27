@@ -88,8 +88,8 @@ function radialLayout(
 }
 
 export function RoleRequirementTree({ roleId, jobId }: Props) {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
   const [treeData, setTreeData] = useState<{ nodes: Node<SkillNodeData>[]; edges: Edge[] } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -144,13 +144,13 @@ export function RoleRequirementTree({ roleId, jobId }: Props) {
         ...edge.style,
         stroke: edge.style?.stroke?.includes('255,230,0') || edge.style?.stroke?.includes('34, 197, 94')
           ? edge.style.stroke // Keep accent colors (yellow for paths, green for skills user has)
-          : isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.4)',
+          : (isDark || isGame) ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.4)',
       },
       markerEnd: {
         ...edge.markerEnd,
         color: edge.style?.stroke?.includes('255,230,0')
           ? 'rgba(255,230,0,0.70)'
-          : isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.4)',
+          : (isDark || isGame) ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.4)',
       },
     }))
 
@@ -163,7 +163,7 @@ export function RoleRequirementTree({ roleId, jobId }: Props) {
       <div
         className="mt-4 rounded-lg p-8 text-center"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -193,7 +193,7 @@ export function RoleRequirementTree({ roleId, jobId }: Props) {
       <div
         className="mt-4 rounded-lg p-4 text-sm"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
           color: colors.textMuted,
         }}
@@ -207,7 +207,7 @@ export function RoleRequirementTree({ roleId, jobId }: Props) {
     <div
       className="h-full overflow-hidden rounded-xl"
       style={{
-        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.2)' : colors.cardBg,
+        backgroundColor: (isDark || isGame) ? 'rgba(0, 0, 0, 0.2)' : colors.cardBg,
         border: `1px solid ${colors.cardBorder}`,
       }}
     >
@@ -224,10 +224,10 @@ export function RoleRequirementTree({ roleId, jobId }: Props) {
         nodesConnectable={false}
         elementsSelectable
         zoomOnDoubleClick={false}
-        style={{ background: isDark ? 'rgba(0, 0, 0, 0.2)' : colors.cardBg }}
+        style={{ background: (isDark || isGame) ? 'rgba(0, 0, 0, 0.2)' : colors.cardBg }}
       >
         <Controls />
-        <Background color={isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'} gap={22} size={1} />
+        <Background color={(isDark || isGame) ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'} gap={22} size={1} />
       </ReactFlow>
     </div>
   )

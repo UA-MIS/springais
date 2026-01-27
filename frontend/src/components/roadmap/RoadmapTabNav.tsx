@@ -17,8 +17,8 @@ import { useRoadmap } from '../../hooks/useRoadmap';
 import { TabId } from '../../context/RoadmapContext';
 
 export default function RoadmapTabNav() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const { tabs, activeTab, setActiveTab, editMode, hasManualEdits } = useRoadmap();
 
@@ -41,7 +41,7 @@ export default function RoadmapTabNav() {
     <div
       className="px-6 py-3 flex items-center gap-2 overflow-x-auto"
       style={{
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+        backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
         borderBottom: `1px solid ${colors.cardBorder}`,
       }}
     >
@@ -90,7 +90,7 @@ export default function RoadmapTabNav() {
                 <span
                   className="text-xs px-1.5 py-0.5 rounded"
                   style={{
-                    backgroundColor: isActive ? 'rgba(0,0,0,0.2)' : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
+                    backgroundColor: isActive ? 'rgba(0,0,0,0.2)' : ((isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
                   }}
                 >
                   {tab.progress.completed}/{tab.progress.total}

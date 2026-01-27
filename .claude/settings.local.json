@@ -23,7 +23,14 @@
       "Bash(dir:*)",
       "Bash(docker ps:*)",
       "Bash(docker-compose exec:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(xargs sed:*)",
+      "Bash(while read f)",
+      "Bash(do grep -n \"useTheme\" \"$f\")",
+      "Bash(done)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

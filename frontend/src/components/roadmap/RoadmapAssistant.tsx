@@ -24,8 +24,8 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export default function RoadmapAssistant({ visible }: RoadmapAssistantProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const {
     chatMessages,
@@ -80,7 +80,7 @@ export default function RoadmapAssistant({ visible }: RoadmapAssistantProps) {
     <div
       className="fixed right-4 bottom-4 w-96 rounded-2xl overflow-hidden shadow-2xl z-50 flex flex-col"
       style={{
-        backgroundColor: isDark ? '#1a1a1f' : '#fff',
+        backgroundColor: (isDark || isGame) ? '#1a1a1f' : '#fff',
         border: `1px solid ${colors.cardBorder}`,
         maxHeight: 'calc(100vh - 120px)',
       }}
@@ -123,7 +123,7 @@ export default function RoadmapAssistant({ visible }: RoadmapAssistantProps) {
                   onClick={() => handleSuggestedQuestion(q)}
                   className="block w-full text-left text-xs p-2 rounded-lg transition-colors hover:bg-yellow-500/10"
                   style={{
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                    backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                     color: colors.textSecondary,
                   }}
                 >
@@ -160,7 +160,7 @@ export default function RoadmapAssistant({ visible }: RoadmapAssistantProps) {
           <div
             className="p-3 rounded-lg text-sm animate-pulse mr-4"
             style={{
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+              backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
               color: colors.textMuted,
             }}
           >
@@ -184,7 +184,7 @@ export default function RoadmapAssistant({ visible }: RoadmapAssistantProps) {
           placeholder="Ask about your roadmap..."
           className="flex-1 px-3 py-2 rounded-lg text-sm"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
             color: colors.textPrimary,
             border: `1px solid ${colors.cardBorder}`,
           }}

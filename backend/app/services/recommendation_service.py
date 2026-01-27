@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List
 from uuid import UUID
 
@@ -35,20 +37,39 @@ class SkillRecommendationService:
         self.db = db
 
     async def compute_recommendations(self, user_id: UUID) -> List[UserSkillRecommendation]:
-        user = self.db.query(UserProfile).filter_by(id=user_id).first()
+        loop = asyncio.get_event_loop()
+
+        # Run blocking DB operations in thread pool
+        def fetch_user_and_aggregate():
+            user = self.db.query(UserProfile).filter_by(id=user_id).first()
+            if not user:
+                return None, None, set()
+
+            current_skills = {self._skill_key(s) for s in (user.skills or []) if s}
+            aggregated = {}
+
+            self._aggregate_from_matches(aggregated, user_id, current_skills)
+            return user, aggregated, current_skills
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            user, aggregated, current_skills = await loop.run_in_executor(
+                executor, fetch_user_and_aggregate
+            )
+
         if not user:
             return []
 
-        current_skills = {self._skill_key(s) for s in (user.skills or []) if s}
-        aggregated = {}
-
-        self._aggregate_from_matches(aggregated, user_id, current_skills)
         await self._aggregate_from_career_goal(aggregated, user, current_skills)
 
         if not aggregated:
             aggregated = await self._llm_bootstrap(user)
 
-        return self._persist_recommendations(user_id, aggregated)
+        # Run persist in thread pool
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            result = await loop.run_in_executor(
+                executor, self._persist_recommendations, user_id, aggregated
+            )
+        return result
 
     def _aggregate_from_matches(
         self,
@@ -86,7 +107,13 @@ class SkillRecommendationService:
         if not career_path or not career_path.target_position_node_id:
             return
 
-        target_skills = self._get_skills_for_target(career_path.target_position_node_id)
+        # Run blocking DB operation in thread pool
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            target_skills = await loop.run_in_executor(
+                executor, self._get_skills_for_target, career_path.target_position_node_id
+            )
+
         for raw_skill in target_skills:
             skill_key = self._skill_key(raw_skill)
             if not skill_key or skill_key in current_skills:

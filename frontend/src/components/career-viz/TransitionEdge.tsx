@@ -11,8 +11,8 @@ function strokeForSuccessRate(successRate: number) {
 
 export function TransitionEdge(props: EdgeProps<TransitionEdgeData>) {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, markerEnd } = props
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -49,9 +49,9 @@ export function TransitionEdge(props: EdgeProps<TransitionEdgeData>) {
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: 'all',
-            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.5)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(0, 0, 0, 0.5)' : colors.cardBg,
             border: `1px solid ${colors.cardBorder}`,
-            boxShadow: isDark ? '0 12px 40px rgba(0,0,0,0.55)' : '0 4px 12px rgba(0,0,0,0.1)',
+            boxShadow: (isDark || isGame) ? '0 12px 40px rgba(0,0,0,0.55)' : '0 4px 12px rgba(0,0,0,0.1)',
             color: colors.textPrimary,
             opacity: dimmed ? 0.4 : 1,
           }}

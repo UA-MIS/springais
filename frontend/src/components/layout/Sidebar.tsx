@@ -10,16 +10,16 @@ const navigation = [
 ];
 
 export default function Sidebar() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   return (
     <aside
       className="w-64 min-h-screen p-4 border-r transition-colors duration-200"
       style={{
-        backgroundColor: isDark ? colors.sidebarBg : colors.sidebarBg,
+        backgroundColor: (isDark || isGame) ? colors.sidebarBg : colors.sidebarBg,
         borderColor: colors.border,
-        backdropFilter: isDark ? 'blur(12px)' : 'none',
+        backdropFilter: (isDark || isGame) ? 'blur(12px)' : 'none',
       }}
     >
       <nav className="space-y-1">
@@ -44,8 +44,8 @@ export default function Sidebar() {
                 : isDark
                   ? colors.textSecondary
                   : colors.textPrimary,
-              backgroundColor: isActive && !isDark ? colors.accent : undefined,
-              borderColor: isActive && !isDark ? colors.accent : undefined,
+              backgroundColor: isActive && !(isDark || isGame) ? colors.accent : undefined,
+              borderColor: isActive && !(isDark || isGame) ? colors.accent : undefined,
             })}
           >
             <span>{item.name}</span>

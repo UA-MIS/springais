@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom';
 import LogoutButton from '../auth/LogoutButton';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme, themeColors } from '../../context/ThemeContext';
+import { useAdventureMode, getFantasyText } from '../../context/AdventureModeContext';
+import { ThemeSwitcher } from '../game';
 
 // Navigation items - Role-centric workflow
 const navigation = [
@@ -11,66 +13,59 @@ const navigation = [
   { name: 'Career Roadmap', href: '/roadmap' },
 ];
 
-// Sun icon for light mode
-function SunIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-    </svg>
-  );
-}
-
-// Moon icon for dark mode
-function MoonIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  );
-}
-
 export default function Header() {
   const { user } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isGame } = useTheme();
+  const { state: adventureState } = useAdventureMode();
+  const colors = themeColors[theme];
 
   return (
     <header
       className="sticky top-0 z-50 w-full border-b transition-colors duration-200"
       style={{
-        backgroundColor: isDark ? colors.headerBg : colors.headerBg,
+        backgroundColor: colors.headerBg,
         borderColor: colors.border,
-        backdropFilter: isDark ? 'blur(12px)' : 'none',
+        backdropFilter: theme !== 'light' ? 'blur(12px)' : 'none',
+        fontFamily: isGame ? "'Cinzel', serif" : 'inherit',
       }}
     >
       {/* Top row: Logo and user actions */}
       <div className="px-6 py-3 flex items-center justify-between">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold" style={{ color: colors.accent }}>
-            SpringAIS
+          <h1
+            className="text-2xl font-bold"
+            style={{
+              color: colors.accent,
+              textShadow: isGame ? '0 0 20px rgba(255, 230, 0, 0.3)' : 'none',
+            }}
+          >
+            {adventureState.enabled ? '⚔️ SpringAIS' : 'SpringAIS'}
           </h1>
+          {adventureState.enabled && (
+            <span
+              className="ml-3 text-xs px-2 py-1 rounded-full"
+              style={{
+                backgroundColor: 'rgba(255, 230, 0, 0.15)',
+                color: colors.accent,
+                border: '1px solid rgba(255, 230, 0, 0.3)',
+              }}
+            >
+              Adventure Mode
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-4">
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg transition-colors duration-200 hover:bg-white/10"
-            style={{ color: isDark ? colors.textSecondary : '#ffffff' }}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? <SunIcon /> : <MoonIcon />}
-          </button>
+          <ThemeSwitcher />
 
           {user && (
-            <span style={{ color: isDark ? colors.textSecondary : '#ffffff' }} className="text-sm">
+            <span
+              style={{
+                color: theme !== 'light' ? colors.textSecondary : '#ffffff',
+                fontFamily: isGame ? "'Spectral', serif" : 'inherit',
+              }}
+              className="text-sm hidden sm:inline"
+            >
+              {adventureState.enabled && '🛡️ '}
               {user.name} ({user.role})
             </span>
           )}
@@ -95,12 +90,14 @@ export default function Header() {
               style={({ isActive }) => ({
                 color: isActive
                   ? colors.accent
-                  : isDark
+                  : theme !== 'light'
                     ? colors.textSecondary
                     : 'rgba(255, 255, 255, 0.75)',
+                fontFamily: isGame ? "'Cinzel', serif" : 'inherit',
+                textShadow: isActive && isGame ? '0 0 10px rgba(255, 230, 0, 0.4)' : 'none',
               })}
             >
-              {item.name}
+              {getFantasyText(item.name, adventureState.enabled)}
             </NavLink>
           ))}
         </div>

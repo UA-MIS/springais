@@ -26,8 +26,8 @@ interface RoadmapViewerProps {
 }
 
 export default function RoadmapViewer({ roadmapId, onBack }: RoadmapViewerProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -99,7 +99,7 @@ export default function RoadmapViewer({ roadmapId, onBack }: RoadmapViewerProps)
             onClick={onBack}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             style={{
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+              backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
               color: colors.textPrimary,
             }}
           >
@@ -118,7 +118,7 @@ export default function RoadmapViewer({ roadmapId, onBack }: RoadmapViewerProps)
           onClick={() => setShowEditModal(true)}
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
           style={{
-            backgroundColor: editMode !== 'view' ? '#f59e0b20' : (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'),
+            backgroundColor: editMode !== 'view' ? '#f59e0b20' : ((isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'),
             color: editMode !== 'view' ? '#f59e0b' : colors.textMuted,
             border: editMode !== 'view' ? '1px solid #f59e0b40' : `1px solid ${colors.cardBorder}`,
           }}
@@ -156,7 +156,7 @@ export default function RoadmapViewer({ roadmapId, onBack }: RoadmapViewerProps)
           <div
             className="relative w-full max-w-lg rounded-2xl p-6"
             style={{
-              backgroundColor: isDark ? '#1a1a1f' : '#fff',
+              backgroundColor: (isDark || isGame) ? '#1a1a1f' : '#fff',
               border: `1px solid ${colors.cardBorder}`,
             }}
           >

@@ -8,8 +8,8 @@ import { useSkillsContext } from '../context/SkillsContext'
 import { DARK_THEME, LIGHT_THEME } from '../components/skills/ThemeSwitcher'
 
 export default function ProfilePage() {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
   const { user } = useAuth()
   const {
     refreshAllSkills,
@@ -44,8 +44,8 @@ export default function ProfilePage() {
     return Array.from(skillSet)
   }, [savedRoles, skills])
 
-  // Theme object for ResumeUpload component
-  const theme = isDark ? DARK_THEME : LIGHT_THEME
+  // Theme object for ResumeUpload component (uses local theme constants)
+  const localTheme = (isDark || isGame) ? DARK_THEME : LIGHT_THEME
 
   // Handle skills extracted from resume upload
   // ResumeUpload already generates groupings, so we just need to refresh the UI
@@ -93,7 +93,7 @@ export default function ProfilePage() {
       <div
         className="p-6 rounded-lg mb-8"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -120,7 +120,7 @@ export default function ProfilePage() {
             <button
               className="px-4 py-2 rounded-md text-sm font-semibold transition-colors"
               style={{
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
+                backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
                 color: colors.textPrimary,
               }}
             >
@@ -134,7 +134,7 @@ export default function ProfilePage() {
       <div
         className="p-6 rounded-lg mb-8"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -144,7 +144,7 @@ export default function ProfilePage() {
         <p style={{ color: colors.textMuted }} className="mb-4">
           Upload your resume to extract skills and get better match recommendations
         </p>
-        <ResumeUpload onSkillsExtracted={handleSkillsExtracted} clearSkills={clearSkills} theme={theme} />
+        <ResumeUpload onSkillsExtracted={handleSkillsExtracted} clearSkills={clearSkills} theme={localTheme} />
       </div>
 
       {/* Skills from Saved Roles Section */}
@@ -152,8 +152,8 @@ export default function ProfilePage() {
         <div
           className="p-6 rounded-lg mb-8"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 230, 0, 0.08)' : 'rgba(255, 230, 0, 0.1)',
-            border: `1px solid ${isDark ? 'rgba(255, 230, 0, 0.3)' : 'rgba(255, 230, 0, 0.4)'}`,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 230, 0, 0.08)' : 'rgba(255, 230, 0, 0.1)',
+            border: `1px solid ${(isDark || isGame) ? 'rgba(255, 230, 0, 0.3)' : 'rgba(255, 230, 0, 0.4)'}`,
           }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -185,7 +185,7 @@ export default function ProfilePage() {
                 key={i}
                 className="px-3 py-1 rounded-full text-sm"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
                   color: colors.textPrimary,
                 }}
               >
@@ -196,7 +196,7 @@ export default function ProfilePage() {
               <span
                 className="px-3 py-1 rounded-full text-sm"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
                   color: colors.textMuted,
                 }}
               >

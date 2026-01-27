@@ -9,8 +9,8 @@ interface RoleOverviewProps {
 }
 
 export default function RoleOverview({ match }: RoleOverviewProps) {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
   const scorePercentage = Math.round(match.overall_score * 100)
 
   // Deep Analysis state

@@ -779,6 +779,26 @@ def extract_skills_from_description(description: str) -> tuple[list[str], list[s
     return required, preferred
 
 
+US_LOCATIONS = [
+    'alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut',
+    'delaware', 'florida', 'georgia', 'hawaii', 'idaho', 'illinois', 'indiana', 'iowa',
+    'kansas', 'kentucky', 'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan',
+    'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new hampshire',
+    'new jersey', 'new mexico', 'new york', 'north carolina', 'north dakota', 'ohio',
+    'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota',
+    'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia',
+    'wisconsin', 'wyoming', 'atlanta', 'austin', 'boston', 'chicago', 'dallas', 'denver',
+    'detroit', 'houston', 'los angeles', 'miami', 'minneapolis', 'nashville', 'new york',
+    'philadelphia', 'phoenix', 'san francisco', 'san diego', 'san jose', 'seattle',
+    'tampa', 'charlotte', 'hoboken', 'secaucus', 'usa', 'united states', 'nyc',
+]
+
+
+def is_us_location(location: str) -> bool:
+    loc_lower = (location or '').lower()
+    return any(us_loc in loc_lower for us_loc in US_LOCATIONS)
+
+
 def job_id_for_external(external_id: str) -> str:
     # Deterministic primary key derived from source + external id.
     # Avoids needing a DB-generated ID in a String PK table.
@@ -987,6 +1007,7 @@ def main() -> int:
     parser.add_argument("--max-pages", type=int, default=600, help="Max listing pages to crawl (25 jobs/page).")
     parser.add_argument("--cache-dir", default=str(REPO_ROOT / ".cache" / "ey_scraper"), help="HTML cache directory.")
     parser.add_argument("--use-cache", action="store_true", help="Use cached HTML instead of fetching.")
+    parser.add_argument("--us-only", action="store_true", help="Only keep US-based job postings.")
 
     args = parser.parse_args()
 
@@ -1085,6 +1106,8 @@ def main() -> int:
                 preferred_text=job.preferred_text,
             )
             if args.service_line and job.service_line.lower() != args.service_line.lower():
+                return None
+            if args.us_only and not is_us_location(job.location):
                 return None
             return job
         except Exception as e:  # noqa: BLE001

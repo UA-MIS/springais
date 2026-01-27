@@ -21,8 +21,8 @@ interface MilestoneCardProps {
 }
 
 export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = false }: MilestoneCardProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const {
     toggleMilestone,
@@ -107,7 +107,7 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
     <div
       className={`rounded-xl overflow-hidden transition-all ${isCompleted ? 'opacity-80' : ''}`}
       style={{
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+        backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
         border: `1px solid ${isCompleted ? '#22c55e40' : colors.cardBorder}`,
       }}
     >
@@ -230,7 +230,7 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
                     key={i}
                     className="text-xs px-2 py-1 rounded"
                     style={{
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                      backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                       color: colors.textSecondary,
                     }}
                   >
@@ -279,7 +279,7 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
           {progress?.notes && (
             <div
               className="p-3 rounded-lg"
-              style={{ backgroundColor: isDark ? 'rgba(255,230,0,0.1)' : 'rgba(255,230,0,0.15)' }}
+              style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,230,0,0.1)' : 'rgba(255,230,0,0.15)' }}
             >
               <div className="text-xs font-medium mb-1" style={{ color: colors.textMuted }}>
                 Your Notes
@@ -299,7 +299,7 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
           <div
             className="relative w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto"
             style={{
-              backgroundColor: isDark ? '#1a1a1f' : '#fff',
+              backgroundColor: (isDark || isGame) ? '#1a1a1f' : '#fff',
               border: `1px solid ${colors.cardBorder}`,
             }}
           >
@@ -340,7 +340,7 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
                 onChange={(e) => setEditTitle(e.target.value)}
                 className="w-full p-3 rounded-lg text-sm"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
                   color: colors.textPrimary,
                   border: `1px solid ${colors.cardBorder}`,
                 }}
@@ -358,7 +358,7 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
                 rows={3}
                 className="w-full p-3 rounded-lg text-sm resize-none"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
                   color: colors.textPrimary,
                   border: `1px solid ${colors.cardBorder}`,
                 }}
@@ -377,7 +377,7 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
                 rows={3}
                 className="w-full p-3 rounded-lg text-sm resize-none"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
                   color: colors.textPrimary,
                   border: `1px solid ${colors.cardBorder}`,
                 }}
@@ -390,7 +390,7 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
                 disabled={isSaving}
                 className="flex-1 py-3 rounded-lg font-medium"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                   color: colors.textPrimary,
                   opacity: isSaving ? 0.5 : 1,
                 }}

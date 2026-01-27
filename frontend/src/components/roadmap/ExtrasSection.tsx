@@ -18,8 +18,8 @@ interface ExtrasSectionProps {
 }
 
 export default function ExtrasSection({ phaseId }: ExtrasSectionProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const { extrasByPhase, deleteExtra } = useRoadmap();
   const extras = extrasByPhase[phaseId] || [];
@@ -49,7 +49,7 @@ export default function ExtrasSection({ phaseId }: ExtrasSectionProps) {
     <div
       className="rounded-xl overflow-hidden"
       style={{
-        backgroundColor: isDark ? 'rgba(34, 197, 94, 0.05)' : 'rgba(34, 197, 94, 0.05)',
+        backgroundColor: (isDark || isGame) ? 'rgba(34, 197, 94, 0.05)' : 'rgba(34, 197, 94, 0.05)',
         border: '1px solid rgba(34, 197, 94, 0.2)',
       }}
     >
@@ -97,7 +97,7 @@ export default function ExtrasSection({ phaseId }: ExtrasSectionProps) {
                 <div
                   key={extra.id}
                   className="flex items-start gap-3 p-3 rounded-lg"
-                  style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}
+                  style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}
                 >
                   <div
                     className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
