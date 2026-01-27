@@ -66,3 +66,23 @@
 2026-01-19 23:43:02,213 - INFO - Service lines: {'Consulting': 4923, 'Tax': 1183, 'Assurance': 803}
 2026-01-19 23:43:02,214 - INFO - Top tags: [('consulting', 2083), ('data', 1235), ('tax', 1183), ('assurance', 828), ('risk', 634), ('sap', 365), ('compliance', 354), ('gds', 308), ('parthenon', 221), ('cyber', 147), ('cloud', 126), ('forensics', 125), ('oracle', 45), ('microsoft', 40), ('grc', 33), ('independence', 27), ('devops', 13), ('sox', 11), ('appsec', 6), ('zscaler', 3)]
 2026-01-19 23:43:02,214 - INFO - Done
+2026-01-27 16:41:18,224 - INFO - Starting EY job scraper
+2026-01-27 16:41:18,225 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=<none>)
+2026-01-27 16:41:18,225 - INFO - Workers: 32 | English-only: yes
+2026-01-27 16:41:21,701 - INFO - Locale en_US: +30 links (total unique now 30)
+2026-01-27 16:41:21,702 - INFO - Found 30 unique job links (after locale merge)
+2026-01-27 16:41:25,652 - INFO - Upsert complete: parsed=29/30 (failed=1) | 29 new, 0 updated, 10 archived
+2026-01-27 16:41:25,653 - INFO - Service lines: {'Consulting': 24, 'Assurance': 2, 'Tax': 3}
+2026-01-27 16:41:25,653 - INFO - Top tags: [('data', 6), ('gds', 6), ('consulting', 4), ('tax', 3), ('assurance', 2), ('sap', 2), ('grc', 1), ('parthenon', 1)]
+2026-01-27 16:41:25,653 - INFO - Done
+2026-01-27 18:51:56,670 - INFO - Starting EY job scraper
+2026-01-27 18:51:56,671 - INFO - Search URL: https://careers.ey.com/ey/search/ (locationsearch=United States)
+2026-01-27 18:51:56,671 - INFO - Workers: 32 | English-only: yes
+2026-01-27 18:51:58,363 - INFO - Locale en_US: +25 links (total unique now 25)
+2026-01-27 18:51:59,936 - INFO - Locale en_GB: +25 links (total unique now 25)
+2026-01-27 18:52:02,610 - INFO - Locale en: +25 links (total unique now 25)
+2026-01-27 18:52:02,611 - INFO - Found 25 unique job links (after locale merge)
+2026-01-27 18:52:11,636 - INFO - Upsert complete: parsed=25/25 (failed=0) | 25 new, 0 updated, 0 archived
+2026-01-27 18:52:11,636 - INFO - Service lines: {'Consulting': 19, 'Tax': 6}
+2026-01-27 18:52:11,637 - INFO - Top tags: [('consulting', 8), ('tax', 6), ('compliance', 4), ('microsoft', 4), ('cyber', 3), ('data', 2), ('risk', 1), ('parthenon', 1)]
+2026-01-27 18:52:11,638 - INFO - Done

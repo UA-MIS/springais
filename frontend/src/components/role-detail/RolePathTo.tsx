@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Match } from '../../services/mockMatchData'
 import { useTheme, themeColors } from '../../context/ThemeContext'
 import { RoleRequirementTree } from '../career-viz/RoleRequirementTree'
+import { NetworkSidebar } from './NetworkSidebar'
 import api from '../../services/api'
+import type { SkillNodeData } from '../career-viz/SkillNode'
 
 interface RolePathToProps {
   match: Match
@@ -14,11 +16,26 @@ interface RoleStats {
   successRate: number | null
 }
 
+interface SkillPlanSummary {
+  total_skills: number
+  skills_have: number
+  skills_need: number
+  match_percent: number
+  skills_have_list: string[]
+  skills_need_list: string[]
+}
+
 export default function RolePathTo({ match }: RolePathToProps) {
   const { isDark } = useTheme()
   const colors = isDark ? themeColors.dark : themeColors.light
   const [roleStats, setRoleStats] = useState<RoleStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [planSummary, setPlanSummary] = useState<SkillPlanSummary | null>(null)
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [selectedNode, setSelectedNode] = useState<{ id: string; data: SkillNodeData } | null>(null)
+  const [planNodes, setPlanNodes] = useState<any[]>([])
+  const [planEdges, setPlanEdges] = useState<any[]>([])
+  const [customizeMode, setCustomizeMode] = useState(false)
 
   // Use the job ID from the match for the skill plan
   const jobId = match.job_id || match.id
@@ -54,93 +71,281 @@ export default function RolePathTo({ match }: RolePathToProps) {
     fetchStats()
   }, [match.job_title])
 
+  // Extract paths from plan nodes and calculate progress using edges
+  const paths = useMemo(() => {
+    if (!planNodes.length || !planEdges.length) return []
+    
+    return planNodes
+      .filter((node: any) => node.data?.kind === 'path')
+      .map((node: any) => {
+        const pathName = node.data?.label || ''
+        const pathNodeId = node.id
+        
+        // Find all skills connected to this path via edges
+        const pathSkillIds = new Set<string>()
+        planEdges.forEach((edge: any) => {
+          if (edge.source === pathNodeId) {
+            pathSkillIds.add(edge.target)
+          }
+        })
+        
+        // Get the actual skill nodes
+        const pathSkills = planNodes.filter((n: any) => 
+          n.data?.kind === 'skill' && pathSkillIds.has(n.id)
+        )
+        
+        const totalSkills = pathSkills.length
+        const skillsHave = pathSkills.filter((n: any) => n.data?.has).length
+        const progress = totalSkills > 0 ? (skillsHave / totalSkills) * 100 : 0
+
+        // Map category names to emojis
+        const emojiMap: Record<string, string> = {
+          'Technical': '☁️',
+          'Leadership': '👥',
+          'Domain': '💼',
+          'Tools': '🛠️',
+        }
+
+        return {
+          name: pathName,
+          emoji: emojiMap[pathName] || '📚',
+          progress: Math.round(progress),
+          type: pathName === 'Technical' ? 'Technical' : pathName === 'Leadership' ? 'Soft Skills' : 'Core',
+          nodeId: pathNodeId,
+        }
+      })
+  }, [planNodes, planEdges])
+
+  // Network stats calculation
+  const networkStats = useMemo(() => {
+    if (!planSummary) {
+      return {
+        completed: 0,
+        inProgress: 0,
+        available: 0,
+        match: match.overall_score ? Math.round(match.overall_score * 100) : 0,
+      }
+    }
+
+    return {
+      completed: planSummary.skills_have,
+      inProgress: 0, // Will be enhanced later with progress API
+      available: planSummary.skills_need,
+      match: planSummary.match_percent,
+    }
+  }, [planSummary, match.overall_score])
+
+  const handlePlanGenerated = (summary: SkillPlanSummary) => {
+    setPlanSummary(summary)
+  }
+
+  const handleNodeClick = (nodeId: string, nodeData: SkillNodeData) => {
+    setSelectedNode({ id: nodeId, data: nodeData })
+  }
+
+  const handleNodeDeselect = () => {
+    setSelectedNode(null)
+  }
+
+  // Fetch plan nodes and edges for path extraction
+  const handlePlanNodesReceived = (nodes: any[], edges: any[]) => {
+    setPlanNodes(nodes)
+    setPlanEdges(edges)
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div
+      className="network-container"
+      style={{
+        background: isDark ? '#1A1A24' : colors.cardBg,
+        borderRadius: '16px',
+        minHeight: '700px',
+        position: 'relative',
+        overflow: 'hidden',
+        border: isDark ? 'none' : `1px solid ${colors.cardBorder}`,
+      }}
+    >
+      {/* Network Header */}
       <div
-        className="p-6 rounded-lg"
+        className="network-header"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-          border: `1px solid ${colors.cardBorder}`,
+          padding: '32px 40px',
+          borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBorder}`,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px',
         }}
       >
-        <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>
-          Path to {match.job_title}
-        </h3>
-        <p style={{ color: colors.textMuted }}>
-          Explore the different paths and skills that can help you reach this role.
-          The diagram below shows common routes others have taken.
-        </p>
-      </div>
-
-      {/* Career Tree */}
-      <div
-        className="rounded-lg overflow-hidden"
-        style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-          border: `1px solid ${colors.cardBorder}`,
-        }}
-      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <h2
+            style={{
+              fontSize: '24px',
+              fontWeight: 600,
+              color: colors.textPrimary,
+            }}
+          >
+            Skill Development Network
+          </h2>
+          <button
+            onClick={() => setCustomizeMode((v) => !v)}
+            className="px-3 py-2 rounded-md text-xs font-semibold transition-colors"
+            style={{
+              backgroundColor: customizeMode ? colors.accent : 'transparent',
+              color: customizeMode ? '#1A1A24' : colors.textSecondary,
+              border: `1px solid ${customizeMode ? colors.accent : colors.cardBorder}`,
+            }}
+          >
+            {customizeMode ? 'Done' : 'Customize'}
+          </button>
+        </div>
         <div
-          className="px-6 py-4 border-b"
-          style={{ borderColor: colors.cardBorder }}
+          className="network-stats"
+          style={{
+            display: 'flex',
+            gap: '32px',
+          }}
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm font-semibold" style={{ color: colors.textPrimary }}>
-              Routes to become {match.job_title}
+          <div className="network-stat" style={{ textAlign: 'center' }}>
+            <div
+              className="network-stat-value"
+              style={{
+                fontSize: '28px',
+                fontWeight: 700,
+                color: colors.accent,
+              }}
+            >
+              {networkStats.completed}
             </div>
-            <div className="text-xs" style={{ color: colors.textMuted }}>
-              Technical / leadership / mentoring branches
+            <div
+              className="network-stat-label"
+              style={{
+                fontSize: '11px',
+                color: isDark ? 'rgba(255, 255, 255, 0.45)' : colors.textMuted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Completed
+            </div>
+          </div>
+          <div className="network-stat" style={{ textAlign: 'center' }}>
+            <div
+              className="network-stat-value"
+              style={{
+                fontSize: '28px',
+                fontWeight: 700,
+                color: colors.accent,
+              }}
+            >
+              {networkStats.inProgress}
+            </div>
+            <div
+              className="network-stat-label"
+              style={{
+                fontSize: '11px',
+                color: isDark ? 'rgba(255, 255, 255, 0.45)' : colors.textMuted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              In Progress
+            </div>
+          </div>
+          <div className="network-stat" style={{ textAlign: 'center' }}>
+            <div
+              className="network-stat-value"
+              style={{
+                fontSize: '28px',
+                fontWeight: 700,
+                color: colors.accent,
+              }}
+            >
+              {networkStats.available}
+            </div>
+            <div
+              className="network-stat-label"
+              style={{
+                fontSize: '11px',
+                color: isDark ? 'rgba(255, 255, 255, 0.45)' : colors.textMuted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Available
+            </div>
+          </div>
+          <div className="network-stat" style={{ textAlign: 'center' }}>
+            <div
+              className="network-stat-value"
+              style={{
+                fontSize: '28px',
+                fontWeight: 700,
+                color: colors.accent,
+              }}
+            >
+              {networkStats.match}%
+            </div>
+            <div
+              className="network-stat-label"
+              style={{
+                fontSize: '11px',
+                color: isDark ? 'rgba(255, 255, 255, 0.45)' : colors.textMuted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Match
             </div>
           </div>
         </div>
-        <div className="p-4">
-          <div className="h-[500px]">
-            <RoleRequirementTree roleId={match.job_title} jobId={jobId} />
-          </div>
-        </div>
       </div>
 
-      {/* Path Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Network Body */}
+      <div
+        className="network-body"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '300px 1fr',
+        }}
+      >
+        {/* Sidebar */}
+        <NetworkSidebar
+          paths={paths}
+          selectedPath={selectedPath}
+          onPathSelect={setSelectedPath}
+          selectedNode={selectedNode}
+          onNodeDeselect={handleNodeDeselect}
+        />
+
+        {/* Canvas */}
         <div
-          className="p-5 rounded-lg"
+          className="network-canvas"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-            border: `1px solid ${colors.cardBorder}`,
+            position: 'relative',
+            padding: '40px',
           }}
         >
-          <p className="text-sm" style={{ color: colors.textMuted }}>Average Time</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: colors.accent }}>
-            {loading ? '...' : roleStats?.avgTimeToPromotion ? `${roleStats.avgTimeToPromotion.toFixed(1)} years` : 'N/A'}
-          </p>
-          <p className="text-sm mt-1" style={{ color: colors.textMuted }}>to reach this role</p>
-        </div>
-        <div
-          className="p-5 rounded-lg"
-          style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-            border: `1px solid ${colors.cardBorder}`,
-          }}
-        >
-          <p className="text-sm" style={{ color: colors.textMuted }}>Next Role</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: colors.accent }}>
-            {loading ? '...' : roleStats?.commonPath || 'Various'}
-          </p>
-          <p className="text-sm mt-1" style={{ color: colors.textMuted }}>common progression</p>
-        </div>
-        <div
-          className="p-5 rounded-lg"
-          style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
-            border: `1px solid ${colors.cardBorder}`,
-          }}
-        >
-          <p className="text-sm" style={{ color: colors.textMuted }}>Success Rate</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: '#22c55e' }}>
-            {loading ? '...' : roleStats?.successRate ? `${roleStats.successRate.toFixed(0)}%` : 'N/A'}
-          </p>
-          <p className="text-sm mt-1" style={{ color: colors.textMuted }}>with right skills</p>
+          <div style={{ height: '500px' }}>
+            <style>
+              {`
+                @keyframes nodeWiggle {
+                  0% { transform: rotate(-1.2deg); }
+                  50% { transform: rotate(1.2deg); }
+                  100% { transform: rotate(-1.2deg); }
+                }
+              `}
+            </style>
+            <RoleRequirementTree
+              roleId={match.job_title}
+              jobId={jobId}
+              onPlanGenerated={handlePlanGenerated}
+              onNodesReceived={handlePlanNodesReceived}
+              onNodeClick={handleNodeClick}
+              selectedPath={selectedPath}
+              isCustomizing={customizeMode}
+            />
+          </div>
         </div>
       </div>
     </div>
