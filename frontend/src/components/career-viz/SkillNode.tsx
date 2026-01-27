@@ -11,8 +11,8 @@ export type SkillNodeData = {
 }
 
 export function SkillNode({ data }: NodeProps<SkillNodeData>) {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
 
   // Skills the user has get green styling
   const hasSkill = data.kind === 'skill' && data.has
@@ -21,7 +21,7 @@ export function SkillNode({ data }: NodeProps<SkillNodeData>) {
     data.kind === 'role'
       ? 'rgba(255, 230, 0, 0.7)'
       : data.kind === 'path'
-        ? isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
+        ? (isDark || isGame) ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'
         : hasSkill
           ? 'rgba(34, 197, 94, 0.5)' // Green for skills user has
           : colors.cardBorder
@@ -37,8 +37,8 @@ export function SkillNode({ data }: NodeProps<SkillNodeData>) {
 
   const bgColor =
     hasSkill
-      ? isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'
-      : isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg
+      ? (isDark || isGame) ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.1)'
+      : (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg
 
   const shadow = isDark
     ? '0 12px 40px rgba(0,0,0,0.55)'
@@ -57,7 +57,7 @@ export function SkillNode({ data }: NodeProps<SkillNodeData>) {
       <Handle
         type="target"
         position={Position.Top}
-        style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
+        style={{ background: (isDark || isGame) ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
         className="!h-2 !w-2 !border-0"
       />
       <div className="max-w-[200px] whitespace-normal leading-snug text-center">
@@ -67,7 +67,7 @@ export function SkillNode({ data }: NodeProps<SkillNodeData>) {
       <Handle
         type="source"
         position={Position.Bottom}
-        style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
+        style={{ background: (isDark || isGame) ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
         className="!h-2 !w-2 !border-0"
       />
     </div>

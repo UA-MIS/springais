@@ -30,6 +30,34 @@ logger = logging.getLogger(__name__)
 
 # Model configuration - GPT-5.2 chat for quality extraction
 OPENAI_MODEL = "gpt-5.2-chat-latest"
+
+# Map LLM-returned categories to valid SkillCategory values
+CATEGORY_MAPPING = {
+    # Direct mappings for LLM variations
+    "protocol": "security",
+    "cloud": "cloud_infrastructure",
+    "infrastructure": "cloud_infrastructure",
+    "data": "data_analytics",
+    "analytics": "data_analytics",
+    "leadership": "leadership_management",
+    "management": "leadership_management",
+    "business": "business_acumen",
+    "finance": "domain",
+    "accounting": "domain",
+    "communication": "soft",
+    "interpersonal": "soft",
+    "framework": "tool",
+    "platform": "tool",
+    "software": "tool",
+    "language": "programming",
+    "database": "technical",
+    "networking": "technical",
+    "devops": "technical",
+    "process": "methodology",
+    "agile": "methodology",
+    "compliance": "domain",
+    "regulatory": "domain",
+}
 MAX_TOKENS = 4000  # Higher limit for batch job extraction
 TEMPERATURE = 0.3  # Low temperature for consistent extractions
 
@@ -564,6 +592,24 @@ class JobSkillExtractorService:
                 for job in jobs
             ]
 
+        # Valid categories from SkillCategory literal
+        VALID_CATEGORIES = {
+            "technical", "soft", "domain", "certification", "tool", "methodology", "programming",
+            "cloud_infrastructure", "data_analytics", "leadership_management", "business_acumen",
+            "tools", "research", "consulting_excellence", "security"
+        }
+
+        def normalize_category(cat: str) -> str:
+            """Map LLM category to valid SkillCategory."""
+            cat_lower = cat.lower().strip()
+            if cat_lower in VALID_CATEGORIES:
+                return cat_lower
+            # Check mapping
+            if cat_lower in CATEGORY_MAPPING:
+                return CATEGORY_MAPPING[cat_lower]
+            # Default fallback
+            return "technical"
+
         extractions = []
         for item in data:
             try:
@@ -571,9 +617,10 @@ class JobSkillExtractorService:
                 required_skills = []
                 for skill_data in item.get("required_skills", []):
                     try:
+                        raw_category = skill_data.get("category", "technical")
                         skill = ExtractedSkill(
                             name=skill_data.get("name", "").strip(),
-                            category=skill_data.get("category", "technical"),
+                            category=normalize_category(raw_category),
                             confidence=float(skill_data.get("confidence", 0.5))
                         )
                         if skill.name:
@@ -585,9 +632,10 @@ class JobSkillExtractorService:
                 inferred_skills = []
                 for skill_data in item.get("inferred_skills", []):
                     try:
+                        raw_category = skill_data.get("category", "technical")
                         skill = ExtractedSkill(
                             name=skill_data.get("name", "").strip(),
-                            category=skill_data.get("category", "technical"),
+                            category=normalize_category(raw_category),
                             confidence=float(skill_data.get("confidence", 0.5))
                         )
                         if skill.name:

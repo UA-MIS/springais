@@ -10,6 +10,8 @@ Uses real database models and vector embeddings for semantic skill matching.
 """
 
 import logging
+import time
+import threading
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import numpy as np
@@ -23,6 +25,30 @@ from app.models.user_profile import UserProfile
 from app.models.skill_embedding import SkillEmbedding
 from app.utils.text import normalize_skill_text
 from app.services.skill_taxonomy import get_taxonomy_service
+
+
+# ==============================================
+# Global Embedding Cache (shared across requests)
+# ==============================================
+# This prevents reloading embeddings on every request
+_global_embedding_cache: Dict[str, List[float]] = {}
+_cache_lock = threading.Lock()
+_cache_loaded_at: Optional[float] = None
+CACHE_TTL_SECONDS = 600  # Refresh cache every 10 minutes
+
+
+def invalidate_embedding_cache() -> None:
+    """
+    Invalidate the global embedding cache.
+
+    Call this when skill embeddings are updated in the database
+    to force a refresh on the next match request.
+    """
+    global _global_embedding_cache, _cache_loaded_at
+    with _cache_lock:
+        _global_embedding_cache = {}
+        _cache_loaded_at = None
+    logging.getLogger(__name__).info("Embedding cache invalidated")
 
 from ..config.matching_config import (
     MatchMode,
@@ -727,10 +753,26 @@ class MatchingService:
 
         return sum(matches) / len(matches) if matches else 0.0
 
+    # US states and major cities for filtering
+    US_LOCATIONS = [
+        'alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut',
+        'delaware', 'florida', 'georgia', 'hawaii', 'idaho', 'illinois', 'indiana', 'iowa',
+        'kansas', 'kentucky', 'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan',
+        'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new hampshire',
+        'new jersey', 'new mexico', 'new york', 'north carolina', 'north dakota', 'ohio',
+        'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota',
+        'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia',
+        'wisconsin', 'wyoming', 'atlanta', 'austin', 'boston', 'chicago', 'dallas', 'denver',
+        'detroit', 'houston', 'los angeles', 'miami', 'minneapolis', 'nashville', 'new york',
+        'philadelphia', 'phoenix', 'san francisco', 'san diego', 'san jose', 'seattle',
+        'tampa', 'charlotte', 'hoboken', 'secaucus', 'usa', 'united states',
+    ]
+
     def _get_filtered_jobs(
         self,
         department: Optional[str] = None,
         location: Optional[str] = None,
+        us_only: bool = True,
     ) -> List["JobPostingData"]:
         """
         Get job postings with optional filters.
@@ -738,6 +780,7 @@ class MatchingService:
         Args:
             department: Optional department filter
             location: Optional location filter
+            us_only: If True, only return US-based jobs (default True)
 
         Returns:
             List of matching job postings
@@ -751,7 +794,19 @@ class MatchingService:
             query = query.filter(JobPosting.service_line.ilike(f"%{department}%"))
         if location:
             query = query.filter(JobPosting.location.ilike(f"%{location}%"))
+
         jobs = query.all()
+
+        # Filter to US jobs only (much faster than scoring all 6000)
+        if us_only:
+            us_jobs = []
+            for job in jobs:
+                loc_lower = (job.location or '').lower()
+                if any(us_loc in loc_lower for us_loc in self.US_LOCATIONS):
+                    us_jobs.append(job)
+            jobs = us_jobs
+            logger.info(f"Filtered to {len(jobs)} US jobs")
+
         return [self._to_job_posting_data(job) for job in jobs]
 
     def _get_employee_profile(self, employee_id: int) -> Optional["EmployeeProfile"]:
@@ -834,25 +889,78 @@ class MatchingService:
 
     def _preload_all_embeddings(self) -> None:
         """
-        Pre-load ALL skill embeddings from database into cache.
+        Load skill embeddings from global cache or refresh if stale.
 
-        This prevents N+1 query problem when processing thousands of jobs.
-        Called once at the start of matching to load all embeddings in a single query.
+        Uses a shared global cache to prevent reloading on every request.
+        Only refreshes if cache is empty or TTL has expired.
         """
+        global _global_embedding_cache, _cache_loaded_at
+
         if not self.db:
             return  # No DB available
-        if len(self._embedding_cache) > 1000:
-            return  # Already fully loaded
 
-        logger.info("Pre-loading all skill embeddings into cache...")
-        results = self.db.query(SkillEmbedding).all()
+        # Check if global cache is fresh
+        now = time.time()
+        cache_is_fresh = (
+            _cache_loaded_at is not None
+            and (now - _cache_loaded_at) < CACHE_TTL_SECONDS
+            and len(_global_embedding_cache) > 0
+        )
 
-        for result in results:
-            if result.embedding is not None:
-                # Cache by normalized text for fast lookup
-                self._embedding_cache[result.normalized_text] = list(result.embedding)
+        if cache_is_fresh:
+            # Use global cache - just copy reference
+            self._embedding_cache = _global_embedding_cache
+            logger.debug(f"Using cached embeddings ({len(self._embedding_cache)} entries)")
+            return
 
-        logger.info(f"Loaded {len(self._embedding_cache)} skill embeddings into cache")
+        # Need to refresh cache - acquire lock to prevent duplicate loads
+        with _cache_lock:
+            # Double-check after acquiring lock
+            if (
+                _cache_loaded_at is not None
+                and (time.time() - _cache_loaded_at) < CACHE_TTL_SECONDS
+                and len(_global_embedding_cache) > 0
+            ):
+                self._embedding_cache = _global_embedding_cache
+                return
+
+            logger.info("Refreshing global skill embeddings cache...")
+            start = time.time()
+
+            # Load embeddings in batches to avoid memory spikes
+            new_cache: Dict[str, List[float]] = {}
+            batch_size = 500
+            offset = 0
+
+            while True:
+                results = (
+                    self.db.query(SkillEmbedding.normalized_text, SkillEmbedding.embedding)
+                    .limit(batch_size)
+                    .offset(offset)
+                    .all()
+                )
+
+                if not results:
+                    break
+
+                for normalized_text, embedding in results:
+                    if embedding is not None:
+                        new_cache[normalized_text] = list(embedding)
+
+                offset += batch_size
+
+                # Safety limit - don't load more than 50k embeddings
+                if offset >= 50000:
+                    logger.warning("Embedding cache limit reached (50k)")
+                    break
+
+            # Update global cache
+            _global_embedding_cache = new_cache
+            _cache_loaded_at = time.time()
+            self._embedding_cache = _global_embedding_cache
+
+            elapsed = time.time() - start
+            logger.info(f"Loaded {len(self._embedding_cache)} embeddings in {elapsed:.2f}s")
 
     def _build_skill_embeddings(self, skills: List[str]) -> Dict[str, List[float]]:
         """Build skill embeddings from cache or return empty dict."""

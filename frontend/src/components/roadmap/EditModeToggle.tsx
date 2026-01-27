@@ -17,8 +17,8 @@ interface EditModeToggleProps {
 }
 
 export default function EditModeToggle({ onClose }: EditModeToggleProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const {
     editMode,
@@ -96,7 +96,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
       <div
         className="rounded-xl p-4"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -135,7 +135,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
         <div
           className="rounded-xl p-4"
           style={{
-            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)',
+            backgroundColor: (isDark || isGame) ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)',
             border: '1px solid rgba(59, 130, 246, 0.3)',
           }}
         >
@@ -157,7 +157,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
                     onClick={() => setAiInstructions(edit.instruction)}
                     className="text-xs px-3 py-1.5 rounded-full transition-colors hover:bg-blue-500/20"
                     style={{
-                      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                      backgroundColor: (isDark || isGame) ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)',
                       color: '#3b82f6',
                     }}
                   >
@@ -173,7 +173,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
                 rows={3}
                 className="w-full px-4 py-3 rounded-lg text-sm resize-none mb-3"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.05)' : '#fff',
                   color: colors.textPrimary,
                   border: `1px solid ${colors.cardBorder}`,
                 }}
@@ -224,7 +224,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
                     onClick={cancelPendingAIEdit}
                     className="flex-1 py-3 rounded-lg font-medium"
                     style={{
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                      backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                       color: colors.textPrimary,
                     }}
                   >
@@ -258,7 +258,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
                   onClick={cancelPendingAIEdit}
                   className="w-full py-3 rounded-lg font-medium"
                   style={{
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                    backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                     color: colors.textPrimary,
                   }}
                 >
@@ -275,7 +275,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
         <div
           className="rounded-xl p-4"
           style={{
-            backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.05)',
+            backgroundColor: (isDark || isGame) ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.05)',
             border: '1px solid rgba(245, 158, 11, 0.3)',
           }}
         >
@@ -315,7 +315,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
           <div
             className="relative w-full max-w-md rounded-2xl p-6"
             style={{
-              backgroundColor: isDark ? '#1a1a1f' : '#fff',
+              backgroundColor: (isDark || isGame) ? '#1a1a1f' : '#fff',
               border: `1px solid ${colors.cardBorder}`,
             }}
           >
@@ -350,7 +350,7 @@ export default function EditModeToggle({ onClose }: EditModeToggleProps) {
                 onClick={() => setShowManualWarning(false)}
                 className="flex-1 py-3 rounded-lg font-medium"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                   color: colors.textPrimary,
                 }}
               >

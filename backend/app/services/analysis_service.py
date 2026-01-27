@@ -15,6 +15,7 @@ import logging
 import asyncio
 from typing import Optional
 from uuid import UUID
+from concurrent.futures import ThreadPoolExecutor
 
 from openai import AsyncOpenAI, APIError, RateLimitError, APITimeoutError
 from sqlalchemy.orm import Session
@@ -207,27 +208,40 @@ class DeepAnalysisService:
         Raises:
             ValueError: If job posting not found or analysis fails
         """
-        # Get job posting from database
-        job = self.db.query(JobPosting).filter(JobPosting.id == job_id).first()
+        # Run blocking DB operations in a thread pool to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+
+        def fetch_job_and_match():
+            # Get job posting from database
+            job = self.db.query(JobPosting).filter(JobPosting.id == job_id).first()
+            if not job:
+                return None, None
+
+            # Get match details using MatchingService
+            matching_service = MatchingService(
+                db=self.db,
+                user_profile=user,
+                mode=MatchMode.BEST_FIT,
+            )
+
+            try:
+                # Use the user's ID as employee_id for matching
+                match_detail = matching_service.get_detailed_match(
+                    employee_id=int(str(user.id).replace("-", "")[:8], 16) % 1000000,
+                    job_id=job_id,
+                )
+            except Exception as e:
+                logger.warning(f"Could not get match details: {e}, using default scores")
+                match_detail = None
+
+            return job, match_detail
+
+        # Execute blocking operations in thread pool
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            job, match_detail = await loop.run_in_executor(executor, fetch_job_and_match)
+
         if not job:
             raise ValueError(f"Job posting not found: {job_id}")
-
-        # Get match details using MatchingService
-        matching_service = MatchingService(
-            db=self.db,
-            user_profile=user,
-            mode=MatchMode.BEST_FIT,
-        )
-
-        try:
-            # Use the user's ID as employee_id for matching
-            match_detail = matching_service.get_detailed_match(
-                employee_id=int(str(user.id).replace("-", "")[:8], 16) % 1000000,
-                job_id=job_id,
-            )
-        except Exception as e:
-            logger.warning(f"Could not get match details: {e}, using default scores")
-            match_detail = None
 
         # Build the prompt with all context
         prompt = self._build_prompt(user, job, match_detail)

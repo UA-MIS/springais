@@ -559,12 +559,19 @@ export function RoadmapProvider({ children }: { children: ReactNode }) {
         ? state.activeTab.replace('phase-', '')
         : null;
 
+      // Build conversation history from previous messages (last 10 messages max)
+      const history = state.chatMessages.slice(-10).map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
       const response = await enhancedChat(
         state.roadmapId,
         message,
         false, // Always use fast model
         state.activeTab,
-        currentPhaseId
+        currentPhaseId,
+        history
       );
 
       const assistantMessage: ChatMessage = {

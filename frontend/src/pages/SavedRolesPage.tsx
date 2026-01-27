@@ -6,8 +6,8 @@ import MatchCard from '../components/matches/MatchCard'
 import { Match } from '../services/mockMatchData'
 
 export default function SavedRolesPage() {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
   const navigate = useNavigate()
   const [savedRoles, setSavedRoles] = useState<SavedMatch[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,7 +78,7 @@ export default function SavedRolesPage() {
         <div
           className="p-6 rounded-lg text-center"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
             border: `1px solid ${colors.cardBorder}`,
           }}
         >
@@ -98,14 +98,14 @@ export default function SavedRolesPage() {
         <div
           className="p-12 rounded-lg text-center"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
             border: `1px solid ${colors.cardBorder}`,
           }}
         >
           <div
             className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
             style={{
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
+              backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
             }}
           >
             <svg
@@ -148,14 +148,12 @@ export default function SavedRolesPage() {
                   match={match}
                   onViewDetails={(id) => navigate(`/matches/${id}`)}
                   onSave={() => handleUnsave(saved.match_id)}
-                  isDark={isDark}
-                  colors={colors}
                 />
                 <button
                   onClick={() => handleUnsave(saved.match_id)}
                   className="absolute top-4 right-4 px-3 py-1 text-sm rounded-md transition-colors"
                   style={{
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                    backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
                     color: colors.textPrimary,
                   }}
                   title="Remove from saved"

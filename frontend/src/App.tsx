@@ -15,6 +15,7 @@ import { SavedRolesProvider } from './context/SavedRolesContext';
 import { SkillsProvider } from './context/SkillsContext';
 import { RoadmapProvider } from './context/RoadmapContext';
 import { ToastProvider } from './context/ToastContext';
+import { AdventureModeProvider } from './context/AdventureModeContext';
 
 function App() {
   return (
@@ -28,15 +29,17 @@ function App() {
       <Route
         element={
           <ProtectedRoute>
-            <ToastProvider>
-              <MatchesProvider>
-                <SavedRolesProvider>
-                  <SkillsProvider>
-                    <MainLayout />
-                  </SkillsProvider>
-                </SavedRolesProvider>
-              </MatchesProvider>
-            </ToastProvider>
+            <AdventureModeProvider>
+              <ToastProvider>
+                <MatchesProvider>
+                  <SavedRolesProvider>
+                    <SkillsProvider>
+                      <MainLayout />
+                    </SkillsProvider>
+                  </SavedRolesProvider>
+                </MatchesProvider>
+              </ToastProvider>
+            </AdventureModeProvider>
           </ProtectedRoute>
         }
       >

@@ -13,6 +13,7 @@ import hashlib
 import os
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 # Redis client for caching
@@ -171,13 +172,19 @@ async def get_employee_matches(
             top_k=offset + limit,  # Get enough for offset + limit
             min_overall_score=min_score,
         )
-        employee_profile = service._get_employee_profile(employee_id)
+
+        # Run blocking DB operations in thread pool to avoid blocking event loop
+        employee_profile = await run_in_threadpool(
+            service._get_employee_profile, employee_id
+        )
         if not employee_profile:
             raise HTTPException(status_code=404, detail="Employee not found")
-        matches, total_count = service.find_matches_for_employee_with_total(
-            employee_id=employee_id,
-            department_filter=department,
-            location_filter=location,
+
+        matches, total_count = await run_in_threadpool(
+            service.find_matches_for_employee_with_total,
+            employee_id,
+            department,
+            location,
         )
 
         # Filter by min_score if different from default
@@ -260,10 +267,17 @@ async def get_detailed_match(
     try:
         match_mode = MatchMode(mode.value)
         service = MatchingService(db=db, user_profile=current_user, mode=match_mode)
-        employee_profile = service._get_employee_profile(employee_id)
+
+        # Run blocking DB operations in thread pool
+        employee_profile = await run_in_threadpool(
+            service._get_employee_profile, employee_id
+        )
         if not employee_profile:
             raise HTTPException(status_code=404, detail="Employee not found")
-        match_detail = service.get_detailed_match(employee_id=employee_id, job_id=job_id)
+
+        match_detail = await run_in_threadpool(
+            service.get_detailed_match, employee_id, job_id
+        )
 
         return DetailedMatchResponse(
             employee_id=employee_profile.id,
@@ -299,7 +313,11 @@ async def analyze_skill_gaps(
     """
     try:
         service = MatchingService(db=db, user_profile=current_user)
-        gap_analysis = service.analyze_skill_gaps(employee_id, job_id)
+
+        # Run blocking DB operations in thread pool
+        gap_analysis = await run_in_threadpool(
+            service.analyze_skill_gaps, employee_id, job_id
+        )
         return gap_analysis
 
     except ValueError as e:
@@ -337,15 +355,24 @@ async def save_match(
         matched_skills=payload.matched_skills,
         explanation=payload.explanation,
     )
-    db.add(match)
-    db.commit()
-    db.refresh(match)
 
-    # Refresh recommendations after saving a match
-    service = SkillRecommendationService(db)
-    await service.compute_recommendations(current_user.id)
+    # Run blocking DB operations in thread pool
+    def save_to_db():
+        db.add(match)
+        db.commit()
+        db.refresh(match)
+        return match.id
 
-    return {"saved": True, "match_id": str(match.id)}
+    match_id = await run_in_threadpool(save_to_db)
+
+    # Refresh recommendations after saving a match (run in background, don't block response)
+    try:
+        service = SkillRecommendationService(db)
+        await service.compute_recommendations(current_user.id)
+    except Exception as e:
+        logger.warning(f"Failed to refresh recommendations: {e}")
+
+    return {"saved": True, "match_id": str(match_id)}
 
 
 @router.get(
@@ -360,20 +387,23 @@ async def get_saved_matches(
 ):
     """
     Get all saved matches for the current user.
-    
+
     Returns matches with job details, scores, and skill analysis.
     Results are sorted by overall score (descending) and saved date (newest first).
     """
     try:
-        # Query saved matches for the current user
-        matches = (
-            db.query(Match)
-            .join(JobPosting, Match.job_posting_id == JobPosting.id)
-            .filter(Match.user_id == current_user.id)
-            .order_by(Match.overall_score.desc(), Match.created_at.desc())
-            .all()
-        )
-        
+        # Run blocking DB query in thread pool
+        def fetch_matches():
+            return (
+                db.query(Match)
+                .join(JobPosting, Match.job_posting_id == JobPosting.id)
+                .filter(Match.user_id == current_user.id)
+                .order_by(Match.overall_score.desc(), Match.created_at.desc())
+                .all()
+            )
+
+        matches = await run_in_threadpool(fetch_matches)
+
         saved_matches = []
         for match in matches:
             job = match.job_posting
@@ -493,22 +523,28 @@ async def delete_saved_match(
                 detail="Invalid match ID format"
             )
         
-        # Find the match
-        match = db.query(Match).filter(
-            Match.id == match_uuid,
-            Match.user_id == current_user.id
-        ).first()
-        
-        if not match:
+        # Run blocking DB operations in thread pool
+        def find_and_delete():
+            match = db.query(Match).filter(
+                Match.id == match_uuid,
+                Match.user_id == current_user.id
+            ).first()
+
+            if not match:
+                return False
+
+            db.delete(match)
+            db.commit()
+            return True
+
+        deleted = await run_in_threadpool(find_and_delete)
+
+        if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Saved match not found"
             )
-        
-        # Delete the match
-        db.delete(match)
-        db.commit()
-        
+
         return {"deleted": True, "match_id": match_id}
         
     except HTTPException:

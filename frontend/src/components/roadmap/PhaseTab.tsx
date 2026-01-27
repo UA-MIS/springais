@@ -15,8 +15,8 @@ import MilestoneCard from './MilestoneCard';
 import ExtrasSection from './ExtrasSection';
 
 export default function PhaseTab() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const {
     roadmap,
@@ -40,7 +40,7 @@ export default function PhaseTab() {
       <div
         className="rounded-2xl p-6"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -53,7 +53,7 @@ export default function PhaseTab() {
                 cy="48"
                 r="40"
                 fill="none"
-                stroke={isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
+                stroke={(isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
                 strokeWidth="8"
               />
               <circle
@@ -145,7 +145,7 @@ export default function PhaseTab() {
           disabled={isFirstPhase}
           className="px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2"
           style={{
-            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+            backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
             color: isFirstPhase ? colors.textMuted : colors.textPrimary,
             opacity: isFirstPhase ? 0.5 : 1,
           }}
@@ -163,7 +163,7 @@ export default function PhaseTab() {
           disabled={isLastPhase}
           className="px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2"
           style={{
-            backgroundColor: isLastPhase ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : colors.accent,
+            backgroundColor: isLastPhase ? ((isDark || isGame) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : colors.accent,
             color: isLastPhase ? colors.textMuted : '#2e2e38',
             opacity: isLastPhase ? 0.5 : 1,
           }}

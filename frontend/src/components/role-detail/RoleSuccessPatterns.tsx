@@ -25,8 +25,8 @@ interface RolePatternData {
 }
 
 export default function RoleSuccessPatterns({ match }: RoleSuccessPatternsProps) {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
 
   const [data, setData] = useState<RolePatternData>({
     transitions_to_role: [],

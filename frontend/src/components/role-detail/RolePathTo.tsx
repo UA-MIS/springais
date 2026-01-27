@@ -15,8 +15,8 @@ interface RoleStats {
 }
 
 export default function RolePathTo({ match }: RolePathToProps) {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
   const [roleStats, setRoleStats] = useState<RoleStats | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -60,7 +60,7 @@ export default function RolePathTo({ match }: RolePathToProps) {
       <div
         className="p-6 rounded-lg"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -77,7 +77,7 @@ export default function RolePathTo({ match }: RolePathToProps) {
       <div
         className="rounded-lg overflow-hidden"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -106,7 +106,7 @@ export default function RolePathTo({ match }: RolePathToProps) {
         <div
           className="p-5 rounded-lg"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
             border: `1px solid ${colors.cardBorder}`,
           }}
         >
@@ -119,7 +119,7 @@ export default function RolePathTo({ match }: RolePathToProps) {
         <div
           className="p-5 rounded-lg"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
             border: `1px solid ${colors.cardBorder}`,
           }}
         >
@@ -132,7 +132,7 @@ export default function RolePathTo({ match }: RolePathToProps) {
         <div
           className="p-5 rounded-lg"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
             border: `1px solid ${colors.cardBorder}`,
           }}
         >

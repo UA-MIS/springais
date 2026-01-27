@@ -21,8 +21,8 @@ const tabs: { id: TabId; label: string }[] = [
 export default function RoleDetailPage() {
   const { roleId } = useParams<{ roleId: string }>()
   const navigate = useNavigate()
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
   const [activeTab, setActiveTab] = useState<TabId>('overview')
   const [match, setMatch] = useState<Match | null>(null)
   const [loading, setLoading] = useState(false)
@@ -175,7 +175,7 @@ export default function RoleDetailPage() {
           onClick={() => navigate('/matches')}
           className="mb-4 px-3 py-2 rounded-md text-sm font-semibold transition-colors inline-flex items-center gap-2"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
             color: colors.textPrimary,
           }}
         >

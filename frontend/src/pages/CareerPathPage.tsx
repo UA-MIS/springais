@@ -2,14 +2,14 @@ import { CareerVisualization } from '@/components/career-viz/CareerVisualization
 import { useTheme, themeColors } from '../context/ThemeContext'
 
 export function CareerPathPage() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   return (
     <div
       className="career-paths relative min-h-screen overflow-hidden transition-colors duration-200"
       style={{
-        backgroundColor: isDark ? 'transparent' : colors.pageBg,
+        backgroundColor: (isDark || isGame) ? 'transparent' : colors.pageBg,
         color: colors.textPrimary
       }}
     >
@@ -55,7 +55,7 @@ export function CareerPathPage() {
             style={{
               backgroundColor: colors.cardBg,
               borderColor: colors.cardBorder,
-              backdropFilter: isDark ? 'blur(12px)' : 'none',
+              backdropFilter: (isDark || isGame) ? 'blur(12px)' : 'none',
             }}
           >
             <div

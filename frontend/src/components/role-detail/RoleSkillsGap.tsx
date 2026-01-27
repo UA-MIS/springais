@@ -6,8 +6,8 @@ interface RoleSkillsGapProps {
 }
 
 export default function RoleSkillsGap({ match }: RoleSkillsGapProps) {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
 
   const skillMatchPercent = Math.round(match.skill_match_score * 100)
   const matchedCount = match.matched_skills.length

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { saveMatch } from '../../services/matchService';
 import MatchCard from './MatchCard';
@@ -9,19 +9,22 @@ import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useMatches } from '../../context/MatchesContext';
 import { useToast } from '../../context/ToastContext';
 import { useSkillsContext } from '../../context/SkillsContext';
+import { useAdventureMode, getFantasyText } from '../../context/AdventureModeContext';
 
 export default function MatchResultsPage() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { state: adventureState, unlockAchievement, addXP, addGold } = useAdventureMode();
+  const hasViewedMatches = useRef(false);
 
   // Check if user has uploaded a resume (has skills)
   const { skills } = useSkillsContext();
   const hasResume = skills.length > 0;
 
   // Use cached matches from context
-  const { state: matchesState, fetchMatches } = useMatches();
+  const { state: matchesState, fetchMatchesProgressive } = useMatches();
 
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
@@ -37,6 +40,7 @@ export default function MatchResultsPage() {
   // Get matches/loading/error from context
   const matches = matchesState.matches;
   const loading = matchesState.loading;
+  const loadingMore = matchesState.loadingMore;
   const error = matchesState.error;
 
   // US locations/cities for filtering
@@ -71,10 +75,18 @@ export default function MatchResultsPage() {
 
   useEffect(() => {
     // Only fetch matches if user has uploaded a resume
-    if (hasResume) {
-      fetchMatches(filters);
+    if (hasResume && matches.length === 0 && !loading) {
+      fetchMatchesProgressive();
     }
-  }, [filters, fetchMatches, hasResume]);
+  }, [hasResume, fetchMatchesProgressive, matches.length, loading]);
+
+  // Adventure Mode: Trigger "first_match" achievement when viewing matches
+  useEffect(() => {
+    if (adventureState.enabled && matches.length > 0 && !hasViewedMatches.current) {
+      hasViewedMatches.current = true;
+      unlockAchievement('first_match');
+    }
+  }, [matches, adventureState.enabled, unlockAchievement]);
 
   // Filter matches
   const filteredMatches = useMemo(() => {
@@ -145,7 +157,16 @@ export default function MatchResultsPage() {
     if (!match) return;
     try {
       await saveMatch(match, 'best_fit');  // Default mode for saved matches
-      showToast('Match saved successfully!', 'success');
+      showToast(
+        adventureState.enabled ? 'Quest marked for greatness!' : 'Match saved successfully!',
+        'success'
+      );
+      // Adventure Mode: Grant XP and unlock achievement
+      if (adventureState.enabled) {
+        addXP(25, 'Saved a role');
+        addGold(10, 'Saved a role');
+        unlockAchievement('save_role');
+      }
     } catch (err) {
       console.error('Failed to save match', err);
       showToast('Failed to save match', 'error');
@@ -227,18 +248,27 @@ export default function MatchResultsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto transition-colors duration-200">
+    <div
+      className="max-w-7xl mx-auto transition-colors duration-200"
+      style={{ fontFamily: isGame ? "'Spectral', serif" : 'inherit' }}
+    >
       <h1
         className="text-4xl font-bold mb-2"
-        style={{ color: colors.textPrimary }}
+        style={{
+          color: colors.textPrimary,
+          fontFamily: isGame ? "'Cinzel', serif" : 'inherit',
+          textShadow: isGame ? '0 0 20px rgba(255, 230, 0, 0.2)' : 'none',
+        }}
       >
-        Match Results
+        {getFantasyText('Role Matches', adventureState.enabled)}
       </h1>
       <p
         className="text-lg mb-6"
         style={{ color: colors.textMuted }}
       >
-        Discover job opportunities matched to your skills and career goals
+        {adventureState.enabled
+          ? 'Discover quests matched to your abilities and destiny'
+          : 'Discover job opportunities matched to your skills and career goals'}
       </p>
 
       {/* Filters and Sort */}
@@ -263,7 +293,7 @@ export default function MatchResultsPage() {
       </div>
 
       {/* Match Cards */}
-      {loading ? (
+      {loading && matches.length === 0 ? (
         <div className="py-12 text-center" style={{ color: colors.textMuted }}>
           Loading matches...
         </div>
@@ -282,11 +312,16 @@ export default function MatchResultsPage() {
                 match={match}
                 onViewDetails={handleViewDetails}
                 onSave={handleSave}
-                isDark={isDark}
-                colors={colors}
               />
             ))}
           </div>
+
+          {/* Loading more indicator */}
+          {loadingMore && (
+            <div className="py-4 text-center" style={{ color: colors.accent }}>
+              Loading more matches... ({matches.length} loaded)
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -296,7 +331,7 @@ export default function MatchResultsPage() {
                 disabled={currentPage === 1}
                 className="px-4 py-2 font-semibold rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
+                  backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
                   color: colors.textPrimary,
                   border: `1px solid ${colors.border}`,
                 }}
@@ -314,7 +349,7 @@ export default function MatchResultsPage() {
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 font-semibold rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
+                  backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
                   color: colors.textPrimary,
                   border: `1px solid ${colors.border}`,
                 }}

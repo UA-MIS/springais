@@ -17,8 +17,8 @@ export type GraphControlsProps = {
 
 export function GraphControls(props: GraphControlsProps) {
   const { state, departments, onChange, onReset, isOpen, onToggle } = props
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
 
   const activeCount =
     (state.search.trim() ? 1 : 0) + (state.department !== 'all' ? 1 : 0) + (state.minSuccessRate > 0 ? 1 : 0)
@@ -31,7 +31,7 @@ export function GraphControls(props: GraphControlsProps) {
           onClick={onToggle}
           className="rounded-full px-3 py-2 text-xs font-semibold shadow-2xl backdrop-blur-md"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
             border: `1px solid rgba(255, 230, 0, 0.3)`,
             color: colors.textPrimary,
           }}
@@ -45,7 +45,7 @@ export function GraphControls(props: GraphControlsProps) {
         <div
           className="mt-3 w-[360px] rounded-xl p-3 shadow-2xl backdrop-blur-md"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
             border: `1px solid ${colors.cardBorder}`,
           }}
         >
@@ -56,7 +56,7 @@ export function GraphControls(props: GraphControlsProps) {
               onClick={onReset}
               className="rounded-md px-2 py-1 text-xs font-semibold"
               style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
+                backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
                 color: colors.textPrimary,
               }}
             >
@@ -86,7 +86,7 @@ export function GraphControls(props: GraphControlsProps) {
                 onChange={(e) => onChange({ ...state, department: e.target.value as GraphControlsState['department'] })}
                 className="mt-1 w-full rounded-md px-3 py-2 text-sm outline-none focus:border-[#FFE600]"
                 style={{
-                  backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.04)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.04)',
                   border: `1px solid ${colors.cardBorder}`,
                   color: colors.textPrimary,
                 }}

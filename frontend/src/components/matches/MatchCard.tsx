@@ -1,23 +1,12 @@
 import { Match } from '../../services/mockMatchData';
 import ProgressRing from '../common/ProgressRing';
 import SkillGapDisplay from './SkillGapDisplay';
-
-interface ThemeColors {
-  textPrimary: string;
-  textSecondary: string;
-  textMuted: string;
-  cardBg: string;
-  cardBorder: string;
-  border: string;
-  accent: string;
-}
+import { useTheme, themeColors } from '../../context/ThemeContext';
 
 interface MatchCardProps {
   match: Match;
   onViewDetails: (matchId: string) => void;
   onSave: (matchId: string) => void;
-  isDark: boolean;
-  colors: ThemeColors;
 }
 
 function formatDate(dateString: string): string {
@@ -36,16 +25,18 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function MatchCard({ match, onViewDetails, onSave, isDark, colors }: MatchCardProps) {
+export default function MatchCard({ match, onViewDetails, onSave }: MatchCardProps) {
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
   const scorePercentage = Math.round(match.overall_score * 100);
 
   return (
     <div
       className="p-6 rounded-sm shadow-2xl transition-all"
       style={{
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+        backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
         border: `1px solid ${colors.cardBorder}`,
-        backdropFilter: isDark ? 'blur(12px)' : 'none',
+        backdropFilter: (isDark || isGame) ? 'blur(12px)' : 'none',
       }}
     >
       {/* Header: Title + Score */}
@@ -86,7 +77,7 @@ export default function MatchCard({ match, onViewDetails, onSave, isDark, colors
       <div
         className="mb-4 p-3 rounded-sm"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
           border: `1px solid ${colors.border}`,
         }}
       >
@@ -114,7 +105,7 @@ export default function MatchCard({ match, onViewDetails, onSave, isDark, colors
           onClick={() => onSave(match.id)}
           className="px-4 py-2 font-semibold rounded-sm transition-colors"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : colors.cardBg,
             color: colors.textPrimary,
             border: `1px solid ${colors.border}`,
           }}

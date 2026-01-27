@@ -12,8 +12,8 @@ import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useRoadmap } from '../../hooks/useRoadmap';
 
 export default function OverviewTab() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const {
     roadmap,
@@ -34,7 +34,7 @@ export default function OverviewTab() {
       <div
         className="rounded-2xl p-8"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -89,7 +89,7 @@ export default function OverviewTab() {
         {roadmap.customization_notes && (
           <div
             className="mt-6 p-4 rounded-lg"
-            style={{ backgroundColor: isDark ? 'rgba(255, 230, 0, 0.1)' : 'rgba(255, 230, 0, 0.15)' }}
+            style={{ backgroundColor: (isDark || isGame) ? 'rgba(255, 230, 0, 0.1)' : 'rgba(255, 230, 0, 0.15)' }}
           >
             <span className="text-sm" style={{ color: colors.textMuted }}>
               Personalization: {roadmap.customization_notes}
@@ -102,7 +102,7 @@ export default function OverviewTab() {
       <div
         className="rounded-2xl p-6"
         style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+          backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -114,7 +114,7 @@ export default function OverviewTab() {
           {/* Timeline Line */}
           <div
             className="absolute left-6 top-0 bottom-0 w-0.5"
-            style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
+            style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
           />
 
           {/* Timeline Progress */}
@@ -170,7 +170,7 @@ export default function OverviewTab() {
                           -&gt; {phase.target_role}
                         </span>
                       )}
-                      <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', color: colors.textMuted }}>
+                      <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', color: colors.textMuted }}>
                         {phase.estimated_duration_months} mo
                       </span>
                     </div>
@@ -183,7 +183,7 @@ export default function OverviewTab() {
                     <div className="mt-2 flex items-center gap-2">
                       <div
                         className="flex-1 h-1.5 rounded-full overflow-hidden max-w-xs"
-                        style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
+                        style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
                       >
                         <div
                           className="h-full rounded-full transition-all"

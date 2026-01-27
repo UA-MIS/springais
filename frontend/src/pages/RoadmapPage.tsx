@@ -12,6 +12,7 @@ import { useTheme, themeColors } from '../context/ThemeContext';
 import { useSavedRoles } from '../context/SavedRolesContext';
 import { RoadmapProvider } from '../context/RoadmapContext';
 import { RoadmapViewer } from '../components/roadmap';
+import { useAdventureMode, getFantasyText } from '../context/AdventureModeContext';
 import {
   generateRoadmap,
   getSavedRoadmaps,
@@ -37,7 +38,7 @@ interface SavedRoadmapsListProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onCreateNew: () => void;
-  colors: ReturnType<typeof themeColors.dark>;
+  colors: typeof themeColors.dark;
   isDark: boolean;
 }
 
@@ -170,7 +171,7 @@ interface RoleSelectionPanelProps {
   onReorderRole: (jobId: string, direction: 'up' | 'down') => void;
   autoOrder: boolean;
   onAutoOrderChange: (v: boolean) => void;
-  colors: ReturnType<typeof themeColors.dark>;
+  colors: typeof themeColors.dark;
   isDark: boolean;
 }
 
@@ -330,7 +331,7 @@ interface CustomizationPanelProps {
   onIncludeCertificationsChange: (v: boolean) => void;
   timelinePreference: string;
   onTimelinePreferenceChange: (v: string) => void;
-  colors: ReturnType<typeof themeColors.dark>;
+  colors: typeof themeColors.dark;
   isDark: boolean;
 }
 
@@ -468,10 +469,11 @@ function CustomizationPanel({
 // ============================================
 
 export default function RoadmapPage() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
   const savedRolesContext = useSavedRoles();
   const savedRoles = savedRolesContext?.state.savedRoles || [];
+  const { state: adventureState, unlockAchievement, addXP, addGold } = useAdventureMode();
 
   // View state
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -566,6 +568,12 @@ export default function RoadmapPage() {
       // Reset form
       setSelectedRoles([]);
       setCustomInstructions('');
+      // Adventure Mode: Grant XP, gold, and unlock achievement
+      if (adventureState.enabled) {
+        addXP(100, 'Created a roadmap');
+        addGold(50, 'Created a roadmap');
+        unlockAchievement('create_roadmap');
+      }
     } catch (err: unknown) {
       console.error('Roadmap generation failed:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate roadmap. Please try again.';
@@ -597,12 +605,24 @@ export default function RoadmapPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-6">
+    <div
+      className="max-w-7xl mx-auto py-6 px-6"
+      style={{ fontFamily: isGame ? "'Spectral', serif" : 'inherit' }}
+    >
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>Career Roadmap</h1>
+        <h1
+          className="text-3xl font-bold mb-2"
+          style={{
+            color: colors.textPrimary,
+            fontFamily: isGame ? "'Cinzel', serif" : 'inherit',
+            textShadow: isGame ? '0 0 20px rgba(255, 230, 0, 0.2)' : 'none',
+          }}
+        >
+          {getFantasyText('Career Roadmap', adventureState.enabled)}
+        </h1>
         <p style={{ color: colors.textMuted }}>
-          {viewMode === 'list' && 'View your saved roadmaps or create a new one.'}
-          {viewMode === 'create' && 'Create a personalized career development plan.'}
+          {viewMode === 'list' && (adventureState.enabled ? 'View your adventure paths or forge a new destiny.' : 'View your saved roadmaps or create a new one.')}
+          {viewMode === 'create' && (adventureState.enabled ? 'Forge your personalized path to glory.' : 'Create a personalized career development plan.')}
         </p>
       </div>
 

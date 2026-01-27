@@ -323,11 +323,17 @@ class ManualEditRequest(BaseModel):
     changes: dict = Field(default={}, description="Changes to apply")
 
 
+class ChatHistoryMessage(BaseModel):
+    role: str = Field(..., description="Message role: user or assistant")
+    content: str = Field(..., description="Message content")
+
+
 class EnhancedChatRequest(BaseModel):
     message: str = Field(..., description="User's message")
     use_deep_thinking: bool = Field(default=False, description="Use GPT-5.2 for complex edits")
     current_tab: str = Field(default="overview", description="Current tab the user is viewing")
     current_phase_id: str | None = Field(None, description="Current phase ID if on a phase tab")
+    conversation_history: list[ChatHistoryMessage] = Field(default=[], description="Previous messages for context")
 
 
 class RoadmapChatResponse(BaseModel):
@@ -966,60 +972,58 @@ async def enhanced_roadmap_chat(
     progress_service = RoadmapProgressService(db)
     progress = progress_service.get_progress(roadmap_uuid)
 
-    # Build full context
-    roadmap_data = roadmap.roadmap_data
+    # Just give the AI everything - it's simpler and more accurate
+    import json
+
     context = f"""
-## User Profile
+## USER
 Name: {current_user.full_name}
 Current Role: {current_user.current_role}
-Skills: {', '.join(current_user.skills or [])}
+Skills: {json.dumps(current_user.skills or [])}
 
-## Roadmap Overview
-Title: {roadmap.title}
-Target Roles: {', '.join(roadmap.target_role_titles)}
-Total Duration: {roadmap.total_estimated_months} months
-Phases: {roadmap.total_phases}
-Milestones: {roadmap.total_milestones}
-
-## Progress
+## PROGRESS
 Completed: {progress['completed_count']} / {progress['total_count']} milestones ({progress['overall_progress']}%)
-Extra Achievements: {progress['extras_count']}
+Milestone Status: {json.dumps(progress['milestones'])}
+Extra Achievements: {json.dumps(progress['extras'])}
 
-## Current View
-Tab: {request.current_tab}
-Phase: {request.current_phase_id or 'N/A'}
-
-## Roadmap Details
-Executive Summary: {roadmap_data.get('executive_summary', '')}
-
-Quick Wins: {', '.join(roadmap_data.get('quick_wins', []))}
-
-Critical Skills: {', '.join(roadmap_data.get('critical_skills_to_develop', []))}
-
-Phases:
+## FULL ROADMAP
+{json.dumps(roadmap.roadmap_data, indent=2)}
 """
-    for phase in roadmap_data.get("phases", []):
-        phase_progress = progress['milestones_by_phase'].get(phase['id'], [])
-        completed_in_phase = sum(1 for m in phase_progress if m['status'] == 'completed')
-        total_in_phase = len(phase.get('milestones', []))
-        context += f"\n- {phase['name']} ({completed_in_phase}/{total_in_phase} complete): {phase.get('description', '')[:100]}..."
 
     try:
         client = get_openai_client()
 
-        # Use gpt-5.2-instant for fast responses
-        model = "gpt-5.2-instant"
+        # Use gpt-5.2-chat-latest for fast responses
+        model = "gpt-5.2-chat-latest"
+
+        system_content = ENHANCED_CHAT_SYSTEM_PROMPT + f"\n\n{context}"
+
+        # Build messages array with conversation history
+        messages = [{"role": "system", "content": system_content}]
+
+        # Add conversation history (limit to last 10 for token management)
+        for hist_msg in request.conversation_history[-10:]:
+            messages.append({"role": hist_msg.role, "content": hist_msg.content})
+
+        # Add current user message
+        messages.append({"role": "user", "content": request.message})
+
+        logger.info(f"Enhanced chat - {len(messages)} messages, context: {len(system_content)} chars")
+        logger.info(f"Enhanced chat - User question: {request.message}")
 
         response = client.chat.completions.create(
             model=model,
-            messages=[
-                {"role": "system", "content": ENHANCED_CHAT_SYSTEM_PROMPT + f"\n\n{context}"},
-                {"role": "user", "content": request.message}
-            ],
-            max_completion_tokens=500,
+            messages=messages,
+            max_completion_tokens=1000,
         )
 
+        # Log full response for debugging
+        logger.info(f"Enhanced chat - finish_reason: {response.choices[0].finish_reason}")
+        logger.info(f"Enhanced chat - content type: {type(response.choices[0].message.content)}")
+        logger.info(f"Enhanced chat - content length: {len(response.choices[0].message.content) if response.choices[0].message.content else 0}")
+
         content = response.choices[0].message.content
+
         if not content:
             content = "I apologize, but I wasn't able to generate a response. Please try rephrasing your question."
 

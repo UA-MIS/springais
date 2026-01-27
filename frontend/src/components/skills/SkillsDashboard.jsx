@@ -33,8 +33,9 @@ export default function SkillsDashboard() {
   const [showResumeUpload, setShowResumeUpload] = useState(false);
 
   // Use global theme context
-  const { isDark } = useTheme();
-  const theme = isDark ? DARK_THEME : LIGHT_THEME;
+  const { theme: globalTheme, isDark, isGame } = useTheme();
+  // Map global theme to local theme constants
+  const localTheme = (isDark || isGame) ? DARK_THEME : LIGHT_THEME;
 
   const handleSkillClick = (skill) => {
     setSelectedSkill(skill);
@@ -61,18 +62,18 @@ export default function SkillsDashboard() {
   return (
     <div 
       className="min-h-screen p-4 md:p-6 transition-colors duration-300"
-      style={{ backgroundColor: theme.pageBg }}
+      style={{ backgroundColor: localTheme.pageBg }}
     >
       {/* Professional Header */}
       <div 
         className="mb-6 rounded-2xl shadow-xl overflow-hidden"
-        style={{ background: theme.headerBg }}
+        style={{ background: localTheme.headerBg }}
       >
         {/* Decorative top accent bar */}
         <div 
           className="h-1"
           style={{ 
-            background: `linear-gradient(90deg, ${theme.primaryBtn.bg} 0%, transparent 50%, ${theme.primaryBtn.bg} 100%)`,
+            background: `linear-gradient(90deg, ${localTheme.primaryBtn.bg} 0%, transparent 50%, ${localTheme.primaryBtn.bg} 100%)`,
             opacity: 0.6 
           }}
         />
@@ -96,7 +97,7 @@ export default function SkillsDashboard() {
                     <circle 
                       cx="40" cy="40" r="34"
                       fill="none" 
-                      stroke={theme.primaryBtn.bg}
+                      stroke={localTheme.primaryBtn.bg}
                       strokeWidth="6"
                       strokeLinecap="round"
                       strokeDasharray={`${(avgProgress / 100) * 213.6} 213.6`}
@@ -107,7 +108,7 @@ export default function SkillsDashboard() {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span 
                       className="text-lg font-bold"
-                      style={{ color: theme.headerText }}
+                      style={{ color: localTheme.headerText }}
                     >
                       {avgProgress}%
                     </span>
@@ -115,7 +116,7 @@ export default function SkillsDashboard() {
                 </div>
                 <span 
                   className="text-xs mt-1 uppercase tracking-wider font-medium"
-                  style={{ color: theme.headerSubtext }}
+                  style={{ color: localTheme.headerSubtext }}
                 >
                   Overall
                 </span>
@@ -126,7 +127,7 @@ export default function SkillsDashboard() {
                 <div className="flex items-center gap-3 mb-2">
                   <h1 
                     className="text-2xl lg:text-3xl font-bold tracking-tight"
-                    style={{ color: theme.headerText }}
+                    style={{ color: localTheme.headerText }}
                   >
                     Skills Portfolio
                   </h1>
@@ -134,7 +135,7 @@ export default function SkillsDashboard() {
                     className="px-2.5 py-0.5 text-xs font-semibold rounded-full"
                     style={{ 
                       backgroundColor: 'rgba(255,255,255,0.15)',
-                      color: theme.headerText 
+                      color: localTheme.headerText 
                     }}
                   >
                     {totalSkills} skills
@@ -142,7 +143,7 @@ export default function SkillsDashboard() {
                 </div>
                 <p 
                   className="text-sm lg:text-base max-w-md"
-                  style={{ color: theme.headerSubtext }}
+                  style={{ color: localTheme.headerSubtext }}
                 >
                   Track your professional development, certifications, and career growth
                 </p>
@@ -162,20 +163,20 @@ export default function SkillsDashboard() {
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
                   >
-                    <svg className="w-5 h-5" fill="none" stroke={theme.headerText} viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke={localTheme.headerText} viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
                   <div>
                     <p
                       className="text-xl font-bold leading-none"
-                      style={{ color: theme.headerText }}
+                      style={{ color: localTheme.headerText }}
                     >
                       {skills.filter(s => s.status === 'active' || s.status === 'in_progress').length}
                     </p>
                     <p
                       className="text-xs uppercase tracking-wide mt-0.5"
-                      style={{ color: theme.headerSubtext }}
+                      style={{ color: localTheme.headerSubtext }}
                     >
                       Active
                     </p>
@@ -198,13 +199,13 @@ export default function SkillsDashboard() {
                   <div>
                     <p 
                       className="text-xl font-bold leading-none"
-                      style={{ color: theme.headerText }}
+                      style={{ color: localTheme.headerText }}
                     >
                       {completedSkills}
                     </p>
                     <p 
                       className="text-xs uppercase tracking-wide mt-0.5"
-                      style={{ color: theme.headerSubtext }}
+                      style={{ color: localTheme.headerSubtext }}
                     >
                       Completed
                     </p>
@@ -217,12 +218,12 @@ export default function SkillsDashboard() {
                 onClick={() => setIsAddModalOpen(true)}
                 className="font-semibold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2 group"
                 style={{ 
-                  backgroundColor: theme.primaryBtn.bg, 
-                  color: theme.primaryBtn.text,
-                  border: `2px solid ${theme.primaryBtn.border}`,
+                  backgroundColor: localTheme.primaryBtn.bg, 
+                  color: localTheme.primaryBtn.text,
+                  border: `2px solid ${localTheme.primaryBtn.border}`,
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = theme.primaryBtn.hover}
-                onMouseLeave={(e) => e.target.style.backgroundColor = theme.primaryBtn.bg}
+                onMouseEnter={(e) => e.target.style.backgroundColor = localTheme.primaryBtn.hover}
+                onMouseLeave={(e) => e.target.style.backgroundColor = localTheme.primaryBtn.bg}
               >
                 <svg className="w-5 h-5 transition-transform group-hover:rotate-90 duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -239,28 +240,28 @@ export default function SkillsDashboard() {
         <div
           className="rounded-2xl p-8 text-center"
           style={{
-            backgroundColor: theme.cardBg,
-            border: `2px dashed ${theme.cardBorder}`,
+            backgroundColor: localTheme.cardBg,
+            border: `2px dashed ${localTheme.cardBorder}`,
           }}
         >
           <div className="max-w-md mx-auto">
             <svg
               className="w-16 h-16 mx-auto mb-4 opacity-50"
               fill="none"
-              stroke={theme.categoryText}
+              stroke={localTheme.categoryText}
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <h3
               className="text-xl font-semibold mb-2"
-              style={{ color: theme.categoryText }}
+              style={{ color: localTheme.categoryText }}
             >
               No Skills Yet
             </h3>
             <p
               className="mb-6"
-              style={{ color: theme.headerSubtext }}
+              style={{ color: localTheme.headerSubtext }}
             >
               Upload your resume to automatically extract and track your professional skills.
             </p>
@@ -268,9 +269,9 @@ export default function SkillsDashboard() {
               onClick={() => setShowResumeUpload(true)}
               className="font-semibold px-6 py-3 rounded-xl transition-all duration-200 hover:scale-[1.02] shadow-lg"
               style={{
-                backgroundColor: theme.primaryBtn.bg,
-                color: theme.primaryBtn.text,
-                border: `2px solid ${theme.primaryBtn.border}`,
+                backgroundColor: localTheme.primaryBtn.bg,
+                color: localTheme.primaryBtn.text,
+                border: `2px solid ${localTheme.primaryBtn.border}`,
               }}
             >
               Upload Resume
@@ -284,12 +285,12 @@ export default function SkillsDashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div
             className="w-full max-w-2xl rounded-2xl p-6"
-            style={{ backgroundColor: theme.cardBg }}
+            style={{ backgroundColor: localTheme.cardBg }}
           >
             <div className="flex justify-between items-center mb-4">
               <h2
                 className="text-xl font-semibold"
-                style={{ color: theme.categoryText }}
+                style={{ color: localTheme.categoryText }}
               >
                 Upload Your Resume
               </h2>
@@ -297,7 +298,7 @@ export default function SkillsDashboard() {
                 onClick={() => setShowResumeUpload(false)}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                <svg className="w-5 h-5" fill="none" stroke={theme.categoryText} viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke={localTheme.categoryText} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -308,7 +309,7 @@ export default function SkillsDashboard() {
                 addSkills(extractedSkills);
                 setShowResumeUpload(false);
               }}
-              theme={theme}
+              theme={localTheme}
             />
           </div>
         </div>
@@ -320,7 +321,7 @@ export default function SkillsDashboard() {
           filterTab={filterTab}
           onFilterChange={setFilterTab}
           onSearchChange={setSearchQuery}
-          theme={theme}
+          theme={localTheme}
         />
       )}
 
@@ -332,7 +333,7 @@ export default function SkillsDashboard() {
           searchQuery={searchQuery}
           onSkillClick={handleSkillClick}
           onMarkComplete={markSkillComplete}
-          theme={theme}
+          theme={localTheme}
           progressColors={PROGRESS_COLORS}
         />
       )}
@@ -345,7 +346,7 @@ export default function SkillsDashboard() {
           onUpdate={handleUpdateSkill}
           onRefresh={fetchSkillsWithProgress}
           onMarkComplete={markSkillComplete}
-          theme={theme}
+          theme={localTheme}
         />
       )}
 
@@ -356,7 +357,7 @@ export default function SkillsDashboard() {
             addSkill(newSkill);
             setIsAddModalOpen(false);
           }}
-          theme={theme}
+          theme={localTheme}
         />
       )}
     </div>

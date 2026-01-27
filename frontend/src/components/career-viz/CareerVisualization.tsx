@@ -55,8 +55,8 @@ function computeSearchVisibleRoleIds(
 
 export function CareerVisualization({ employeeCurrentRoleId }: Props) {
   const navigate = useNavigate()
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
 
   const [graph, setGraph] = useState<CareerGraphData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -229,7 +229,7 @@ export function CareerVisualization({ employeeCurrentRoleId }: Props) {
   }
 
   const containerStyle = {
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+    backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
     border: `1px solid ${colors.cardBorder}`,
   }
 
@@ -264,7 +264,7 @@ export function CareerVisualization({ employeeCurrentRoleId }: Props) {
             }}
             className="mt-4 rounded-md px-4 py-2 text-sm font-semibold transition-colors"
             style={{
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.05)',
+              backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.05)',
               color: colors.textPrimary,
             }}
           >
@@ -290,7 +290,7 @@ export function CareerVisualization({ employeeCurrentRoleId }: Props) {
     <div
       className="relative h-[720px] w-full overflow-hidden rounded-xl"
       style={{
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
+        backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
         border: `1px solid ${colors.cardBorder}`,
       }}
     >
@@ -320,7 +320,7 @@ export function CareerVisualization({ employeeCurrentRoleId }: Props) {
         proOptions={{ hideAttribution: true }}
       >
         <Controls />
-        <Background color={isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)'} gap={18} size={1} />
+        <Background color={(isDark || isGame) ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)'} gap={18} size={1} />
       </ReactFlow>
     </div>
   )

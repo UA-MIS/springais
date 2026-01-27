@@ -12,8 +12,8 @@ import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useRoadmap } from '../../hooks/useRoadmap';
 
 export default function GlobalProgressBar() {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const {
     overallProgress,
@@ -28,7 +28,7 @@ export default function GlobalProgressBar() {
     <div
       className="sticky top-0 z-20 px-6 py-4 backdrop-blur-md"
       style={{
-        backgroundColor: isDark ? 'rgba(30, 30, 35, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: (isDark || isGame) ? 'rgba(30, 30, 35, 0.95)' : 'rgba(255, 255, 255, 0.95)',
         borderBottom: `1px solid ${colors.cardBorder}`,
       }}
     >
@@ -41,7 +41,7 @@ export default function GlobalProgressBar() {
               cy="28"
               r="24"
               fill="none"
-              stroke={isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
+              stroke={(isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}
               strokeWidth="4"
             />
             <circle
@@ -97,7 +97,7 @@ export default function GlobalProgressBar() {
           {/* Progress Bar */}
           <div
             className="h-2 rounded-full overflow-hidden"
-            style={{ backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
+            style={{ backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }}
           >
             <div
               className="h-full rounded-full transition-all duration-500"

@@ -24,8 +24,8 @@ const CATEGORIES = [
 ];
 
 export default function AddExtraModal({ phaseId, onClose }: AddExtraModalProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const { addExtra } = useRoadmap();
 
@@ -61,7 +61,7 @@ export default function AddExtraModal({ phaseId, onClose }: AddExtraModalProps) 
       <div
         className="relative w-full max-w-md rounded-2xl p-6"
         style={{
-          backgroundColor: isDark ? '#1a1a1f' : '#fff',
+          backgroundColor: (isDark || isGame) ? '#1a1a1f' : '#fff',
           border: `1px solid ${colors.cardBorder}`,
         }}
       >
@@ -82,7 +82,7 @@ export default function AddExtraModal({ phaseId, onClose }: AddExtraModalProps) 
               placeholder="e.g., AWS Solutions Architect Professional"
               className="w-full px-4 py-3 rounded-lg text-sm"
               style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                 color: colors.textPrimary,
                 border: `1px solid ${colors.cardBorder}`,
               }}
@@ -138,7 +138,7 @@ export default function AddExtraModal({ phaseId, onClose }: AddExtraModalProps) 
               rows={3}
               className="w-full px-4 py-3 rounded-lg text-sm resize-none"
               style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                 color: colors.textPrimary,
                 border: `1px solid ${colors.cardBorder}`,
               }}
@@ -152,7 +152,7 @@ export default function AddExtraModal({ phaseId, onClose }: AddExtraModalProps) 
               onClick={onClose}
               className="flex-1 py-3 rounded-lg font-medium transition-colors"
               style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                 color: colors.textPrimary,
               }}
             >

@@ -14,8 +14,8 @@ export default function ProgressRing({
   strokeWidth = 10,
   className = ''
 }: ProgressRingProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
   const [animatedPercentage, setAnimatedPercentage] = useState(0);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -43,7 +43,7 @@ export default function ProgressRing({
     return () => clearInterval(timer);
   }, [percentage]);
 
-  const bgStroke = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+  const bgStroke = (isDark || isGame) ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
 
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>

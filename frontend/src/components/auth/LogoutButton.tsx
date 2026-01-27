@@ -5,8 +5,8 @@ import { useTheme, themeColors } from '../../context/ThemeContext';
 export default function LogoutButton() {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const colors = isDark ? themeColors.dark : themeColors.light;
+  const { theme, isDark, isGame } = useTheme();
+  const colors = themeColors[theme];
 
   const handleLogout = () => {
     logout();
@@ -18,12 +18,12 @@ export default function LogoutButton() {
       onClick={handleLogout}
       className="px-4 py-2 text-sm font-medium rounded-md transition-colors border"
       style={{
-        color: isDark ? colors.textSecondary : '#ffffff',
-        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'transparent',
+        color: (isDark || isGame) ? colors.textSecondary : '#ffffff',
+        borderColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'transparent',
         backgroundColor: 'transparent',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)';
+        e.currentTarget.style.backgroundColor = (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.backgroundColor = 'transparent';

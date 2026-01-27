@@ -7,8 +7,8 @@ import { useTheme, themeColors } from '../context/ThemeContext'
 
 export function RoleRequirementPage() {
   const { roleId } = useParams()
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
 
   const role = useMemo(() => {
     if (!roleId) return null
@@ -38,7 +38,7 @@ export function RoleRequirementPage() {
                 to="/career-path"
                 className="rounded-md px-3 py-2 text-sm font-semibold transition-colors"
                 style={{
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.06)',
+                  backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.06)',
                   color: colors.textPrimary,
                 }}
               >
@@ -56,26 +56,26 @@ export function RoleRequirementPage() {
             <div className="mt-2 flex flex-wrap gap-2 text-xs" style={{ color: colors.textMuted }}>
               <span
                 className="rounded px-2 py-1"
-                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
+                style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
               >
                 {role?.department ?? '—'}
               </span>
               <span
                 className="rounded px-2 py-1"
-                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
+                style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
               >
                 Employees: <span className="font-semibold" style={{ color: colors.textPrimary }}>{role?.employeeCount ?? '—'}</span>
               </span>
               <span
                 className="rounded px-2 py-1"
-                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
+                style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
               >
                 Avg years: <span className="font-semibold" style={{ color: colors.textPrimary }}>{(role?.avgYearsInRole ?? 0).toFixed(1)}</span>
               </span>
               {roleId ? (
                 <span
                   className="rounded px-2 py-1"
-                  style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
+                  style={{ backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }}
                 >
                   id: <span className="font-mono" style={{ color: colors.textSecondary }}>{roleId}</span>
                 </span>
@@ -102,7 +102,7 @@ export function RoleRequirementPage() {
           <div
             className="rounded-2xl shadow-2xl backdrop-blur-md"
             style={{
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+              backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
               border: `1px solid ${colors.cardBorder}`,
             }}
           >
@@ -127,7 +127,7 @@ export function RoleRequirementPage() {
                 <div
                   className="rounded-lg p-6 text-sm"
                   style={{
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                    backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
                     border: `1px solid ${colors.cardBorder}`,
                     color: colors.textMuted,
                   }}

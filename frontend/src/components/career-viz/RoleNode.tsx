@@ -4,8 +4,8 @@ import type { RoleNodeData } from './graphTransformUtils'
 import { useTheme, themeColors } from '../../context/ThemeContext'
 
 export function RoleNode({ data }: NodeProps<RoleNodeData>) {
-  const { isDark } = useTheme()
-  const colors = isDark ? themeColors.dark : themeColors.light
+  const { theme, isDark, isGame } = useTheme()
+  const colors = themeColors[theme]
   const isGoal = data.isGoal === true && !data.isCurrentRole
 
   const borderColor = data.isCurrentRole
@@ -26,13 +26,13 @@ export function RoleNode({ data }: NodeProps<RoleNodeData>) {
       ? '0 0 0 1px rgba(34,197,94,0.18), 0 12px 40px rgba(0,0,0,0.55)'
       : data.isSelected
         ? '0 0 0 1px rgba(255,230,0,0.18), 0 12px 40px rgba(0,0,0,0.55)'
-        : isDark ? '0 12px 40px rgba(0,0,0,0.55)' : '0 4px 20px rgba(0,0,0,0.12)'
+        : (isDark || isGame) ? '0 12px 40px rgba(0,0,0,0.55)' : '0 4px 20px rgba(0,0,0,0.12)'
 
   return (
     <div
       className="rounded-lg px-4 py-3 backdrop-blur-md min-w-[220px] max-w-[260px] transition-[box-shadow,transform] duration-150 hover:-translate-y-[1px]"
       style={{
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+        backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
         border: `1px solid ${borderColor}`,
         boxShadow: shadow,
       }}
@@ -40,7 +40,7 @@ export function RoleNode({ data }: NodeProps<RoleNodeData>) {
       <Handle
         type="target"
         position={Position.Top}
-        style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
+        style={{ background: (isDark || isGame) ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
         className="!h-2 !w-2 !border-0"
       />
 
@@ -52,7 +52,7 @@ export function RoleNode({ data }: NodeProps<RoleNodeData>) {
         <div
           className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
           style={{
-            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+            backgroundColor: (isDark || isGame) ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
             color: colors.textSecondary,
           }}
         >
@@ -67,7 +67,7 @@ export function RoleNode({ data }: NodeProps<RoleNodeData>) {
       <Handle
         type="source"
         position={Position.Bottom}
-        style={{ background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
+        style={{ background: (isDark || isGame) ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)' }}
         className="!h-2 !w-2 !border-0"
       />
     </div>

@@ -298,13 +298,15 @@ export async function enhancedChat(
   message: string,
   useDeepThinking: boolean = false,
   currentTab: string = 'overview',
-  currentPhaseId: string | null = null
+  currentPhaseId: string | null = null,
+  conversationHistory: Array<{ role: string; content: string }> = []
 ): Promise<EnhancedChatResponse> {
   const response = await api.post(`/roadmap/saved/${roadmapId}/chat/enhanced`, {
     message,
     use_deep_thinking: useDeepThinking,
     current_tab: currentTab,
     current_phase_id: currentPhaseId,
+    conversation_history: conversationHistory,
   });
   return response.data;
 }

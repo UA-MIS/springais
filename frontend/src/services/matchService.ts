@@ -68,6 +68,22 @@ const mapMatchDetail = (item: any): Match => {
   };
 };
 
+export async function getMatchesBatch(
+  limit: number = 10,
+  offset: number = 0,
+): Promise<{ matches: Match[]; total: number }> {
+  const params: Record<string, string | number> = {
+    limit,
+    offset,
+    min_score: 0,
+  };
+
+  const response = await api.get(`/matches/employee/${DEFAULT_EMPLOYEE_ID}`, { params });
+  const data = response.data;
+  const matches = (data.matches || []).map(mapMatchResult);
+  return { matches, total: data.total_count || matches.length };
+}
+
 export async function getMatches(
   filters?: MatchFilters
 ): Promise<{ matches: Match[]; total: number }> {
