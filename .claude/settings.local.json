@@ -22,7 +22,8 @@
       "Bash(docker-compose restart:*)",
       "Bash(dir:*)",
       "Bash(docker ps:*)",
-      "Bash(docker-compose exec:*)"
+      "Bash(docker-compose exec:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }

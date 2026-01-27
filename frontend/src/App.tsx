@@ -13,6 +13,7 @@ import RoadmapPage from './pages/RoadmapPage';
 import { MatchesProvider } from './context/MatchesContext';
 import { SavedRolesProvider } from './context/SavedRolesContext';
 import { SkillsProvider } from './context/SkillsContext';
+import { RoadmapProvider } from './context/RoadmapContext';
 import { ToastProvider } from './context/ToastContext';
 
 function App() {

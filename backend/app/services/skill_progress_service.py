@@ -81,12 +81,6 @@ class SkillProgressService:
             category_info = self._get_category_for_skill(skill.skill_name)
             ai_modules = category_info.get("modules", []) if category_info else []
 
-            # Debug: print first skill's lookup result
-            if skill == user_skills[0]:
-                print(f"DEBUG: Skill '{skill.skill_name}' -> category_info={category_info is not None}, ai_modules={len(ai_modules)}", flush=True)
-                if category_info:
-                    print(f"DEBUG: Category name={category_info.get('name')}, modules={category_info.get('modules', [])}", flush=True)
-
             # Use AI module count if available, otherwise fall back to DB modules
             if ai_modules:
                 total = len(ai_modules)
