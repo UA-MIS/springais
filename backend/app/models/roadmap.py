@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Integer
+from sqlalchemy import DateTime, ForeignKey, String, Text, Integer, Boolean
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import text
@@ -20,6 +20,7 @@ from .base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from .user_profile import UserProfile
+    from .roadmap_progress import RoadmapMilestoneProgress, RoadmapExtra, RoadmapEdit
 
 
 class SavedRoadmap(Base, TimestampMixin):
@@ -81,8 +82,42 @@ class SavedRoadmap(Base, TimestampMixin):
         nullable=False,
     )
 
-    # Relationship
+    # Edit tracking fields
+    edit_mode: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="view",
+    )  # view | ai_edit | manual_edit
+    has_manual_edits: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+    current_phase_id: Mapped[Optional[str]] = mapped_column(String(100))
+
+    # Relationships
     user_profile: Mapped["UserProfile"] = relationship(
         "UserProfile",
         back_populates="saved_roadmaps",
+    )
+
+    milestone_progress: Mapped[List["RoadmapMilestoneProgress"]] = relationship(
+        "RoadmapMilestoneProgress",
+        backref="roadmap",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    extras: Mapped[List["RoadmapExtra"]] = relationship(
+        "RoadmapExtra",
+        backref="roadmap",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
+
+    edits: Mapped[List["RoadmapEdit"]] = relationship(
+        "RoadmapEdit",
+        backref="roadmap",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
     )

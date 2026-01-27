@@ -69,10 +69,26 @@ export default function SkillsPortfolio({
     ? dynamicCategories.map(category => {
         // Match skills by categoryId (from backend) OR by name in category.skills
         const categorySkillNames = new Set((category.skills || []).map(s => s.toLowerCase()));
-        const matchingSkills = filteredSkills.filter(skill =>
-          skill.categoryId === category.id ||
-          categorySkillNames.has(skill.name.toLowerCase())
-        );
+        const categoryModuleCount = (category.modules || []).length || 4;
+
+        const matchingSkills = filteredSkills
+          .filter(skill =>
+            skill.categoryId === category.id ||
+            categorySkillNames.has(skill.name.toLowerCase())
+          )
+          .map(skill => ({
+            ...skill,
+            // Override progress.total with actual module count from AI groupings
+            progress: {
+              ...skill.progress,
+              total: categoryModuleCount,
+              // Recalculate percentage with correct total
+              percentage: categoryModuleCount > 0
+                ? Math.round((skill.progress?.current || 0) / categoryModuleCount * 100)
+                : 0,
+            },
+          }));
+
         return {
           id: category.id,
           name: category.name,

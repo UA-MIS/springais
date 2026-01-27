@@ -4,6 +4,7 @@ from .employee import Employee
 from .job_posting import JobPosting
 from .match import Match
 from .roadmap import SavedRoadmap
+from .roadmap_progress import RoadmapMilestoneProgress, RoadmapExtra, RoadmapEdit
 from .schemas import MatchScores, PerformanceMetrics, ReactFlowGraph
 from .skill_embedding import SkillEmbedding
 from .skill_progress import SkillModule, UserModuleProgress, UserSkill
@@ -21,6 +22,9 @@ __all__ = [
     "JobPosting",
     "Match",
     "SavedRoadmap",
+    "RoadmapMilestoneProgress",
+    "RoadmapExtra",
+    "RoadmapEdit",
     "SkillEmbedding",
     "SkillModule",
     "UserModuleProgress",

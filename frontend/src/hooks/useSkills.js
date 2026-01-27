@@ -286,8 +286,8 @@ export function useSkills() {
                            skill.proficiency === 'advanced' ? 75 :
                            skill.proficiency === 'expert' ? 95 : 50,
               status: 'active',
-              // Use a reasonable default - will be updated when skill is tracked
-              progress: { current: 0, total: 4, unit: 'modules', percentage: 0 },
+              // Will be updated with actual module count from groupings
+              progress: { current: 0, total: 0, unit: 'modules', percentage: 0 },
               source: 'profile',
             });
             addedNames.add(normalizedName);
