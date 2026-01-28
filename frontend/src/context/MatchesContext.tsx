@@ -22,7 +22,7 @@ interface MatchesContextType {
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 20;  // Increased from 10 to match new server default
 
 const defaultState: MatchesState = {
   matches: [],

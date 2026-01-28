@@ -5,14 +5,16 @@ Provides client factories for:
 - OpenAI API (text-embedding-3-large)
 - Redis cache
 - Database session
+
+Implements singleton pattern for clients to avoid recreating connections.
 """
 
 import os
+from functools import lru_cache
 from typing import Optional
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-import redis.asyncio as redis
-from sqlalchemy.orm import Session
+import redis.asyncio as aioredis
 
 # Load environment variables
 load_dotenv()
@@ -34,15 +36,24 @@ elif DATABASE_URL.startswith("postgres://"):
 
 
 # ============================================
-# Client Factories
+# Singleton Client Instances
 # ============================================
 
+_openai_client: Optional[AsyncOpenAI] = None
+_redis_pool: Optional[aioredis.ConnectionPool] = None
+
+
+# ============================================
+# Client Factories (Singleton Pattern)
+# ============================================
+
+@lru_cache(maxsize=1)
 def get_openai_client() -> AsyncOpenAI:
     """
-    Create and return an OpenAI API client.
+    Get or create singleton OpenAI client.
 
     Returns:
-        AsyncOpenAI client configured with API key
+        AsyncOpenAI client configured with API key (reuses same instance)
 
     Raises:
         ValueError: If OPENAI_API_KEY is not set in environment
@@ -54,18 +65,38 @@ def get_openai_client() -> AsyncOpenAI:
             input="Python Programming"
         )
     """
-    if not OPENAI_API_KEY:
-        raise ValueError(
-            "OPENAI_API_KEY not found in environment variables. "
-            "Please set it in .env file or environment."
-        )
+    global _openai_client
+    if _openai_client is None:
+        if not OPENAI_API_KEY:
+            raise ValueError(
+                "OPENAI_API_KEY not found in environment variables. "
+                "Please set it in .env file or environment."
+            )
+        _openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+    return _openai_client
 
-    return AsyncOpenAI(api_key=OPENAI_API_KEY)
 
-
-async def get_redis_client() -> redis.Redis:
+async def get_redis_pool() -> aioredis.ConnectionPool:
     """
-    Create and return a Redis client with async support.
+    Get or create Redis connection pool.
+
+    Returns:
+        Connection pool for Redis (reuses same pool)
+    """
+    global _redis_pool
+    if _redis_pool is None:
+        _redis_pool = aioredis.ConnectionPool.from_url(
+            REDIS_URL,
+            max_connections=20,
+            encoding="utf-8",
+            decode_responses=False,
+        )
+    return _redis_pool
+
+
+async def get_redis_client() -> aioredis.Redis:
+    """
+    Get Redis client from connection pool (reuses connections).
 
     Returns:
         Redis client configured with connection URL
@@ -86,21 +117,16 @@ async def get_redis_client() -> redis.Redis:
         )
 
     try:
-        # Create Redis client with connection pooling
-        client = redis.from_url(
-            REDIS_URL,
-            encoding="utf-8",
-            decode_responses=False,  # We'll handle JSON encoding manually
-            max_connections=10
-        )
+        pool = await get_redis_pool()
+        client = aioredis.Redis(connection_pool=pool)
 
         # Test connection
         await client.ping()
 
         return client
 
-    except redis.ConnectionError as e:
-        raise redis.ConnectionError(
+    except aioredis.ConnectionError as e:
+        raise aioredis.ConnectionError(
             f"Failed to connect to Redis at {REDIS_URL}. "
             f"Ensure Redis is running. Error: {e}"
         )
@@ -147,7 +173,7 @@ async def test_redis_connection() -> bool:
     try:
         client = await get_redis_client()
         await client.ping()
-        await client.close()
+        # Don't close - we're using a connection pool now
         return True
     except Exception as e:
         print(f"✗ Redis connection failed: {e}")

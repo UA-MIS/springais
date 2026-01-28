@@ -29,6 +29,12 @@ from ..schemas.pattern import (
     CareerGraphEdge,
     RoleRecommendation,
     TrajectoryMetrics,
+    SkillBasedPatternsResponse,
+    SuccessPatternMetrics,
+    TransitionData,
+    StageData,
+    SkillFrequency,
+    DepartmentData,
 )
 
 logger = logging.getLogger(__name__)
@@ -913,6 +919,402 @@ class SuccessPatternService:
         
         return similarity >= threshold
     
+    # ============================================
+    # Skill-Based Pattern Matching (for job pages)
+    # ============================================
+
+    def get_patterns_by_skills(
+        self,
+        job_skills: List[str],
+        service_line: Optional[str] = None,
+        min_skill_overlap: float = 0.15,
+        min_employees: int = 5
+    ) -> SkillBasedPatternsResponse:
+        """
+        Get success patterns based on skill overlap with a job posting.
+
+        Finds synthetic employees whose skills overlap with the job's required skills,
+        then builds career transition patterns from their data.
+
+        Args:
+            job_skills: List of skills required/desired for the job
+            service_line: Optional filter by service line
+            min_skill_overlap: Minimum Jaccard similarity to include employee (default: 0.15)
+            min_employees: Minimum employees to guarantee (will relax threshold if needed)
+
+        Returns:
+            SkillBasedPatternsResponse with metrics, transitions, and skill data
+        """
+        # Normalize job skills
+        job_skills_set = {s.lower().strip() for s in job_skills if s}
+
+        if not job_skills_set:
+            return self._empty_patterns_response()
+
+        # Get all employees from database (not just those with career_history)
+        employees = self._get_all_employees(service_line)
+
+        if not employees:
+            return self._empty_patterns_response()
+
+        # Score employees by skill overlap
+        scored_employees = []
+        for emp in employees:
+            emp_skills = emp.get("skills", []) or []
+            emp_skills_set = {s.lower().strip() for s in emp_skills if s}
+
+            if not emp_skills_set:
+                continue
+
+            # Calculate Jaccard similarity
+            intersection = job_skills_set & emp_skills_set
+            union = job_skills_set | emp_skills_set
+            jaccard = len(intersection) / len(union) if union else 0
+
+            # Also calculate coverage (what % of job skills does employee have)
+            coverage = len(intersection) / len(job_skills_set) if job_skills_set else 0
+
+            # Use max of Jaccard and coverage for flexibility
+            score = max(jaccard, coverage * 0.7)
+
+            scored_employees.append({
+                **emp,
+                "match_score": score,
+                "matched_skills": list(intersection)
+            })
+
+        # Sort by match score
+        scored_employees.sort(key=lambda x: x["match_score"], reverse=True)
+
+        # Progressive threshold relaxation to guarantee min_employees
+        threshold = min_skill_overlap
+        matched = []
+
+        while len(matched) < min_employees and threshold >= 0.01:
+            matched = [e for e in scored_employees if e["match_score"] >= threshold]
+            if len(matched) < min_employees:
+                threshold -= 0.02
+
+        # If still not enough, take top N by score
+        if len(matched) < min_employees:
+            matched = scored_employees[:min_employees]
+
+        logger.info(f"Matched {len(matched)} employees for {len(job_skills)} job skills (threshold: {threshold:.2f})")
+
+        # If still no matches at all, fall back to service line matching only
+        if not matched:
+            logger.info(f"No skill matches found, falling back to all employees")
+            # Try with service line first, then without
+            all_employees = self._get_all_employees(service_line)
+            if not all_employees:
+                logger.info(f"No employees in service line '{service_line}', trying all employees")
+                all_employees = self._get_all_employees(None)
+            if all_employees:
+                # Take sample from available employees
+                matched = all_employees[:min_employees]
+                for emp in matched:
+                    emp["match_score"] = 0.05  # Low score indicates fallback
+                    emp["matched_skills"] = []
+
+        if not matched:
+            return self._empty_patterns_response()
+
+        # Build the response data
+        return self._build_skill_patterns_response(matched, service_line)
+
+    def _get_all_employees(self, service_line: Optional[str] = None) -> List[Dict]:
+        """Get all employees from database (not just those with career_history)."""
+        if self.use_mock or self.db is None:
+            # Convert mock employees to dict format
+            employees = [
+                {
+                    "id": e.id,
+                    "current_role": e.current_role,
+                    "role_level": e.role_level,
+                    "service_line": e.service_line,
+                    "years_experience": e.years_experience,
+                    "skills": e.skills,
+                }
+                for e in MOCK_EMPLOYEES_FOR_PATTERNS
+            ]
+            if service_line:
+                employees = [e for e in employees if e["service_line"].lower() == service_line.lower()]
+            return employees
+
+        try:
+            # Get ALL employees (not just those with career_history)
+            if service_line:
+                query = text("""
+                    SELECT id, current_role, role_level, service_line,
+                           years_experience, skills, performance_metrics
+                    FROM employees
+                    WHERE service_line ILIKE :svc
+                """)
+                result = self.db.execute(query, {"svc": f"%{service_line}%"})
+            else:
+                query = text("""
+                    SELECT id, current_role, role_level, service_line,
+                           years_experience, skills, performance_metrics
+                    FROM employees
+                """)
+                result = self.db.execute(query)
+
+            rows = result.fetchall()
+
+            if not rows:
+                # Fall back to mock
+                employees = [
+                    {
+                        "id": e.id,
+                        "current_role": e.current_role,
+                        "role_level": e.role_level,
+                        "service_line": e.service_line,
+                        "years_experience": e.years_experience,
+                        "skills": e.skills,
+                    }
+                    for e in MOCK_EMPLOYEES_FOR_PATTERNS
+                ]
+                if service_line:
+                    employees = [e for e in employees if service_line.lower() in e["service_line"].lower()]
+                return employees
+
+            return [
+                {
+                    "id": row[0],
+                    "current_role": row[1],
+                    "role_level": row[2] or 1,
+                    "service_line": row[3] or "General",
+                    "years_experience": float(row[4]) if row[4] else 0,
+                    "skills": row[5] or [],
+                    "performance_metrics": row[6] or {},
+                }
+                for row in rows
+            ]
+
+        except Exception as e:
+            logger.warning(f"Database query failed, using mock data: {e}")
+            employees = [
+                {
+                    "id": e.id,
+                    "current_role": e.current_role,
+                    "role_level": e.role_level,
+                    "service_line": e.service_line,
+                    "years_experience": e.years_experience,
+                    "skills": e.skills,
+                }
+                for e in MOCK_EMPLOYEES_FOR_PATTERNS
+            ]
+            if service_line:
+                employees = [e for e in employees if service_line.lower() in e["service_line"].lower()]
+            return employees
+
+    def _build_skill_patterns_response(
+        self,
+        employees: List[Dict],
+        service_line: Optional[str]
+    ) -> SkillBasedPatternsResponse:
+        """Build the SkillBasedPatternsResponse from matched employees."""
+
+        # Role level to role name mapping
+        ROLE_NAMES = {
+            1: "Staff",
+            2: "Senior Staff",
+            3: "Senior",
+            4: "Consultant",
+            5: "Senior Consultant",
+            6: "Manager",
+            7: "Senior Manager",
+            8: "Director",
+            9: "Senior Director",
+            10: "Partner"
+        }
+
+        # Department colors
+        DEPT_COLORS = {
+            "Assurance": "#FFE600",
+            "Consulting": "#2E2E38",
+            "Tax": "#747480",
+            "Advisory": "#C4C4CD",
+            "Technology": "#22c55e",
+        }
+
+        # Transition colors based on success rate
+        def get_transition_color(rate: float) -> str:
+            if rate >= 70:
+                return "#22c55e"  # green
+            elif rate >= 50:
+                return "#FFE600"  # yellow
+            else:
+                return "#dc2626"  # red
+
+        # Group employees by role_level
+        by_level: Dict[int, List[Dict]] = defaultdict(list)
+        for emp in employees:
+            level = emp.get("role_level", 1)
+            by_level[level].append(emp)
+
+        # Group by service line
+        by_service_line: Dict[str, List[Dict]] = defaultdict(list)
+        for emp in employees:
+            svc = emp.get("service_line", "General")
+            by_service_line[svc].append(emp)
+
+        # Aggregate all skills
+        skill_counts: Dict[str, int] = defaultdict(int)
+        for emp in employees:
+            for skill in emp.get("skills", []):
+                skill_counts[skill] += 1
+
+        # Build transitions (level N → level N+1)
+        transitions: List[TransitionData] = []
+        levels_present = sorted(by_level.keys())
+
+        for i, level in enumerate(levels_present[:-1]):
+            next_level = levels_present[i + 1] if i + 1 < len(levels_present) else level + 1
+
+            source_role = ROLE_NAMES.get(level, f"Level {level}")
+            target_role = ROLE_NAMES.get(next_level, f"Level {next_level}")
+
+            # Count employees at this level and next
+            at_current = len(by_level.get(level, []))
+            at_next = len(by_level.get(next_level, []))
+
+            if at_current == 0:
+                continue
+
+            # Infer success rate from ratio and performance
+            # Higher ratio of next-level employees = higher success rate
+            base_rate = min(95, max(30, (at_next / max(at_current, 1)) * 100 + 40))
+
+            # Adjust by average performance metrics if available
+            level_emps = by_level.get(level, [])
+            avg_quality = sum(
+                emp.get("performance_metrics", {}).get("quality_score", 3.5)
+                for emp in level_emps
+            ) / max(len(level_emps), 1)
+
+            # Quality score is typically 3-5, center around 4
+            quality_bonus = (avg_quality - 3.5) * 10
+            success_rate = min(95, max(25, base_rate + quality_bonus))
+
+            transitions.append(TransitionData(
+                transition=f"{source_role} → {target_role}",
+                success_rate=round(success_rate, 0),
+                sample_size=at_current,
+                color=get_transition_color(success_rate)
+            ))
+
+        # If no transitions generated, create some based on role distribution
+        if not transitions and employees:
+            # Create generic transitions from the roles present
+            roles_by_level = sorted(
+                [(emp.get("role_level", 1), emp.get("current_role", "Staff"))
+                 for emp in employees],
+                key=lambda x: x[0]
+            )
+            seen_transitions = set()
+            for i in range(len(roles_by_level) - 1):
+                curr_level, curr_role = roles_by_level[i]
+                next_level, next_role = roles_by_level[i + 1]
+
+                if curr_level < next_level:
+                    trans_key = f"{curr_role} → {next_role}"
+                    if trans_key not in seen_transitions:
+                        seen_transitions.add(trans_key)
+                        transitions.append(TransitionData(
+                            transition=trans_key,
+                            success_rate=70,
+                            sample_size=max(1, len(employees) // 5),
+                            color="#FFE600"
+                        ))
+
+        # Build time-to-promotion by service line
+        time_to_promotion: Dict[str, List[StageData]] = {}
+
+        for svc, svc_employees in by_service_line.items():
+            # Group by level within service line
+            svc_by_level: Dict[int, List[Dict]] = defaultdict(list)
+            for emp in svc_employees:
+                svc_by_level[emp.get("role_level", 1)].append(emp)
+
+            stages = []
+            cumulative_years = 0.0
+
+            for level in sorted(svc_by_level.keys()):
+                level_emps = svc_by_level[level]
+                avg_exp = sum(e.get("years_experience", 0) for e in level_emps) / max(len(level_emps), 1)
+
+                role_name = ROLE_NAMES.get(level, f"Level {level}")
+                stages.append(StageData(
+                    stage=role_name,
+                    avg_years=round(cumulative_years, 1)
+                ))
+
+                # Estimate time at this level (difference to average experience)
+                if level_emps:
+                    time_at_level = max(1.5, min(4.0, avg_exp / max(level, 1)))
+                    cumulative_years += time_at_level
+
+            if stages:
+                time_to_promotion[svc] = stages
+
+        # Build skill frequency
+        total_employees = len(employees)
+        skill_frequency = [
+            SkillFrequency(
+                skill=skill,
+                frequency=round((count / total_employees) * 100, 0)
+            )
+            for skill, count in sorted(skill_counts.items(), key=lambda x: -x[1])[:10]
+        ]
+
+        # Build department distribution
+        department_distribution = [
+            DepartmentData(
+                name=svc,
+                value=len(emps),
+                color=DEPT_COLORS.get(svc, "#747480")
+            )
+            for svc, emps in sorted(by_service_line.items(), key=lambda x: -len(x[1]))
+        ]
+
+        # Calculate overall metrics
+        avg_years = sum(e.get("years_experience", 0) for e in employees) / max(len(employees), 1)
+        avg_success = sum(t.success_rate for t in transitions) / max(len(transitions), 1) if transitions else 65
+        top_skills = [sf.skill for sf in skill_frequency[:5]]
+
+        metrics = SuccessPatternMetrics(
+            avg_time_to_promotion=round(avg_years / max(1, len(levels_present) - 1), 1) if len(levels_present) > 1 else round(avg_years, 1),
+            overall_success_rate=round(avg_success / 100, 2),
+            total_sample_size=len(employees),
+            top_skills=top_skills
+        )
+
+        return SkillBasedPatternsResponse(
+            metrics=metrics,
+            success_rate_by_transition=transitions,
+            time_to_promotion=time_to_promotion,
+            skill_frequency=skill_frequency,
+            department_distribution=department_distribution,
+            matched_employee_count=len(employees)
+        )
+
+    def _empty_patterns_response(self) -> SkillBasedPatternsResponse:
+        """Return an empty patterns response."""
+        return SkillBasedPatternsResponse(
+            metrics=SuccessPatternMetrics(
+                avg_time_to_promotion=0,
+                overall_success_rate=0,
+                total_sample_size=0,
+                top_skills=[]
+            ),
+            success_rate_by_transition=[],
+            time_to_promotion={},
+            skill_frequency=[],
+            department_distribution=[],
+            matched_employee_count=0
+        )
+
     def find_similar_roles(self, target_role: str, threshold: float = 0.7) -> List[str]:
         """
         Find all roles similar to the target role.

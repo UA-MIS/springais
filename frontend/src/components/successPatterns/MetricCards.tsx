@@ -2,11 +2,37 @@ import { SuccessPatternMetrics } from '../../services/successPatternService';
 
 interface MetricCardsProps {
   metrics: SuccessPatternMetrics;
+  transitionCount?: number;
+  employeeCount?: number;
 }
 
-export default function MetricCards({ metrics }: MetricCardsProps) {
+export default function MetricCards({ metrics, transitionCount, employeeCount }: MetricCardsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Career Transitions */}
+      <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:border-[#FFE600]/60 transition-all">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-[#FFE600]/15 rounded-lg flex items-center justify-center">
+            <svg
+              className="w-6 h-6 text-[#FFE600]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+              />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm text-white/60">Career Transitions</p>
+            <p className="text-2xl font-bold text-white">{transitionCount ?? metrics.totalSampleSize}</p>
+          </div>
+        </div>
+      </div>
       {/* Average Time to Promotion */}
       <div className="border border-white/15 bg-white/7 p-6 rounded-sm shadow-2xl backdrop-blur-md hover:border-[#FFE600]/60 transition-all">
         <div className="flex items-center gap-4">
@@ -79,7 +105,7 @@ export default function MetricCards({ metrics }: MetricCardsProps) {
           </div>
           <div>
             <p className="text-sm text-white/60">Sample Size</p>
-            <p className="text-2xl font-bold text-white">{metrics.totalSampleSize} transitions</p>
+            <p className="text-2xl font-bold text-white">{employeeCount ?? metrics.totalSampleSize} employees</p>
           </div>
         </div>
       </div>
