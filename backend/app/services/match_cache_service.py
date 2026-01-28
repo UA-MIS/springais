@@ -44,11 +44,12 @@ class MatchCacheService:
         limit: int,
         offset: int
     ) -> str:
-        """Generate deterministic cache key."""
+        """Generate deterministic cache key with user_id prefix for targeted invalidation."""
         filter_str = json.dumps(filters, sort_keys=True)
-        key_data = f"{user_id}:{mode}:{filter_str}:{limit}:{offset}"
+        key_data = f"{mode}:{filter_str}:{limit}:{offset}"
         key_hash = hashlib.md5(key_data.encode()).hexdigest()[:12]
-        return f"matches:{key_hash}"
+        # Include user_id as prefix for easy pattern-based deletion
+        return f"matches:{user_id}:{key_hash}"
 
     async def get_cached_matches(
         self,
@@ -116,7 +117,7 @@ class MatchCacheService:
         return "v1"
 
     async def invalidate_user_cache(self, user_id: str) -> None:
-        """Invalidate all cached matches for a user (call when skills change)."""
+        """Invalidate all cached matches for a specific user (call when skills change)."""
         redis = await self._get_redis()
 
         # Update skill version (invalidates all caches that check version)
@@ -124,15 +125,16 @@ class MatchCacheService:
         new_version = f"v{datetime.utcnow().timestamp()}"
         await redis.setex(version_key, SKILL_VERSION_TTL, new_version)
 
-        # Also delete any matching keys (belt and suspenders)
+        # Delete only THIS user's cache entries (not other users')
         try:
-            pattern = "matches:*"
+            # Pattern matches only this user's keys: matches:{user_id}:*
+            pattern = f"matches:{user_id}:*"
             deleted_count = 0
             async for key in redis.scan_iter(match=pattern, count=100):
                 await redis.delete(key)
                 deleted_count += 1
             if deleted_count > 0:
-                logger.info(f"Deleted {deleted_count} match cache entries")
+                logger.info(f"Deleted {deleted_count} match cache entries for user {user_id}")
         except Exception as e:
             logger.warning(f"Cache invalidation error: {e}")
 

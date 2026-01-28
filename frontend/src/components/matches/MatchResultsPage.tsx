@@ -5,11 +5,15 @@ import MatchCard from './MatchCard';
 import MatchFilters, { FilterState } from './MatchFilters';
 import MatchSortDropdown, { SortOption } from './MatchSortDropdown';
 import EmptyMatchState from './EmptyMatchState';
+import VirtualMatchList from './VirtualMatchList';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useMatches } from '../../context/MatchesContext';
 import { useToast } from '../../context/ToastContext';
 import { useSkillsContext } from '../../context/SkillsContext';
 import { useAdventureMode, getFantasyText } from '../../context/AdventureModeContext';
+
+// Threshold for switching to virtual scrolling
+const VIRTUAL_SCROLL_THRESHOLD = 50;
 
 export default function MatchResultsPage() {
   const { theme, isDark, isGame } = useTheme();
@@ -303,7 +307,23 @@ export default function MatchResultsPage() {
         </div>
       ) : paginatedMatches.length === 0 ? (
         <EmptyMatchState onResetFilters={handleResetFilters} isDark={isDark} colors={colors} />
+      ) : sortedMatches.length > VIRTUAL_SCROLL_THRESHOLD ? (
+        /* Use virtual scrolling for large lists (50+ matches) */
+        <>
+          <VirtualMatchList
+            matches={sortedMatches}
+            onViewDetails={handleViewDetails}
+            onSave={handleSave}
+            height="calc(100vh - 350px)"
+          />
+          {loadingMore && (
+            <div className="py-4 text-center" style={{ color: colors.accent }}>
+              Loading more matches... ({matches.length} loaded)
+            </div>
+          )}
+        </>
       ) : (
+        /* Use regular rendering for smaller lists */
         <>
           <div className="space-y-4 mb-6">
             {paginatedMatches.map((match) => (
