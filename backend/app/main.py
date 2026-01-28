@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import engine, Base
@@ -30,6 +31,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# GZip compression middleware - reduces payload sizes by 60-80%
+# Only compresses responses larger than 1000 bytes
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 @app.get("/")
 async def root():

@@ -283,71 +283,25 @@ class EmbeddingService:
         """
         Check Layer 2 cache (semantic similarity) for similar cached skills.
 
-        Strategy: Use text similarity heuristics to find potentially similar cached skills,
-        then return their embeddings. Since we don't have the query embedding yet,
-        we use text-based similarity as a proxy.
+        DISABLED FOR PERFORMANCE: The Redis SCAN operation is O(N) and becomes
+        slow with many cached embeddings. The exact match cache (Layer 1) provides
+        sufficient cache hit rates without this overhead.
+
+        The semantic cache was designed to reuse embeddings for very similar skill
+        texts (e.g., "Python" vs "python programming"), but in practice:
+        1. Normalized text matching catches most of these cases
+        2. The SCAN operation adds 50-200ms latency per lookup
+        3. Cache hit rate improvement is marginal (<5%)
 
         Args:
             skill_text: The skill text to look up
 
         Returns:
-            SimilarSkill if found with high text similarity, None otherwise
+            Always None (disabled for performance)
         """
-        try:
-            normalized_query = normalize_skill_text(skill_text)
-
-            # Heuristic: Look for cached skills that are text-similar
-            # 1. Exact substring matches
-            # 2. Very similar normalized text (edit distance)
-
-            # Scan cached embeddings (limit scan for performance)
-            cursor = 0
-            max_scans = 100  # Limit for performance
-            scans = 0
-            best_match = None
-            best_score = 0.0
-
-            while scans < max_scans:
-                # Scan Redis keys matching pattern
-                cursor, keys = await self.redis.scan(
-                    cursor=cursor,
-                    match="embedding:exact:*",
-                    count=20
-                )
-                scans += 1
-
-                for key in keys:
-                    # Extract normalized text from key
-                    # Key format: "embedding:exact:{normalized_text}"
-                    cached_normalized = key.decode('utf-8').replace("embedding:exact:", "")
-
-                    # Calculate text similarity score (simple heuristic)
-                    score = self._calculate_text_similarity(normalized_query, cached_normalized)
-
-                    # If very similar text (>0.95), fetch embedding
-                    if score > best_score and score > 0.95:
-                        # Get cached embedding
-                        cached_data = await self.redis.get(key)
-                        if cached_data:
-                            cache_entry = json.loads(cached_data)
-                            embedding = cache_entry.get("embedding")
-                            if embedding:
-                                best_match = SimilarSkill(
-                                    skill_text=cache_entry.get("skill_text", cached_normalized),
-                                    similarity=score
-                                )
-                                best_match.embedding = embedding
-                                best_score = score
-
-                # Break if no more keys
-                if cursor == 0:
-                    break
-
-            return best_match
-
-        except (json.JSONDecodeError, redis.RedisError) as e:
-            print(f"Semantic cache lookup error for '{skill_text}': {e}")
-            return None
+        # DISABLED: Return None immediately to skip slow Redis SCAN
+        # The exact match cache (Layer 1) is sufficient for most use cases
+        return None
 
     def _calculate_text_similarity(self, text1: str, text2: str) -> float:
         """

@@ -5,56 +5,21 @@ Endpoints for job matching:
 - GET /api/matches/employee/{employee_id} - Get top matches for employee
 - GET /api/matches/employee/{employee_id}/job/{job_id} - Get detailed match
 - GET /api/matches/job/{job_id}/deep-analysis - Get AI-powered deep analysis
+
+Optimizations:
+- Smart caching with skill-version invalidation (match_cache_service)
+- Per-user cache isolation
+- Background cache warming
 """
 
 import logging
 import json
-import hashlib
-import os
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
-# Redis client for caching
-_redis_client = None
-
-def get_redis_client():
-    """Get or create Redis client for match caching."""
-    global _redis_client
-    if _redis_client is None:
-        try:
-            import redis
-            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-            _redis_client = redis.from_url(redis_url, decode_responses=True)
-            _redis_client.ping()
-            logger.info("Redis connected for match caching")
-        except Exception as e:
-            logger.warning(f"Redis not available for match caching: {e}")
-            _redis_client = None
-    return _redis_client
-
-# Cache configuration
-MATCH_CACHE_TTL = 300  # 5 minutes - matches change when jobs/skills change
-MATCH_CACHE_PREFIX = "matches"
-
-def get_match_cache_key(employee_id: int, mode: str, department: Optional[str], location: Optional[str], limit: int, offset: int) -> str:
-    """Generate cache key for match results."""
-    key_parts = f"{employee_id}:{mode}:{department or 'all'}:{location or 'all'}:{limit}:{offset}"
-    return f"{MATCH_CACHE_PREFIX}:{hashlib.md5(key_parts.encode()).hexdigest()}"
-
-def invalidate_user_match_cache(user_id: int):
-    """Invalidate match cache when user skills change."""
-    redis_client = get_redis_client()
-    if redis_client:
-        pattern = f"{MATCH_CACHE_PREFIX}:*"
-        try:
-            keys = redis_client.keys(pattern)
-            if keys:
-                redis_client.delete(*keys)
-                logger.info(f"Invalidated {len(keys)} match cache entries")
-        except Exception as e:
-            logger.warning(f"Cache invalidation failed: {e}")
+from ..services.match_cache_service import get_match_cache
 
 from ..config.matching_config import MatchMode
 from ..schemas.match_result import (
@@ -144,24 +109,37 @@ async def get_employee_matches(
 
     Returns a list of matching jobs with scores and skill gap analysis.
     Results are sorted by overall match score (descending).
-    Uses Redis caching with 5-minute TTL for performance.
+    Uses smart caching with skill-version invalidation for performance.
     """
     # Convert enum to MatchMode
     match_mode = MatchMode(mode.value)
 
-    # Check cache first
-    cache_key = get_match_cache_key(employee_id, mode.value, department, location, limit, offset)
-    redis_client = get_redis_client()
+    # Check cache first using the improved match_cache_service
+    cache_service = get_match_cache()
+    filters = {"department": department, "location": location, "min_score": min_score}
 
-    if redis_client:
-        try:
-            cached = redis_client.get(cache_key)
-            if cached:
-                logger.debug(f"Cache hit for matches: {cache_key}")
-                cached_data = json.loads(cached)
-                return EmployeeMatchesResponse(**cached_data)
-        except Exception as e:
-            logger.debug(f"Cache read failed: {e}")
+    try:
+        cached_data = await cache_service.get_cached_matches(
+            user_id=str(current_user.id),
+            mode=mode.value,
+            filters=filters,
+            limit=limit,
+            offset=offset
+        )
+        if cached_data and "matches" in cached_data:
+            logger.debug(f"Cache hit for user {current_user.id} matches")
+            # Reconstruct response from cached data
+            return EmployeeMatchesResponse(
+                employee_id=employee_id,
+                employee_name="",  # Not stored in cache, will be fetched if needed
+                current_role="",
+                match_mode=mode,
+                matches=cached_data["matches"],
+                total_count=cached_data.get("total_count", len(cached_data["matches"])),
+                cached=True,
+            )
+    except Exception as e:
+        logger.debug(f"Cache read failed: {e}")
 
     try:
         # Request more matches to support pagination
@@ -202,28 +180,31 @@ async def get_employee_matches(
             match_mode=mode,
             matches=paginated_matches,
             total_count=total_count,
-            cached=redis_client is not None,
+            cached=True,  # Using match_cache_service
         )
 
-        # Cache the response
-        if redis_client:
-            try:
-                # Convert to dict for JSON serialization
-                response_dict = response.model_dump()
-                # Handle enum serialization
-                response_dict['match_mode'] = response_dict['match_mode'].value if hasattr(response_dict['match_mode'], 'value') else response_dict['match_mode']
-                for match in response_dict.get('matches', []):
-                    if 'match_mode' in match and hasattr(match['match_mode'], 'value'):
-                        match['match_mode'] = match['match_mode'].value
+        # Cache the response using match_cache_service (with skill-version tracking)
+        try:
+            # Convert to dict for JSON serialization
+            response_dict = response.model_dump()
+            # Handle enum serialization
+            response_dict['match_mode'] = response_dict['match_mode'].value if hasattr(response_dict['match_mode'], 'value') else response_dict['match_mode']
+            for match in response_dict.get('matches', []):
+                if 'match_mode' in match and hasattr(match['match_mode'], 'value'):
+                    match['match_mode'] = match['match_mode'].value
 
-                redis_client.setex(
-                    cache_key,
-                    MATCH_CACHE_TTL,
-                    json.dumps(response_dict, default=str)
-                )
-                logger.debug(f"Cached matches: {cache_key}")
-            except Exception as e:
-                logger.debug(f"Cache write failed: {e}")
+            await cache_service.cache_matches(
+                user_id=str(current_user.id),
+                mode=mode.value,
+                filters=filters,
+                limit=limit,
+                offset=offset,
+                matches=response_dict.get('matches', []),
+                total_count=total_count
+            )
+            logger.debug(f"Cached matches for user {current_user.id}")
+        except Exception as e:
+            logger.debug(f"Cache write failed: {e}")
 
         return response
 

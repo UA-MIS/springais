@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import atexit
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from sqlalchemy import func
@@ -18,6 +19,30 @@ from app.models.skill_recommendation import UserSkillRecommendation
 from app.models.user_profile import UserProfile
 
 logger = logging.getLogger(__name__)
+
+# Shared thread pool for DB operations (reused across requests)
+_db_thread_pool: Optional[ThreadPoolExecutor] = None
+
+
+def get_db_thread_pool() -> ThreadPoolExecutor:
+    """Get or create shared thread pool for DB operations."""
+    global _db_thread_pool
+    if _db_thread_pool is None:
+        _db_thread_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="rec_db_")
+        logger.info("Created shared DB thread pool for recommendation service")
+    return _db_thread_pool
+
+
+def shutdown_db_thread_pool():
+    """Shutdown thread pool on app exit."""
+    global _db_thread_pool
+    if _db_thread_pool is not None:
+        _db_thread_pool.shutdown(wait=False)
+        _db_thread_pool = None
+
+
+# Register cleanup on exit
+atexit.register(shutdown_db_thread_pool)
 
 
 DEFAULT_BOOTSTRAP_SKILLS = [
@@ -38,6 +63,7 @@ class SkillRecommendationService:
 
     async def compute_recommendations(self, user_id: UUID) -> List[UserSkillRecommendation]:
         loop = asyncio.get_event_loop()
+        executor = get_db_thread_pool()  # Use shared pool
 
         # Run blocking DB operations in thread pool
         def fetch_user_and_aggregate():
@@ -51,10 +77,9 @@ class SkillRecommendationService:
             self._aggregate_from_matches(aggregated, user_id, current_skills)
             return user, aggregated, current_skills
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            user, aggregated, current_skills = await loop.run_in_executor(
-                executor, fetch_user_and_aggregate
-            )
+        user, aggregated, current_skills = await loop.run_in_executor(
+            executor, fetch_user_and_aggregate
+        )
 
         if not user:
             return []
@@ -64,11 +89,10 @@ class SkillRecommendationService:
         if not aggregated:
             aggregated = await self._llm_bootstrap(user)
 
-        # Run persist in thread pool
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            result = await loop.run_in_executor(
-                executor, self._persist_recommendations, user_id, aggregated
-            )
+        # Run persist in thread pool (reuse shared pool)
+        result = await loop.run_in_executor(
+            executor, self._persist_recommendations, user_id, aggregated
+        )
         return result
 
     def _aggregate_from_matches(
@@ -107,12 +131,12 @@ class SkillRecommendationService:
         if not career_path or not career_path.target_position_node_id:
             return
 
-        # Run blocking DB operation in thread pool
+        # Run blocking DB operation in shared thread pool
         loop = asyncio.get_event_loop()
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            target_skills = await loop.run_in_executor(
-                executor, self._get_skills_for_target, career_path.target_position_node_id
-            )
+        executor = get_db_thread_pool()  # Use shared pool
+        target_skills = await loop.run_in_executor(
+            executor, self._get_skills_for_target, career_path.target_position_node_id
+        )
 
         for raw_skill in target_skills:
             skill_key = self._skill_key(raw_skill)

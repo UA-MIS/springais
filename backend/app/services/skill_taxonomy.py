@@ -12,11 +12,17 @@ This system improves match percentages by recognizing that users with
 "Microsoft Word" + "Microsoft Excel" should get credit for "Microsoft Office".
 """
 
-from typing import Dict, List, Set, Optional
+from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass, field
+from functools import lru_cache
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Cache for skill expansion (frozen set of user skills -> expanded set)
+_expand_cache: Dict[Tuple[str, ...], Set[str]] = {}
+_coverage_cache: Dict[Tuple[Tuple[str, ...], str], float] = {}
+MAX_CACHE_SIZE = 1000
 
 
 @dataclass
@@ -478,11 +484,22 @@ class SkillTaxonomyService:
         - Original skills (normalized)
         - Skills implied by having multiple children
         - Parent skills (user knows specific, so knows general)
+
+        Uses caching for performance (same skill sets return cached results).
         """
+        global _expand_cache
+
         if not user_skills:
             return set()
 
-        normalized = {self.normalize_skill(s) for s in user_skills}
+        # Create cache key from sorted, normalized skills
+        cache_key = tuple(sorted(self.normalize_skill(s) for s in user_skills))
+
+        # Check cache first
+        if cache_key in _expand_cache:
+            return _expand_cache[cache_key].copy()
+
+        normalized = set(cache_key)
 
         # Add implied skills (from having multiple children)
         implied = self.get_implied_skills(user_skills)
@@ -498,6 +515,10 @@ class SkillTaxonomyService:
         expanded = normalized | implied | parents
         if len(expanded) > len(normalized):
             logger.debug(f"Expanded {len(normalized)} skills to {len(expanded)} with taxonomy")
+
+        # Cache result (limit cache size)
+        if len(_expand_cache) < MAX_CACHE_SIZE:
+            _expand_cache[cache_key] = expanded.copy()
 
         return expanded
 
@@ -515,47 +536,63 @@ class SkillTaxonomyService:
         - 0.80: User has parent skill (knows the broader area)
         - 0.70: User has related skill
         - 0.0: No match
+
+        Uses caching for performance.
         """
+        global _coverage_cache
+
         if not user_skills or not required_skill:
             return 0.0
 
-        user_expanded = self.expand_user_skills(user_skills)
+        # Create cache key
+        skills_key = tuple(sorted(self.normalize_skill(s) for s in user_skills))
         required_normalized = self.normalize_skill(required_skill)
+        cache_key = (skills_key, required_normalized)
+
+        # Check cache first
+        if cache_key in _coverage_cache:
+            return _coverage_cache[cache_key]
+
+        user_expanded = self.expand_user_skills(user_skills)
 
         # Direct match (including aliases)
         if required_normalized in user_expanded:
-            return 1.0
-
-        # Check if user has the required skill via child skills
-        if required_normalized in self._taxonomy:
+            result = 1.0
+        elif required_normalized in self._taxonomy:
             required_rel = self._taxonomy[required_normalized]
+            result = 0.0
 
             # Check if user has enough children to imply this skill
             if required_rel.child_skills:
                 child_set = {self.normalize_skill(c) for c in required_rel.child_skills}
                 matching = user_expanded & child_set
                 if len(matching) >= 2:
-                    return 0.85  # Has enough specifics to imply general
+                    result = 0.85  # Has enough specifics to imply general
                 elif len(matching) == 1:
-                    return 0.6  # Has one related child skill
+                    result = 0.6  # Has one related child skill
 
-        # Check if user has parent of required skill (broader knowledge)
-        if required_normalized in self._taxonomy:
-            required_rel = self._taxonomy[required_normalized]
-            for parent in required_rel.parent_skills:
-                parent_normalized = self.normalize_skill(parent)
-                if parent_normalized in user_expanded:
-                    return 0.80  # Has broader skill
+            # Check if user has parent of required skill (broader knowledge)
+            if result == 0.0:
+                for parent in required_rel.parent_skills:
+                    parent_normalized = self.normalize_skill(parent)
+                    if parent_normalized in user_expanded:
+                        result = 0.80  # Has broader skill
+                        break
 
-        # Check for related skills
-        if required_normalized in self._taxonomy:
-            required_rel = self._taxonomy[required_normalized]
-            related_set = {self.normalize_skill(r) for r in required_rel.related_skills}
-            matching_related = user_expanded & related_set
-            if matching_related:
-                return 0.70  # Has related skill
+            # Check for related skills
+            if result == 0.0:
+                related_set = {self.normalize_skill(r) for r in required_rel.related_skills}
+                matching_related = user_expanded & related_set
+                if matching_related:
+                    result = 0.70  # Has related skill
+        else:
+            result = 0.0
 
-        return 0.0
+        # Cache result (limit cache size)
+        if len(_coverage_cache) < MAX_CACHE_SIZE:
+            _coverage_cache[cache_key] = result
+
+        return result
 
     def get_skill_info(self, skill: str) -> Optional[SkillRelationship]:
         """Get full skill relationship info if available."""
