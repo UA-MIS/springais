@@ -148,9 +148,91 @@ class EmployeeRecommendationsResponse(BaseModel):
 
 class CareerGraphResponse(BaseModel):
     """Response for GET /api/patterns/graph."""
-    
+
     graph: CareerGraph = Field(...)
     total_nodes: int = Field(...)
     total_edges: int = Field(...)
     service_line: Optional[str] = Field(default=None)
+
+
+# ============================================
+# Skill-Based Success Patterns (for job pages)
+# ============================================
+
+class SuccessPatternMetrics(BaseModel):
+    """Summary metrics for success patterns."""
+
+    avg_time_to_promotion: float = Field(..., description="Average years to next promotion")
+    overall_success_rate: float = Field(..., ge=0.0, le=1.0, description="Overall transition success rate")
+    total_sample_size: int = Field(..., description="Total employees in sample")
+    top_skills: List[str] = Field(default_factory=list, description="Most common skills")
+
+
+class TransitionData(BaseModel):
+    """Transition data for charts."""
+
+    transition: str = Field(..., description="Transition label e.g. 'Analyst → Senior'")
+    success_rate: float = Field(..., description="Success rate as percentage (0-100)")
+    sample_size: int = Field(..., description="Number of employees")
+    color: Optional[str] = Field(default=None, description="Chart color")
+
+
+class StageData(BaseModel):
+    """Career stage data for time-to-promotion charts."""
+
+    stage: str = Field(..., description="Role/stage name")
+    avg_years: float = Field(..., description="Average years to reach this stage")
+
+
+class SkillFrequency(BaseModel):
+    """Skill frequency data."""
+
+    skill: str = Field(...)
+    frequency: float = Field(..., description="Frequency as percentage (0-100)")
+
+
+class DepartmentData(BaseModel):
+    """Department/service line distribution."""
+
+    name: str = Field(...)
+    value: int = Field(..., description="Employee count")
+    color: Optional[str] = Field(default=None)
+
+
+class SkillBasedPatternsResponse(BaseModel):
+    """Response for skill-based success patterns (used on job detail pages)."""
+
+    metrics: SuccessPatternMetrics = Field(...)
+    success_rate_by_transition: List[TransitionData] = Field(default_factory=list)
+    time_to_promotion: Dict[str, List[StageData]] = Field(default_factory=dict)
+    skill_frequency: List[SkillFrequency] = Field(default_factory=list)
+    department_distribution: List[DepartmentData] = Field(default_factory=list)
+    matched_employee_count: int = Field(..., description="Number of employees matched by skills")
+
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "metrics": {
+                "avg_time_to_promotion": 2.5,
+                "overall_success_rate": 0.68,
+                "total_sample_size": 47,
+                "top_skills": ["Leadership", "Excel", "Communication"]
+            },
+            "success_rate_by_transition": [
+                {"transition": "Staff → Senior", "success_rate": 85, "sample_size": 120}
+            ],
+            "time_to_promotion": {
+                "Consulting": [
+                    {"stage": "Staff", "avg_years": 0},
+                    {"stage": "Senior", "avg_years": 2.5}
+                ]
+            },
+            "skill_frequency": [
+                {"skill": "Leadership", "frequency": 92}
+            ],
+            "department_distribution": [
+                {"name": "Consulting", "value": 45}
+            ],
+            "matched_employee_count": 47
+        }
+    })
 

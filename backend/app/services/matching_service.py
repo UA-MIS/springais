@@ -12,12 +12,13 @@ Uses real database models and vector embeddings for semantic skill matching.
 import logging
 import time
 import threading
+import hashlib
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import numpy as np
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func, or_
 
 from app.models.job_posting import JobPosting
 from app.models.employee import Employee
@@ -34,7 +35,19 @@ from app.services.skill_taxonomy import get_taxonomy_service
 _global_embedding_cache: Dict[str, List[float]] = {}
 _cache_lock = threading.Lock()
 _cache_loaded_at: Optional[float] = None
-CACHE_TTL_SECONDS = 600  # Refresh cache every 10 minutes
+_cache_version: Optional[str] = None
+CACHE_TTL_SECONDS = 3600  # 1 hour - longer TTL, rely on invalidation
+
+
+def get_cache_version(db: Session) -> str:
+    """Get a cache version based on latest skill_embedding update."""
+    global _cache_version
+
+    # Get max updated_at from skill_embeddings table
+    result = db.query(func.max(SkillEmbedding.updated_at)).scalar()
+    if result:
+        return hashlib.md5(str(result).encode()).hexdigest()[:8]
+    return "v1"
 
 
 def invalidate_embedding_cache() -> None:
@@ -44,10 +57,11 @@ def invalidate_embedding_cache() -> None:
     Call this when skill embeddings are updated in the database
     to force a refresh on the next match request.
     """
-    global _global_embedding_cache, _cache_loaded_at
+    global _global_embedding_cache, _cache_loaded_at, _cache_version
     with _cache_lock:
         _global_embedding_cache = {}
         _cache_loaded_at = None
+        _cache_version = None
     logging.getLogger(__name__).info("Embedding cache invalidated")
 
 from ..config.matching_config import (
@@ -775,7 +789,7 @@ class MatchingService:
         us_only: bool = True,
     ) -> List["JobPostingData"]:
         """
-        Get job postings with optional filters.
+        Get job postings with database-side filtering.
 
         Args:
             department: Optional department filter
@@ -790,22 +804,107 @@ class MatchingService:
             return []
 
         query = self.db.query(JobPosting).filter(JobPosting.is_active == True)
+
         if department:
             query = query.filter(JobPosting.service_line.ilike(f"%{department}%"))
+
         if location:
             query = query.filter(JobPosting.location.ilike(f"%{location}%"))
 
-        jobs = query.all()
-
-        # Filter to US jobs only (much faster than scoring all 6000)
+        # Database-side US filtering (MUCH faster than Python filtering)
         if us_only:
-            us_jobs = []
-            for job in jobs:
-                loc_lower = (job.location or '').lower()
-                if any(us_loc in loc_lower for us_loc in self.US_LOCATIONS):
-                    us_jobs.append(job)
-            jobs = us_jobs
-            logger.info(f"Filtered to {len(jobs)} US jobs")
+            us_patterns = [
+                func.lower(JobPosting.location).like('%usa%'),
+                func.lower(JobPosting.location).like('%united states%'),
+                func.lower(JobPosting.location).like('%, ny%'),
+                func.lower(JobPosting.location).like('%, ca%'),
+                func.lower(JobPosting.location).like('%, tx%'),
+                func.lower(JobPosting.location).like('%, fl%'),
+                func.lower(JobPosting.location).like('%, il%'),
+                func.lower(JobPosting.location).like('%, pa%'),
+                func.lower(JobPosting.location).like('%, oh%'),
+                func.lower(JobPosting.location).like('%, ga%'),
+                func.lower(JobPosting.location).like('%, nc%'),
+                func.lower(JobPosting.location).like('%, mi%'),
+                func.lower(JobPosting.location).like('%, nj%'),
+                func.lower(JobPosting.location).like('%, va%'),
+                func.lower(JobPosting.location).like('%, wa%'),
+                func.lower(JobPosting.location).like('%, az%'),
+                func.lower(JobPosting.location).like('%, ma%'),
+                func.lower(JobPosting.location).like('%, tn%'),
+                func.lower(JobPosting.location).like('%, in%'),
+                func.lower(JobPosting.location).like('%, mo%'),
+                func.lower(JobPosting.location).like('%, md%'),
+                func.lower(JobPosting.location).like('%, wi%'),
+                func.lower(JobPosting.location).like('%, co%'),
+                func.lower(JobPosting.location).like('%, mn%'),
+                func.lower(JobPosting.location).like('%, sc%'),
+                func.lower(JobPosting.location).like('%, al%'),
+                func.lower(JobPosting.location).like('%, la%'),
+                func.lower(JobPosting.location).like('%, ky%'),
+                func.lower(JobPosting.location).like('%, or%'),
+                func.lower(JobPosting.location).like('%, ok%'),
+                func.lower(JobPosting.location).like('%, ct%'),
+                func.lower(JobPosting.location).like('%, ut%'),
+                func.lower(JobPosting.location).like('%, ia%'),
+                func.lower(JobPosting.location).like('%, nv%'),
+                func.lower(JobPosting.location).like('%, ar%'),
+                func.lower(JobPosting.location).like('%, ms%'),
+                func.lower(JobPosting.location).like('%, ks%'),
+                func.lower(JobPosting.location).like('%, nm%'),
+                func.lower(JobPosting.location).like('%, ne%'),
+                func.lower(JobPosting.location).like('%, wv%'),
+                func.lower(JobPosting.location).like('%, id%'),
+                func.lower(JobPosting.location).like('%, hi%'),
+                func.lower(JobPosting.location).like('%, nh%'),
+                func.lower(JobPosting.location).like('%, me%'),
+                func.lower(JobPosting.location).like('%, mt%'),
+                func.lower(JobPosting.location).like('%, ri%'),
+                func.lower(JobPosting.location).like('%, de%'),
+                func.lower(JobPosting.location).like('%, sd%'),
+                func.lower(JobPosting.location).like('%, nd%'),
+                func.lower(JobPosting.location).like('%, ak%'),
+                func.lower(JobPosting.location).like('%, dc%'),
+                func.lower(JobPosting.location).like('%, vt%'),
+                func.lower(JobPosting.location).like('%, wy%'),
+                func.lower(JobPosting.location).like('%new york%'),
+                func.lower(JobPosting.location).like('%california%'),
+                func.lower(JobPosting.location).like('%texas%'),
+                func.lower(JobPosting.location).like('%florida%'),
+                func.lower(JobPosting.location).like('%illinois%'),
+                func.lower(JobPosting.location).like('%chicago%'),
+                func.lower(JobPosting.location).like('%boston%'),
+                func.lower(JobPosting.location).like('%atlanta%'),
+                func.lower(JobPosting.location).like('%seattle%'),
+                func.lower(JobPosting.location).like('%denver%'),
+                func.lower(JobPosting.location).like('%san francisco%'),
+                func.lower(JobPosting.location).like('%los angeles%'),
+                func.lower(JobPosting.location).like('%hoboken%'),
+                func.lower(JobPosting.location).like('%secaucus%'),
+                func.lower(JobPosting.location).like('%philadelphia%'),
+                func.lower(JobPosting.location).like('%phoenix%'),
+                func.lower(JobPosting.location).like('%san antonio%'),
+                func.lower(JobPosting.location).like('%san diego%'),
+                func.lower(JobPosting.location).like('%dallas%'),
+                func.lower(JobPosting.location).like('%houston%'),
+                func.lower(JobPosting.location).like('%austin%'),
+                func.lower(JobPosting.location).like('%charlotte%'),
+                func.lower(JobPosting.location).like('%columbus%'),
+                func.lower(JobPosting.location).like('%indianapolis%'),
+                func.lower(JobPosting.location).like('%detroit%'),
+                func.lower(JobPosting.location).like('%nashville%'),
+                func.lower(JobPosting.location).like('%portland%'),
+                func.lower(JobPosting.location).like('%las vegas%'),
+                func.lower(JobPosting.location).like('%memphis%'),
+                func.lower(JobPosting.location).like('%baltimore%'),
+                func.lower(JobPosting.location).like('%milwaukee%'),
+                func.lower(JobPosting.location).like('%minneapolis%'),
+            ]
+            query = query.filter(or_(*us_patterns))
+
+        # Limit results for safety (avoid loading 10k+ rows)
+        jobs = query.limit(2000).all()
+        logger.info(f"Loaded {len(jobs)} jobs from database (us_only={us_only})")
 
         return [self._to_job_posting_data(job) for job in jobs]
 

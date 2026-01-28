@@ -13,13 +13,17 @@ Endpoints:
 - POST /api/skills/taxonomy/seed - Seed skill taxonomy database
 - GET /api/skills/recommendations - Get skill recommendations
 - PATCH /api/skills/recommendations/{skill_name}/status - Update status
+
+Performance optimizations:
+- Background tasks for vectorization (non-blocking responses)
+- Async LLM calls
 """
 
 import logging
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, Body
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status, Body, BackgroundTasks
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -197,6 +201,7 @@ async def complete_skill(
 )
 async def extract_skills(
     request: SkillExtractionRequest,
+    background_tasks: BackgroundTasks,
     _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
@@ -206,6 +211,7 @@ async def extract_skills(
     - **text**: Resume text or profile description (10-50000 characters)
 
     Returns structured skills with categories and proficiency levels.
+    Vectorization and recommendation refresh happen in background (non-blocking).
     """
     try:
         # Extract skills using LLM
@@ -224,19 +230,28 @@ async def extract_skills(
         _current_user.skills = [skill.name for skill in normalized_skills]
         db.commit()
 
-        # Vectorize skills for semantic matching
+        # IMPORTANT: Vectorize in background instead of blocking response
         skill_names = [skill.name for skill in normalized_skills]
-        embedding_result = await vectorize_user_skills_and_resume(
-            db=db,
-            user=_current_user,
+        background_tasks.add_task(
+            vectorize_skills_background,
+            user_id=str(_current_user.id),
             skills=skill_names,
-            resume_text=request.text,  # Also vectorize the input text
+            resume_text=request.text,
         )
-        logger.info(f"Embedding result: {embedding_result}")
 
-        # Refresh recommendations after skill update
-        service = SkillRecommendationService(db)
-        await service.compute_recommendations(_current_user.id)
+        # Refresh recommendations in background
+        background_tasks.add_task(
+            refresh_recommendations_background,
+            user_id=str(_current_user.id),
+        )
+
+        # Invalidate match cache since skills changed
+        background_tasks.add_task(
+            invalidate_match_cache_background,
+            user_id=str(_current_user.id),
+        )
+
+        logger.info(f"Extracted {len(normalized_skills)} skills, vectorization scheduled in background")
 
         return SkillExtractionResponse(
             skills=normalized_skills,
@@ -259,6 +274,72 @@ async def extract_skills(
         )
 
 
+async def vectorize_skills_background(
+    user_id: str,
+    skills: List[str],
+    resume_text: str
+) -> None:
+    """Background task to vectorize skills without blocking response."""
+    from app.database import SessionLocal
+
+    try:
+        # Create a new database session for background task
+        db = SessionLocal()
+        try:
+            user = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+            if user:
+                result = await vectorize_user_skills_and_resume(
+                    db=db,
+                    user=user,
+                    skills=skills,
+                    resume_text=resume_text,
+                )
+                logger.info(f"Background vectorization complete for user {user_id}: {result}")
+            else:
+                logger.warning(f"User {user_id} not found for background vectorization")
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Background vectorization failed: {e}")
+
+
+async def refresh_recommendations_background(
+    user_id: str
+) -> None:
+    """Background task to refresh recommendations."""
+    from app.database import SessionLocal
+
+    try:
+        # Create a new database session for background task
+        db = SessionLocal()
+        try:
+            service = SkillRecommendationService(db)
+            await service.compute_recommendations(user_id)
+            logger.info(f"Background recommendations refresh complete for user {user_id}")
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"Background recommendations refresh failed: {e}")
+
+
+async def invalidate_match_cache_background(user_id: str) -> None:
+    """Background task to invalidate match cache when skills change."""
+    try:
+        from app.services.match_cache_service import get_match_cache
+        from app.services.matching_service import invalidate_embedding_cache
+
+        # Invalidate user's match cache
+        cache_service = get_match_cache()
+        await cache_service.invalidate_user_cache(user_id)
+
+        # Also invalidate embedding cache to ensure fresh embeddings are used
+        invalidate_embedding_cache()
+
+        logger.info(f"Match cache invalidated for user {user_id}")
+    except Exception as e:
+        logger.error(f"Match cache invalidation failed: {e}")
+
+
 @router.post(
     "/upload",
     response_model=ResumeUploadResponse,
@@ -266,6 +347,7 @@ async def extract_skills(
     description="Upload a PDF, DOCX, or TXT resume file and extract skills."
 )
 async def upload_resume(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(..., description="Resume file (PDF, DOCX, or TXT)"),
     _current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
@@ -276,6 +358,7 @@ async def upload_resume(
     - **file**: Resume file (PDF, DOCX, or TXT, max 10MB)
 
     Parses the file, extracts text, and returns structured skills.
+    Vectorization and recommendation refresh happen in background (non-blocking).
     """
     # Validate file type
     if not validate_file_type(file.filename, file.content_type):
@@ -307,19 +390,28 @@ async def upload_resume(
         _current_user.skills = [skill.name for skill in normalized_skills]
         db.commit()
 
-        # Vectorize skills and resume for semantic matching
+        # IMPORTANT: Vectorize in background instead of blocking response
         skill_names = [skill.name for skill in normalized_skills]
-        embedding_result = await vectorize_user_skills_and_resume(
-            db=db,
-            user=_current_user,
+        background_tasks.add_task(
+            vectorize_skills_background,
+            user_id=str(_current_user.id),
             skills=skill_names,
-            resume_text=text,  # Vectorize the full resume text
+            resume_text=text,
         )
-        logger.info(f"Resume embedding result: {embedding_result}")
 
-        # Refresh recommendations after skill update
-        service = SkillRecommendationService(db)
-        await service.compute_recommendations(_current_user.id)
+        # Refresh recommendations in background
+        background_tasks.add_task(
+            refresh_recommendations_background,
+            user_id=str(_current_user.id),
+        )
+
+        # Invalidate match cache since skills changed
+        background_tasks.add_task(
+            invalidate_match_cache_background,
+            user_id=str(_current_user.id),
+        )
+
+        logger.info(f"Uploaded resume, extracted {len(normalized_skills)} skills, vectorization scheduled in background")
 
         return ResumeUploadResponse(
             filename=file.filename,

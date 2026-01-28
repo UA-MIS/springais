@@ -128,9 +128,9 @@ async def get_employee_matches(
         description="Filter by location (e.g., 'New York', 'San Francisco')"
     ),
     limit: int = Query(
-        default=10,
+        default=20,  # Increased default from 10 to 20, but NOT 500
         ge=1,
-        le=500,  # Increased to support fetching all matches
+        le=100,  # Reduced from 500 - prevent over-fetching
         description="Maximum number of matches to return"
     ),
     offset: int = Query(

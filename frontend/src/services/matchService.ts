@@ -11,7 +11,7 @@ export interface MatchFilters {
 }
 
 const DEFAULT_EMPLOYEE_ID = 1;
-const DEFAULT_MATCH_LIMIT = 500;  // Fetch all matches for client-side filtering
+const DEFAULT_MATCH_LIMIT = 20;  // Changed from 500 - use server-side pagination
 
 const mapMatchResult = (item: any): Match => {
   const gapAnalysis = item.gap_analysis || {};
@@ -85,13 +85,26 @@ export async function getMatchesBatch(
 }
 
 export async function getMatches(
-  filters?: MatchFilters
-): Promise<{ matches: Match[]; total: number }> {
-  // Fetch all matches in one request for client-side filtering
+  filters?: MatchFilters,
+  limit: number = DEFAULT_MATCH_LIMIT,
+  offset: number = 0
+): Promise<{ matches: Match[]; total: number; hasMore: boolean }> {
+  // Use server-side pagination for better performance
   const params: Record<string, string | number> = {
-    limit: DEFAULT_MATCH_LIMIT,
-    min_score: 0,  // Get all matches, filter/sort client-side
+    limit,
+    offset,
+    min_score: filters?.min_score ?? 0,
   };
+
+  // Apply department filter if provided (server supports one at a time)
+  if (filters?.departments?.length) {
+    params.department = filters.departments[0];
+  }
+
+  // Apply location filter if provided
+  if (filters?.locations?.length) {
+    params.location = filters.locations[0];
+  }
 
   const response = await api.get(`/matches/employee/${DEFAULT_EMPLOYEE_ID}`, { params });
   const data = response.data;
@@ -100,6 +113,7 @@ export async function getMatches(
   return {
     matches,
     total: data.total_count ?? matches.length,
+    hasMore: offset + limit < (data.total_count ?? matches.length),
   };
 }
 

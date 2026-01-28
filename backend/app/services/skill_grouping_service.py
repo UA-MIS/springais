@@ -3,17 +3,19 @@ AI-Powered Skill Grouping Service.
 
 Uses GPT-5.2-chat-latest to intelligently group user skills into categories
 with learning modules for progress tracking.
+
+Optimized with:
+- Singleton async OpenAI client (reuses connections)
+- Async API calls for non-blocking operation
 """
 
 import json
 import logging
 from typing import List, Dict, Any, Optional
-from openai import OpenAI
-import os
+
+from app.config import get_openai_client
 
 logger = logging.getLogger(__name__)
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 GROUPING_SYSTEM_PROMPT = """You are an expert career coach and skills analyst. Given a list of skills extracted from a resume, group them into logical categories that make sense for career development.
 
@@ -87,7 +89,9 @@ Skills: {json.dumps(skills)}
 Return the JSON grouping."""
 
     try:
-        response = client.chat.completions.create(
+        # Use singleton async client (reuses connections)
+        client = get_openai_client()
+        response = await client.chat.completions.create(
             model="gpt-5.2-chat-latest",
             messages=[
                 {"role": "system", "content": GROUPING_SYSTEM_PROMPT},
@@ -133,7 +137,9 @@ New skills to integrate:
 Merge the new skills into the existing structure. Return the complete updated JSON."""
 
     try:
-        response = client.chat.completions.create(
+        # Use singleton async client (reuses connections)
+        client = get_openai_client()
+        response = await client.chat.completions.create(
             model="gpt-5.2-chat-latest",
             messages=[
                 {"role": "system", "content": ENHANCE_SYSTEM_PROMPT},

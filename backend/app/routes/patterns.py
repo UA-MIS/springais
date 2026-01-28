@@ -14,7 +14,7 @@ Endpoints:
 
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -33,6 +33,7 @@ from app.schemas.pattern import (
     EmployeeRecommendationsResponse,
     TransitionPattern,
     TrajectoryMetrics,
+    SkillBasedPatternsResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -138,6 +139,49 @@ async def get_patterns_by_role(
         
     except Exception as e:
         logger.error(f"Error getting patterns for role {role_name}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get patterns: {str(e)}"
+        )
+
+
+@router.post(
+    "/role-skills",
+    response_model=SkillBasedPatternsResponse,
+    summary="Get patterns by job skills",
+    description="Get success patterns based on skill overlap with a job posting's required skills."
+)
+async def get_patterns_by_skills(
+    skills: List[str],
+    service_line: Optional[str] = Query(None, description="Filter by service line"),
+    min_employees: int = Query(5, ge=1, le=100, description="Minimum employees to return"),
+    service: SuccessPatternService = Depends(get_pattern_service)
+):
+    """
+    Get success patterns for employees whose skills overlap with the provided job skills.
+
+    This endpoint is designed for job detail pages to show "what worked for people
+    with similar skills" without requiring exact role matches.
+
+    - **skills**: List of skills from the job posting
+    - **service_line**: Optional filter by service line
+    - **min_employees**: Minimum number of matched employees (default: 5)
+
+    Returns career transition patterns, skill frequencies, and time-to-promotion data
+    aggregated from employees with overlapping skills.
+    """
+    try:
+        patterns = service.get_patterns_by_skills(
+            job_skills=skills,
+            service_line=service_line,
+            min_employees=min_employees
+        )
+
+        logger.info(f"Skill-based patterns: {patterns.matched_employee_count} employees matched for {len(skills)} skills")
+        return patterns
+
+    except Exception as e:
+        logger.error(f"Error getting patterns by skills: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get patterns: {str(e)}"
