@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 from app.config import get_openai_client
 from app.schemas.skill import Skill, SkillList
-from app.utils.text_cleaner import clean_resume_text, chunk_text, count_tokens
+from app.utils.text_cleaner import clean_resume_text, chunk_text, count_tokens, strip_pii
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,8 @@ class SkillExtractor:
     async def extract_skills(
         self,
         text: str,
-        clean_text: bool = True
+        clean_text: bool = True,
+        strip_pii_flag: bool = True
     ) -> SkillExtractionResult:
         """
         Extract skills from resume text, separating listed vs inferred skills.
@@ -170,6 +171,7 @@ class SkillExtractor:
         Args:
             text: Resume text to extract skills from
             clean_text: Whether to clean the text first (default: True)
+            strip_pii_flag: Whether to strip PII for bias mitigation (default: True)
 
         Returns:
             SkillExtractionResult containing listed_skills, inferred_skills,
@@ -181,9 +183,11 @@ class SkillExtractor:
         if not text or not text.strip():
             raise ValueError("Text cannot be empty")
 
-        # Clean text if requested
+        # Clean text if requested (includes PII stripping by default)
         if clean_text:
-            text = clean_resume_text(text)
+            text = clean_resume_text(text, strip_pii_flag=strip_pii_flag)
+            if strip_pii_flag:
+                logger.info("PII stripped from resume text for bias mitigation")
 
         # Check if text needs to be chunked
         text_tokens = count_tokens(text)
@@ -468,7 +472,8 @@ class SkillExtractor:
 
 async def extract_skills_from_text(
     text: str,
-    clean_text: bool = True
+    clean_text: bool = True,
+    strip_pii_flag: bool = True
 ) -> SkillExtractionResult:
     """
     Convenience function to extract skills from text.
@@ -476,6 +481,7 @@ async def extract_skills_from_text(
     Args:
         text: Resume or profile text
         clean_text: Whether to clean text first
+        strip_pii_flag: Whether to strip PII for bias mitigation (default: True)
 
     Returns:
         SkillExtractionResult with listed_skills, inferred_skills, tokens_used, cost_usd
@@ -485,4 +491,4 @@ async def extract_skills_from_text(
         print(result.listed_skills, result.inferred_skills)
     """
     extractor = SkillExtractor()
-    return await extractor.extract_skills(text, clean_text)
+    return await extractor.extract_skills(text, clean_text, strip_pii_flag)
