@@ -12,6 +12,7 @@ from pgvector.sqlalchemy import Vector
 from .base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from .hm_saved_job import HMSavedJob
     from .match import Match
 
 
@@ -59,6 +60,12 @@ class JobPosting(Base, TimestampMixin):
 
     matches: Mapped[list["Match"]] = relationship(
         "Match",
+        back_populates="job_posting",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    hm_saves: Mapped[list["HMSavedJob"]] = relationship(
+        "HMSavedJob",
         back_populates="job_posting",
         cascade="all, delete-orphan",
         passive_deletes=True,

@@ -8,7 +8,7 @@ import SkillDetailModal from './SkillDetailModal';
 import AddSkillModal from './AddSkillModal';
 import ResumeUpload from './ResumeUpload';
 import { DARK_THEME, LIGHT_THEME, PROGRESS_COLORS } from './ThemeSwitcher';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function SkillsDashboard() {
@@ -31,6 +31,19 @@ export default function SkillsDashboard() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [showResumeUpload, setShowResumeUpload] = useState(false);
+
+  // FIX: Sync selectedSkill when skills array is refreshed (e.g., after proficiency change)
+  // This ensures the modal shows updated data after onRefresh is called
+  useEffect(() => {
+    if (selectedSkill && skills.length > 0) {
+      const updatedSkill = skills.find(
+        s => s.id === selectedSkill.id || s.name?.toLowerCase() === selectedSkill.name?.toLowerCase()
+      );
+      if (updatedSkill && JSON.stringify(updatedSkill) !== JSON.stringify(selectedSkill)) {
+        setSelectedSkill(updatedSkill);
+      }
+    }
+  }, [skills, selectedSkill, setSelectedSkill]);
 
   // Use global theme context
   const { theme: globalTheme, isDark, isGame } = useTheme();

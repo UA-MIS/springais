@@ -65,6 +65,10 @@ Years of Experience: {years_experience}
 Current Skills: {current_skills}
 Service Line: {service_line}
 
+## SKILL PROFICIENCY DATA (from My Skills page):
+{skill_proficiencies_section}
+IMPORTANT: Skills at proficiency 3+ are already proficient - don't recommend developing these from scratch. Focus on skills they're still developing or don't have.
+
 ## TARGET ROLES (user wants to achieve ALL of these):
 {target_roles_section}
 
@@ -271,6 +275,42 @@ class RoadmapService:
 
         return "\n".join(patterns_text)
 
+    def _get_skill_proficiencies_section(self, user: UserProfile) -> str:
+        """Get formatted skill proficiencies for the roadmap prompt."""
+        from app.models.skill_progress import UserSkill
+
+        user_skills = self.db.query(UserSkill).filter(
+            UserSkill.user_id == user.id
+        ).all()
+
+        if not user_skills:
+            return "No skill proficiency data available from My Skills page."
+
+        proficient_skills = []
+        developing_skills = []
+        new_skills = []
+
+        for skill in user_skills:
+            if skill.proficiency_level >= 3:
+                proficient_skills.append(f"{skill.skill_name} ({skill.proficiency_level}/5)")
+            elif skill.proficiency_level > 0:
+                developing_skills.append(f"{skill.skill_name} ({skill.proficiency_level}/5)")
+            else:
+                new_skills.append(skill.skill_name)
+
+        lines = []
+        if proficient_skills:
+            lines.append(f"Already Proficient (3+): {', '.join(proficient_skills)}")
+        if developing_skills:
+            lines.append(f"Currently Developing: {', '.join(developing_skills)}")
+        if new_skills:
+            lines.append(f"Just Started (proficiency 0): {', '.join(new_skills)}")
+
+        if not lines:
+            return "User has skills tracked but no proficiency data yet."
+
+        return "\n".join(lines)
+
     def _build_prompt(
         self,
         user: UserProfile,
@@ -279,6 +319,9 @@ class RoadmapService:
         success_patterns: str,
     ) -> str:
         """Build the roadmap generation prompt."""
+
+        # Get skill proficiencies section
+        skill_proficiencies = self._get_skill_proficiencies_section(user)
 
         # Build target roles section
         target_roles_lines = []
@@ -326,6 +369,7 @@ class RoadmapService:
             years_experience=user.years_experience or "Not specified",
             current_skills=", ".join(user.skills or []) or "Not specified",
             service_line=user.target_service_line or "Not specified",
+            skill_proficiencies_section=skill_proficiencies,
             target_roles_section="\n\n".join(target_roles_lines),
             order_instructions=order_instructions,
             emphasis=request.emphasis.value,

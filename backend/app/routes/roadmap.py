@@ -11,6 +11,7 @@ Endpoints for roadmap generation and management:
 
 import logging
 import os
+from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -477,6 +478,115 @@ async def toggle_milestone(
     result["total_count"] = progress["total_count"]
 
     return result
+
+
+class MilestoneCompleteWithSkillsRequest(BaseModel):
+    """Request for completing a milestone with skill proficiency boost."""
+    phase_id: str = Field(..., description="ID of the phase containing the milestone")
+    proof_description: Optional[str] = Field(None, description="Description of completion proof")
+    proof_link: Optional[str] = Field(None, description="Link to proof (project, certificate, etc.)")
+
+
+@router.post(
+    "/saved/{roadmap_id}/milestones/{milestone_id}/complete-with-skills",
+    summary="Complete milestone and boost skills",
+    description="Complete a milestone and boost related skill proficiencies by 1.",
+)
+async def complete_milestone_with_skills(
+    roadmap_id: str,
+    milestone_id: str,
+    request: MilestoneCompleteWithSkillsRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Complete a roadmap milestone and boost related skill proficiencies.
+
+    When a milestone is completed:
+    1. Mark the milestone as complete
+    2. Increase proficiency by 1 for all skills_to_develop in the milestone
+    3. Cap proficiency at 5
+
+    If a skill doesn't exist in the user's My Skills page, it will be created
+    with source='roadmap' and initial proficiency of 1.
+    """
+    from app.services.skill_progress_service import SkillProgressService
+
+    try:
+        roadmap_uuid = UUID(roadmap_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid roadmap ID format"
+        )
+
+    # Verify ownership
+    roadmap = (
+        db.query(SavedRoadmap)
+        .filter(SavedRoadmap.id == roadmap_uuid, SavedRoadmap.user_id == current_user.id)
+        .first()
+    )
+    if not roadmap:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Roadmap not found"
+        )
+
+    # Find the milestone in roadmap data
+    roadmap_data = roadmap.roadmap_data
+    milestone_data = None
+
+    for phase in roadmap_data.get("phases", []):
+        if phase.get("id") == request.phase_id:
+            for milestone in phase.get("milestones", []):
+                if milestone.get("id") == milestone_id:
+                    milestone_data = milestone
+                    break
+            break
+
+    if not milestone_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Milestone not found in roadmap"
+        )
+
+    # Toggle milestone to completed
+    progress_service = RoadmapProgressService(db)
+    result = progress_service.toggle_milestone(roadmap_uuid, milestone_id, request.phase_id)
+
+    # Only boost skills if milestone is now completed
+    boosted_skills = []
+    if result.get("status") == "completed":
+        skills_to_develop = milestone_data.get("skills_to_develop", [])
+        skill_service = SkillProgressService(db, user_profile=current_user)
+
+        for skill_name in skills_to_develop:
+            try:
+                updated_skill = skill_service.boost_skill_proficiency(
+                    user_id=current_user.id,
+                    skill_name=skill_name,
+                    boost_amount=1,
+                )
+                boosted_skills.append({
+                    "skill": updated_skill.skill_name,
+                    "new_proficiency": updated_skill.proficiency_level,
+                    "counts_for_matching": updated_skill.proficiency_level >= 3,
+                })
+            except Exception as e:
+                logger.warning(f"Could not boost skill {skill_name}: {e}")
+
+    # Get updated overall progress
+    progress = progress_service.get_progress(roadmap_uuid)
+
+    return {
+        "milestone_id": milestone_id,
+        "status": result.get("status"),
+        "completed_at": result.get("completed_at"),
+        "skills_boosted": boosted_skills,
+        "overall_progress": progress["overall_progress"],
+        "completed_count": progress["completed_count"],
+        "total_count": progress["total_count"],
+    }
 
 
 @router.post(

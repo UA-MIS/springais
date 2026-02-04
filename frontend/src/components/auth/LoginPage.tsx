@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      navigate('/matches');
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {

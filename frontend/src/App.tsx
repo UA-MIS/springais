@@ -5,11 +5,14 @@ import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
+import HMMainLayout from './components/layout/HMMainLayout';
+import HomeRedirect from './components/layout/HomeRedirect';
 import { MatchesProvider } from './context/MatchesContext';
 import { SavedRolesProvider } from './context/SavedRolesContext';
 import { SkillsProvider } from './context/SkillsContext';
 import { ToastProvider } from './context/ToastContext';
 import { AdventureModeProvider } from './context/AdventureModeContext';
+import { HiringManagerProvider } from './context/HiringManagerContext';
 
 // Lazy load heavier page components for faster initial load
 const MatchResultsPage = lazy(() => import('./components/matches/MatchResultsPage'));
@@ -18,6 +21,11 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SavedRolesPage = lazy(() => import('./pages/SavedRolesPage'));
 const RoadmapPage = lazy(() => import('./pages/RoadmapPage'));
 const SuccessPatternPage = lazy(() => import('./components/successPatterns/SuccessPatternPage'));
+
+// Hiring Manager pages
+const HMJobBrowsePage = lazy(() => import('./pages/hm/HMJobBrowsePage'));
+const HMMyJobsPage = lazy(() => import('./pages/hm/HMMyJobsPage'));
+const HMCandidateInterestPage = lazy(() => import('./pages/hm/HMCandidateInterestPage'));
 
 // Loading fallback component
 function PageLoader() {
@@ -65,8 +73,27 @@ function App() {
         <Route path="/role/:roleId" element={<Suspense fallback={<PageLoader />}><RoleDetailPage /></Suspense>} />
       </Route>
 
-      {/* Default redirect - Match Results is the starting point */}
-      <Route path="/" element={<Navigate to="/matches" replace />} />
+      {/* Hiring Manager routes - separate layout for HM accounts */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <AdventureModeProvider>
+              <ToastProvider>
+                <HiringManagerProvider>
+                  <HMMainLayout />
+                </HiringManagerProvider>
+              </ToastProvider>
+            </AdventureModeProvider>
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/hm/browse" element={<Suspense fallback={<PageLoader />}><HMJobBrowsePage /></Suspense>} />
+        <Route path="/hm/my-jobs" element={<Suspense fallback={<PageLoader />}><HMMyJobsPage /></Suspense>} />
+        <Route path="/hm/interest/:jobPostingId" element={<Suspense fallback={<PageLoader />}><HMCandidateInterestPage /></Suspense>} />
+      </Route>
+
+      {/* Default redirect - based on account type */}
+      <Route path="/" element={<HomeRedirect />} />
     </Routes>
   );
 }

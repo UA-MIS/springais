@@ -51,6 +51,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)) -> AuthRes
             email=user.email,
             name=user.full_name or "",
             role=user.current_role,
+            account_type=user.account_type,
         ),
     )
 
@@ -72,6 +73,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
             email=user.email,
             name=user.full_name or "",
             role=user.current_role,
+            account_type=user.account_type,
         ),
     )
 
@@ -83,4 +85,5 @@ def get_current_user(current_user: UserProfile = Depends(get_current_user_from_t
         email=current_user.email,
         name=current_user.full_name or "",
         role=current_user.current_role,
+        account_type=current_user.account_type,
     )

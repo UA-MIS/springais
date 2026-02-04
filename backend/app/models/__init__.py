@@ -1,6 +1,7 @@
 from .base import Base, TimestampMixin
 from .career_path import CareerPath
 from .employee import Employee
+from .hm_saved_job import HMSavedJob
 from .job_posting import JobPosting
 from .match import Match
 from .roadmap import SavedRoadmap
@@ -19,6 +20,7 @@ __all__ = [
     "MatchScores",
     "ReactFlowGraph",
     "Employee",
+    "HMSavedJob",
     "JobPosting",
     "Match",
     "SavedRoadmap",

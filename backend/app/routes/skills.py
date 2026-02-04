@@ -66,6 +66,25 @@ class RecommendationStatusUpdate(BaseModel):
     status: str = Field(..., description="New status: recommended, in_progress, dismissed")
 
 
+class ProficiencyUpdate(BaseModel):
+    """Request model for updating skill proficiency."""
+    proficiency: int = Field(..., ge=0, le=5, description="Proficiency level 0-5")
+
+
+class ModuleCompletionWithProof(BaseModel):
+    """Request model for completing a module with optional proof."""
+    completion_type: str = Field(default="self_reported", description="self_reported or with_proof")
+    proof_description: Optional[str] = Field(None, description="Description of what was learned/built")
+    proof_link: Optional[str] = Field(None, description="Link to project, certificate, etc.")
+    request_ai_review: bool = Field(default=False, description="Request AI feedback on submission")
+
+
+class QuickAddSkillRequest(BaseModel):
+    """Request model for quickly adding a skill from job gaps."""
+    skill_name: str = Field(..., description="Name of the skill to add")
+    source: str = Field(default="job_gap", description="Source: job_gap, manual")
+
+
 # ============================================
 # User Skills Endpoints
 # ============================================
@@ -187,6 +206,408 @@ async def complete_skill(
         return {"status": "completed", "completed_at": result.completed_at.isoformat()}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+# ============================================
+# Proficiency Management Endpoints
+# ============================================
+
+@router.patch("/{skill_name}/proficiency")
+async def update_skill_proficiency(
+    skill_name: str,
+    payload: ProficiencyUpdate,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Update proficiency level for a skill (0-5 scale).
+
+    - 0 = None
+    - 1 = Beginner
+    - 2 = Elementary
+    - 3 = Intermediate (counts toward job matches)
+    - 4 = Advanced
+    - 5 = Expert
+
+    User can change this anytime without proof required.
+    Skills at proficiency 3+ are synced to the user's profile for job matching.
+    """
+    service = SkillProgressService(db, user_profile=current_user)
+    try:
+        result = service.update_proficiency(current_user.id, skill_name, payload.proficiency)
+        return {
+            "skill_name": result.skill_name,
+            "proficiency_level": result.proficiency_level,
+            "counts_for_matching": result.proficiency_level >= 3,
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{skill_name}/modules/{module_id}/complete-with-proof")
+async def complete_module_with_proof(
+    skill_name: str,
+    module_id: str,
+    payload: ModuleCompletionWithProof,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Complete a module with optional proof of completion.
+
+    Proof can include:
+    - Description of what was learned/built
+    - Link to project, certification, etc.
+    - Optional AI review of submission for feedback
+    """
+    from app.models.skill_progress import UserModuleProgress, UserSkill, SkillModule
+    from app.services.learning_content_service import review_proof_submission
+    from datetime import datetime, timezone
+
+    # Find the user skill and module progress
+    user_skill = db.query(UserSkill).filter(
+        UserSkill.user_id == current_user.id,
+        UserSkill.skill_name == skill_name,
+    ).first()
+
+    if not user_skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    progress = db.query(UserModuleProgress).filter(
+        UserModuleProgress.user_skill_id == user_skill.id,
+        UserModuleProgress.module_id == UUID(module_id),
+    ).first()
+
+    if not progress:
+        raise HTTPException(status_code=404, detail="Module progress not found")
+
+    now = datetime.now(timezone.utc)
+
+    # Update progress with proof
+    progress.status = "completed"
+    progress.progress_percentage = 100
+    progress.completed_at = now
+    progress.completion_type = payload.completion_type
+    progress.proof_description = payload.proof_description
+    progress.proof_link = payload.proof_link
+
+    # Get AI feedback if requested
+    ai_feedback = None
+    if payload.request_ai_review and payload.proof_description:
+        module = db.query(SkillModule).filter(SkillModule.id == UUID(module_id)).first()
+        module_title = module.title if module else "Module"
+        ai_feedback = await review_proof_submission(
+            skill_name=skill_name,
+            module_title=module_title,
+            proof_description=payload.proof_description,
+            proof_link=payload.proof_link,
+        )
+        progress.ai_feedback = ai_feedback
+
+    # Update skill proficiency and check completion
+    service = SkillProgressService(db, user_profile=current_user)
+    service._update_skill_proficiency(user_skill)
+    service._check_skill_completion(user_skill)
+
+    db.commit()
+
+    return {
+        "status": "completed",
+        "completed_at": progress.completed_at.isoformat(),
+        "completion_type": progress.completion_type,
+        "ai_feedback": ai_feedback,
+    }
+
+
+@router.post("/{skill_name}/modules/{module_id}/upload-proof")
+async def upload_module_proof(
+    skill_name: str,
+    module_id: str,
+    file: UploadFile = File(..., description="Proof file (PDF, image, etc.)"),
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload a file as proof of module completion.
+    File is stored in the database (PostgreSQL BYTEA).
+
+    Supported formats: PDF, PNG, JPG, JPEG, GIF, DOC, DOCX, TXT
+    Max size: 10MB
+    """
+    from app.models.skill_progress import UserModuleProgress, UserSkill
+
+    # Allowed extensions
+    ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'txt'}
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+    # Validate file extension
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type .{ext} not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+        )
+
+    # Read file content
+    content = await file.read()
+
+    # Validate file size
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Max size: {MAX_FILE_SIZE // (1024*1024)}MB"
+        )
+
+    # Find module progress
+    user_skill = db.query(UserSkill).filter(
+        UserSkill.user_id == current_user.id,
+        UserSkill.skill_name == skill_name,
+    ).first()
+
+    if not user_skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    progress = db.query(UserModuleProgress).filter(
+        UserModuleProgress.user_skill_id == user_skill.id,
+        UserModuleProgress.module_id == UUID(module_id),
+    ).first()
+
+    if not progress:
+        raise HTTPException(status_code=404, detail="Module progress not found")
+
+    # Store file in database
+    progress.proof_file_data = content
+    progress.proof_file_name = file.filename
+    progress.proof_file_type = file.content_type
+    progress.completion_type = "with_proof"
+
+    db.commit()
+
+    return {
+        "filename": file.filename,
+        "size": len(content),
+        "content_type": file.content_type,
+    }
+
+
+@router.get("/{skill_name}/modules/{module_id}/proof-file")
+async def get_module_proof_file(
+    skill_name: str,
+    module_id: str,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Download proof file for a module.
+    """
+    from app.models.skill_progress import UserModuleProgress, UserSkill
+    from fastapi.responses import Response
+
+    user_skill = db.query(UserSkill).filter(
+        UserSkill.user_id == current_user.id,
+        UserSkill.skill_name == skill_name,
+    ).first()
+
+    if not user_skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    progress = db.query(UserModuleProgress).filter(
+        UserModuleProgress.user_skill_id == user_skill.id,
+        UserModuleProgress.module_id == UUID(module_id),
+    ).first()
+
+    if not progress or not progress.proof_file_data:
+        raise HTTPException(status_code=404, detail="No proof file found")
+
+    return Response(
+        content=progress.proof_file_data,
+        media_type=progress.proof_file_type or "application/octet-stream",
+        headers={
+            "Content-Disposition": f'attachment; filename="{progress.proof_file_name or "proof"}"'
+        }
+    )
+
+
+@router.patch("/{skill_name}/modules/{module_id}/tasks")
+async def toggle_module_task(
+    skill_name: str,
+    module_id: str,
+    task_index: int = Body(..., ge=0, description="Index of the task to toggle"),
+    completed: bool = Body(..., description="Whether the task is completed"),
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Toggle completion status of a task within a module.
+
+    Tasks are tracked by their index in the practice_exercises array.
+    Progress percentage is updated based on completed tasks.
+    """
+    from app.models.skill_progress import UserModuleProgress, UserSkill, SkillModule
+
+    # Find the user skill and module progress
+    user_skill = db.query(UserSkill).filter(
+        UserSkill.user_id == current_user.id,
+        UserSkill.skill_name == skill_name,
+    ).first()
+
+    if not user_skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    progress = db.query(UserModuleProgress).filter(
+        UserModuleProgress.user_skill_id == user_skill.id,
+        UserModuleProgress.module_id == UUID(module_id),
+    ).first()
+
+    if not progress:
+        raise HTTPException(status_code=404, detail="Module progress not found")
+
+    # Get or initialize tasks_completed array
+    tasks = list(progress.tasks_completed or [])
+
+    # Toggle task completion
+    if completed and task_index not in tasks:
+        tasks.append(task_index)
+    elif not completed and task_index in tasks:
+        tasks.remove(task_index)
+
+    progress.tasks_completed = tasks
+
+    # Update progress percentage if we know total tasks
+    # Get module to check if it has learning content with practice exercises
+    module = db.query(SkillModule).filter(SkillModule.id == UUID(module_id)).first()
+
+    # If module has started, update status
+    if len(tasks) > 0 and progress.status == "not_started":
+        progress.status = "in_progress"
+        from datetime import datetime, timezone
+        progress.started_at = datetime.now(timezone.utc)
+
+    db.commit()
+
+    return {
+        "tasks_completed": tasks,
+        "task_count": len(tasks),
+        "status": progress.status,
+    }
+
+
+@router.post("/{skill_name}/modules/{module_id}/generate-content")
+async def generate_module_content(
+    skill_name: str,
+    module_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate AI-powered learning content for a module.
+
+    Returns personalized learning guide, external resources, and EY resources.
+    Content is saved to the database SYNCHRONOUSLY to ensure persistence.
+    If content already exists, returns it without regenerating.
+    """
+    from app.models.skill_progress import SkillModule, UserSkill
+    from app.services.learning_content_service import generate_module_learning_content
+    from sqlalchemy import func
+
+    # Get module details (case-insensitive)
+    module = db.query(SkillModule).filter(SkillModule.id == UUID(module_id)).first()
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found. Please refresh the page.")
+
+    # FIX: Return existing content if already generated (avoids duplicate API calls)
+    if module.learning_content:
+        logger.info(f"Returning cached learning content for {skill_name} - {module.title}")
+        return {
+            "learning_guide": module.learning_content,
+            "external_resources": module.external_resources or [],
+            "ey_resources": module.ey_resources or [],
+            "practice_exercises": [],  # Not stored separately
+            "success_criteria": [],
+        }
+
+    # Get total modules for this skill (case-insensitive)
+    total_modules = db.query(SkillModule).filter(
+        func.lower(SkillModule.skill_name) == skill_name.lower()
+    ).count()
+
+    # Get user's current proficiency
+    user_skill = db.query(UserSkill).filter(
+        UserSkill.user_id == current_user.id,
+        UserSkill.skill_name == skill_name,
+    ).first()
+    current_proficiency = user_skill.proficiency_level if user_skill else 0
+
+    # Generate content
+    content = await generate_module_learning_content(
+        skill_name=skill_name,
+        module_number=module.module_number,
+        total_modules=total_modules,
+        module_title=module.title,
+        module_description=module.description or "",
+        skill_type=module.skill_type,
+        current_proficiency=current_proficiency,
+    )
+
+    # FIX: Save content SYNCHRONOUSLY (not in background) to ensure it persists
+    module.learning_content = content.get("learning_guide", "")
+    module.external_resources = content.get("external_resources", [])
+    module.ey_resources = content.get("ey_resources", [])
+    db.commit()
+    logger.info(f"Saved learning content for {skill_name} - {module.title}")
+
+    return content
+
+
+@router.post("/quick-add")
+async def quick_add_skill(
+    payload: QuickAddSkillRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Quick-add a skill from job gaps to user's profile.
+
+    Skills added this way start at proficiency 0 and don't count
+    toward job matching until the user reaches proficiency 3.
+    """
+    service = SkillProgressService(db, user_profile=current_user)
+
+    user_skill = service.start_skill(
+        user_id=current_user.id,
+        skill_name=payload.skill_name,
+        source=payload.source,
+        initial_proficiency=0,  # Job gap skills start at 0
+    )
+
+    return {
+        "skill_id": str(user_skill.id),
+        "skill_name": user_skill.skill_name,
+        "proficiency": user_skill.proficiency_level,
+        "source": user_skill.source,
+        "counts_for_matching": False,  # Starts at 0, needs to reach 3
+    }
+
+
+@router.get("/stale")
+async def get_stale_skills(
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Get skills that haven't been updated in 6+ months.
+
+    These skills may need refreshing or validation to ensure
+    they still reflect the user's current abilities.
+    """
+    service = SkillProgressService(db, user_profile=current_user)
+    stale_skills = service.get_skills_needing_update(current_user.id)
+
+    return {
+        "stale_skills": stale_skills,
+        "count": len(stale_skills),
+    }
 
 
 # ============================================
@@ -943,6 +1364,7 @@ async def get_stats(
 class SkillGroupingRequest(BaseModel):
     skills: List[str] = Field(..., description="List of skill names to group")
     career_context: Optional[str] = Field(None, description="Optional career goals context")
+    source: str = Field(default="manual", description="Source of skills: resume, manual, job_gap")
 
 
 class SkillEnhanceRequest(BaseModel):
@@ -969,6 +1391,9 @@ async def group_skills(
     """
     from app.services.skill_grouping_service import generate_skill_groupings
 
+    # DEBUG: Log incoming source parameter
+    logger.info(f"GROUP_SKILLS: source='{request.source}', skills={request.skills[:5]}...")
+
     result = await generate_skill_groupings(
         skills=request.skills,
         context=request.career_context
@@ -980,14 +1405,25 @@ async def group_skills(
     db.flush()  # Flush so skill_groupings is available for progress service
 
     # Create UserSkill tracking records for all skills using AI-generated modules
+    # Resume skills start at proficiency 3 (assumed proficient), others start at 0
+    # Use auto_commit=False to batch all operations into a single transaction
+    initial_proficiency = 3 if request.source == "resume" else 0
+    logger.info(f"GROUP_SKILLS: Setting initial_proficiency={initial_proficiency} for source='{request.source}'")
+
     service = SkillProgressService(db, user_profile=current_user)
     for skill_name in request.skills:
         try:
-            service.start_skill(current_user.id, skill_name)
+            service.start_skill(
+                current_user.id,
+                skill_name,
+                source=request.source,
+                initial_proficiency=initial_proficiency,
+                auto_commit=False,  # Batch - commit once at the end
+            )
         except Exception as e:
-            logger.debug(f"Skill tracking for {skill_name}: {e}")
+            logger.warning(f"Skill tracking for {skill_name} failed: {e}")
 
-    db.commit()
+    db.commit()  # Single commit for all skills
     logger.info(f"Generated groupings with {len(result.get('categories', []))} categories and created tracking")
 
     return result
@@ -1030,18 +1466,25 @@ async def enhance_skills(
 
         # Create UserSkill tracking records for new skills
         # Pass the updated user_profile so service can access new groupings
+        # Use auto_commit=False to batch all operations into a single transaction
         db.add(current_user)
         db.flush()  # Flush so user_profile.skill_groupings is available
 
         service = SkillProgressService(db, user_profile=current_user)
         for skill_name in new_skills_to_add:
             try:
-                service.start_skill(current_user.id, skill_name)
+                service.start_skill(
+                    current_user.id,
+                    skill_name,
+                    source="job_gap",
+                    initial_proficiency=0,  # Job gap skills start at 0
+                    auto_commit=False,  # Batch - commit once at the end
+                )
                 logger.info(f"Created progress tracking for skill: {skill_name}")
             except Exception as e:
                 logger.warning(f"Could not create tracking for {skill_name}: {e}")
 
-    db.commit()
+    db.commit()  # Single commit for all changes
 
     return result
 
@@ -1306,3 +1749,87 @@ async def delete_module(
     db.commit()
 
     return {"deleted": True, "module_id": module_id}
+
+
+# ============================================
+# Skill Maintenance Endpoints
+# ============================================
+
+@router.get(
+    "/debug/modules/{skill_name}",
+    summary="Debug: Get module content status",
+    description="Check if modules have learning content in database."
+)
+async def debug_module_content(
+    skill_name: str,
+    db: Session = Depends(get_db),
+):
+    """Debug endpoint to check module content directly from database."""
+    from app.models.skill_progress import SkillModule
+    from sqlalchemy import func
+
+    modules = db.query(SkillModule).filter(
+        func.lower(SkillModule.skill_name) == skill_name.lower()
+    ).order_by(SkillModule.sequence_order).all()
+
+    return {
+        "skill_name": skill_name,
+        "modules": [
+            {
+                "id": str(m.id),
+                "title": m.title,
+                "has_content": bool(m.learning_content),
+                "content_length": len(m.learning_content) if m.learning_content else 0,
+                "content_preview": m.learning_content[:100] if m.learning_content else None,
+            }
+            for m in modules
+        ]
+    }
+
+
+@router.post(
+    "/recategorize",
+    summary="Recategorize all user skills",
+    description="Re-run skill categorization with updated keyword matching for all user skills."
+)
+async def recategorize_skills(
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Recategorize all skills for the current user using the updated categorizer.
+
+    This is useful after the categorizer keywords have been expanded to
+    fix skills that were incorrectly categorized as 'business_acumen' or 'other'.
+    """
+    from app.models.skill_progress import UserSkill
+
+    user_skills = db.query(UserSkill).filter(
+        UserSkill.user_id == current_user.id
+    ).all()
+
+    updated_count = 0
+    changes = []
+
+    for skill in user_skills:
+        old_category = skill.category
+        new_category = categorize_skill(skill.skill_name)
+
+        if old_category != new_category:
+            skill.category = new_category
+            changes.append({
+                "skill": skill.skill_name,
+                "old_category": old_category,
+                "new_category": new_category,
+            })
+            updated_count += 1
+
+    db.commit()
+
+    logger.info(f"Recategorized {updated_count} skills for user {current_user.id}")
+
+    return {
+        "updated_count": updated_count,
+        "total_skills": len(user_skills),
+        "changes": changes,
+    }
