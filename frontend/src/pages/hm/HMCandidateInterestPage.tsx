@@ -2,7 +2,79 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useHiringManager } from '../../context/HiringManagerContext';
-import { CandidateInterestResponse } from '../../services/hiringManagerService';
+import { CandidateInterestResponse, AnonymizedCandidateDetail } from '../../services/hiringManagerService';
+import SkillGapDisplay from '../../components/matches/SkillGapDisplay';
+
+// Fit level colors and labels
+const fitLevelConfig = {
+  strong_fit: { color: '#22c55e', label: 'Strong Fit', bg: 'rgba(34, 197, 94, 0.15)' },
+  good_fit: { color: '#84cc16', label: 'Good Fit', bg: 'rgba(132, 204, 22, 0.15)' },
+  moderate_fit: { color: '#eab308', label: 'Moderate Fit', bg: 'rgba(234, 179, 8, 0.15)' },
+  developing: { color: '#f97316', label: 'Developing', bg: 'rgba(249, 115, 22, 0.15)' },
+};
+
+interface CandidateCardProps {
+  candidate: AnonymizedCandidateDetail;
+  colors: typeof themeColors.dark;
+  isDark: boolean;
+}
+
+function CandidateCard({ candidate, colors, isDark }: CandidateCardProps) {
+  const fitConfig = fitLevelConfig[candidate.fit_level];
+  const scorePercentage = Math.round(candidate.overall_score * 100);
+
+  return (
+    <div
+      className="p-6 rounded-lg"
+      style={{
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.cardBg,
+        border: `1px solid ${colors.cardBorder}`,
+      }}
+    >
+      {/* Header: Candidate label + Score */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-3">
+          <h4 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+            {candidate.candidate_label}
+          </h4>
+          <span
+            className="px-2 py-1 text-xs font-medium rounded"
+            style={{
+              backgroundColor: fitConfig.bg,
+              color: fitConfig.color,
+              border: `1px solid ${fitConfig.color}40`,
+            }}
+          >
+            {fitConfig.label}
+          </span>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold" style={{ color: colors.accent }}>
+            {scorePercentage}%
+          </div>
+          <div className="text-xs" style={{ color: colors.textMuted }}>
+            Overall Match
+          </div>
+        </div>
+      </div>
+
+      {/* Skills Display */}
+      <SkillGapDisplay
+        matched_skills={candidate.matched_skills}
+        transferable_skills={candidate.transferable_skills}
+        skill_gaps={candidate.skill_gaps}
+        skill_match_score={candidate.skill_match_score}
+        isDark={isDark}
+        colors={{
+          textPrimary: colors.textPrimary,
+          textSecondary: colors.textSecondary,
+          textMuted: colors.textMuted,
+          border: colors.cardBorder,
+        }}
+      />
+    </div>
+  );
+}
 
 export default function HMCandidateInterestPage() {
   const { jobPostingId } = useParams<{ jobPostingId: string }>();
@@ -266,6 +338,29 @@ export default function HMCandidateInterestPage() {
                 No employees have saved this job to their list yet.
                 Consider sending out a company-wide announcement about this opportunity.
               </p>
+            </div>
+          )}
+
+          {/* Individual Candidate Cards */}
+          {data.candidates && data.candidates.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4" style={{ color: colors.textPrimary }}>
+                Individual Candidate Profiles
+              </h3>
+              <p className="text-sm mb-6" style={{ color: colors.textMuted }}>
+                Anonymized skill profiles for each interested candidate
+              </p>
+
+              <div className="space-y-4">
+                {data.candidates.map((candidate) => (
+                  <CandidateCard
+                    key={candidate.candidate_label}
+                    candidate={candidate}
+                    colors={colors}
+                    isDark={isDark}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </>
