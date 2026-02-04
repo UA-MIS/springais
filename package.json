@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "playwright": "^1.57.0"
+  },
+  "dependencies": {
+    "reveal": "^0.0.4"
   }
 }

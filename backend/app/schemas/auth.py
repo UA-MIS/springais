@@ -19,6 +19,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     name: str
     role: str | None = None
+    account_type: str = "personal"  # 'personal' or 'hiring_manager'
 
 
 class AuthResponse(BaseModel):

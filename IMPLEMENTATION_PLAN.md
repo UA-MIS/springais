@@ -1,5 +1,376 @@
 # SpringAIS Implementation Plan
 
+---
+
+# NEW: Skills System Bug Fixes (2026-02-02)
+
+## Summary of New Issues
+
+| # | Issue | Root Cause | Priority |
+|---|-------|------------|----------|
+| 1 | Modules show "0 of 4" on first load | Modules not created until user clicks "Start" | HIGH |
+| 2 | Resume skills marked proficiency 0 | `start_skill()` returns early for existing skills | HIGH |
+| 3 | Proficiency update doesn't visually update | Modal not refreshing parent state properly | MEDIUM |
+| 4 | Start button does nothing | Modules don't exist in DB yet | HIGH |
+| 5 | No submit button for tasks | Task tracking not implemented | MEDIUM |
+| 6 | Learning plans disappear on page exit | Content saved but modules may not exist | HIGH |
+| 7 | Plans should be shareable across accounts | Need to ensure content persists and is reused | MEDIUM |
+| 8 | Module completion vs proficiency unclear | Need better UI feedback | LOW |
+
+---
+
+## Issue 1 & 4: Modules Not Created / Start Button Does Nothing
+
+### Root Cause
+When skills are created via resume upload, `UserSkill` records are created but `SkillModule` and `UserModuleProgress` records are NOT created until `start_skill()` is called AND only if the skill doesn't already exist.
+
+The `start_skill()` method returns early if the skill exists:
+```python
+existing = self.db.query(UserSkill).filter(...).first()
+if existing:
+    return existing  # Returns WITHOUT creating modules!
+```
+
+### Solution
+Modify `start_skill()` to ALWAYS ensure modules exist:
+
+**File:** `backend/app/services/skill_progress_service.py`
+
+```python
+def start_skill(
+    self,
+    user_id: UUID,
+    skill_name: str,
+    source: str = "manual",
+    initial_proficiency: int = 0,
+    auto_commit: bool = True,
+) -> UserSkill:
+    existing = self.db.query(UserSkill).filter(
+        UserSkill.user_id == user_id,
+        UserSkill.skill_name == skill_name,
+    ).first()
+
+    if existing:
+        # STILL ensure modules exist even for existing skills
+        skill_type = self._determine_skill_type(skill_name)
+        modules = self._ensure_modules_exist(skill_name, skill_type)
+
+        # Create UserModuleProgress for any missing modules
+        existing_module_ids = {p.module_id for p in self._get_module_progress(existing.id)}
+        for module in modules:
+            if module.id not in existing_module_ids:
+                progress = UserModuleProgress(
+                    user_skill_id=existing.id,
+                    module_id=module.id,
+                    status="not_started",
+                )
+                self.db.add(progress)
+
+        if auto_commit:
+            self.db.commit()
+        return existing
+
+    # ... rest of existing code for new skills
+```
+
+---
+
+## Issue 2: Resume Skills Marked as Proficiency 0
+
+### Root Cause
+Two potential issues:
+1. Skills may already exist from another code path with proficiency 0
+2. The `start_skill()` method returns early for existing skills without updating proficiency
+
+### Solution
+Add ability to update proficiency for existing skills:
+
+**File:** `backend/app/services/skill_progress_service.py`
+
+```python
+def start_skill(
+    self,
+    user_id: UUID,
+    skill_name: str,
+    source: str = "manual",
+    initial_proficiency: int = 0,
+    auto_commit: bool = True,
+) -> UserSkill:
+    existing = self.db.query(UserSkill).filter(
+        UserSkill.user_id == user_id,
+        UserSkill.skill_name == skill_name,
+    ).first()
+
+    if existing:
+        # If new proficiency is higher (e.g., resume says proficient), update it
+        if initial_proficiency > existing.proficiency_level:
+            existing.proficiency_level = initial_proficiency
+            existing.last_updated_at = datetime.now(timezone.utc)
+            self._sync_skill_to_profile(user_id, skill_name, initial_proficiency)
+
+        # Ensure modules exist (from Issue 1 fix)
+        skill_type = self._determine_skill_type(skill_name)
+        modules = self._ensure_modules_exist(skill_name, skill_type)
+        # ... create missing progress records
+
+        if auto_commit:
+            self.db.commit()
+        return existing
+```
+
+Also add debug logging to verify source parameter:
+
+**File:** `backend/app/routes/skills.py`
+
+```python
+@router.post("/group")
+async def group_skills(request: SkillGroupingRequest, ...):
+    logger.info(f"GROUP SKILLS: source={request.source}, skills={request.skills[:3]}...")
+    initial_proficiency = 3 if request.source == "resume" else 0
+    logger.info(f"Setting initial_proficiency={initial_proficiency}")
+    # ...
+```
+
+---
+
+## Issue 3: Proficiency Update Doesn't Visually Update
+
+### Root Cause
+`handleProficiencyChange` calls `onRefresh?.()` but the local state (`proficiencyLevel`) is derived from the original `skill` prop, not from `editedSkill` or refreshed data.
+
+### Solution
+Update local state immediately and ensure proper refresh:
+
+**File:** `frontend/src/components/skills/SkillDetailModal.jsx`
+
+```javascript
+const handleProficiencyChange = async (newLevel) => {
+  setProficiencyUpdating(true);
+  try {
+    const result = await updateProficiency(skill.name, newLevel);
+    // Update editedSkill state for immediate visual feedback
+    setEditedSkill(prev => ({
+      ...prev,
+      proficiency_level: result.proficiency_level,
+      proficiency_label: PROFICIENCY_LABELS[result.proficiency_level],
+      counts_for_matching: result.counts_for_matching,
+    }));
+    // Refresh parent data
+    onRefresh?.();
+  } catch (error) {
+    console.error('Failed to update proficiency:', error);
+  } finally {
+    setProficiencyUpdating(false);
+  }
+};
+
+// Update proficiencyLevel to use editedSkill state
+const proficiencyLevel = editedSkill.proficiency_level ?? skill.proficiency_level ?? 0;
+```
+
+---
+
+## Issue 5: No Submit Button for Tasks
+
+### Current State
+Modules have practice_exercises but no way to track individual task completion.
+
+### Solution
+Add task tracking with checkboxes:
+
+**Database Migration:**
+```python
+# Add tasks_completed column to user_module_progress
+op.add_column('user_module_progress',
+    sa.Column('tasks_completed', postgresql.JSONB, server_default='[]')
+)
+```
+
+**Backend Endpoint:**
+```python
+@router.patch("/{skill_name}/modules/{module_id}/tasks")
+async def toggle_task(
+    skill_name: str,
+    module_id: str,
+    task_index: int = Body(...),
+    completed: bool = Body(...),
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+):
+    """Toggle task completion within a module."""
+    progress = get_module_progress(...)
+    tasks = progress.tasks_completed or []
+
+    if completed and task_index not in tasks:
+        tasks.append(task_index)
+    elif not completed and task_index in tasks:
+        tasks.remove(task_index)
+
+    progress.tasks_completed = tasks
+
+    # Update progress_percentage based on tasks completed
+    total_tasks = len(content.practice_exercises)  # Need to get from module
+    progress.progress_percentage = int(len(tasks) / total_tasks * 100) if total_tasks else 0
+
+    db.commit()
+    return {"tasks_completed": tasks, "progress": progress.progress_percentage}
+```
+
+**Frontend UI:**
+```jsx
+{content.practice_exercises?.map((exercise, idx) => (
+  <label key={idx} className="flex items-start gap-2 cursor-pointer">
+    <input
+      type="checkbox"
+      checked={tasksCompleted.includes(idx)}
+      onChange={() => handleToggleTask(module.id, idx)}
+      className="mt-1 rounded"
+    />
+    <span className={tasksCompleted.includes(idx) ? 'line-through opacity-60' : ''}>
+      {exercise}
+    </span>
+  </label>
+))}
+```
+
+---
+
+## Issue 6: Learning Plans Disappear on Page Exit
+
+### Root Cause
+Learning content IS saved to `SkillModule` table, but:
+1. Modules may not exist when "Generate" is clicked
+2. Frontend checks `module.learning_content` but modules array may be empty
+
+### Solution
+
+1. **Ensure modules exist before generating content:**
+```python
+@router.post("/{skill_name}/modules/{module_id}/generate-content")
+async def generate_module_content(...):
+    module = db.query(SkillModule).filter(SkillModule.id == UUID(module_id)).first()
+    if not module:
+        raise HTTPException(404, "Module not found. Please refresh the page.")
+
+    # Return existing content if already generated
+    if module.learning_content:
+        return {
+            "learning_guide": module.learning_content,
+            "external_resources": module.external_resources or [],
+            "ey_resources": module.ey_resources or [],
+            "practice_exercises": [],
+            "success_criteria": [],
+        }
+
+    # Generate new content and save SYNCHRONOUSLY (not background)
+    content = await generate_module_learning_content(...)
+    module.learning_content = content.get("learning_guide", "")
+    module.external_resources = content.get("external_resources", [])
+    module.ey_resources = content.get("ey_resources", [])
+    db.commit()  # Synchronous commit
+
+    return content
+```
+
+2. **Pre-load content from module data in frontend:**
+```javascript
+// In SkillDetailModal, initialize moduleContent from existing module data
+useEffect(() => {
+  const initialContent = {};
+  (skill?.modules || []).forEach(module => {
+    if (module.learning_content) {
+      initialContent[module.id] = {
+        learning_guide: module.learning_content,
+        external_resources: module.external_resources || [],
+        ey_resources: module.ey_resources || [],
+      };
+    }
+  });
+  setModuleContent(initialContent);
+}, [skill]);
+```
+
+---
+
+## Issue 7: Plans Should Be Shareable Across Accounts
+
+### Current State
+`SkillModule` is already shared across users (not user-specific). The `learning_content`, `external_resources`, and `ey_resources` are stored at the module level.
+
+### Potential Issue
+Module lookup might not be finding existing modules due to case sensitivity.
+
+### Solution
+Use case-insensitive lookup:
+
+```python
+def _get_skill_modules(self, skill_name: str) -> List[SkillModule]:
+    return self.db.query(SkillModule).filter(
+        func.lower(SkillModule.skill_name) == skill_name.lower()
+    ).order_by(SkillModule.sequence_order).all()
+```
+
+---
+
+## Issue 8: Module Completion vs Proficiency Correlation
+
+### Current Logic
+```
+0-20% module avg = proficiency 1
+20-40% = proficiency 2
+40-60% = proficiency 3
+60-80% = proficiency 4
+80-100% = proficiency 5
+```
+
+### Solution
+Add UI feedback showing impact:
+
+```jsx
+{module.status === 'in_progress' && (
+  <p className="text-xs text-gray-500 mt-1">
+    Completing this module will increase proficiency to Level {getPredictedProficiency()}
+  </p>
+)}
+```
+
+---
+
+## Implementation Priority
+
+### Phase 1 (Critical - Fix Core Bugs)
+1. **Issue 1 + 4:** Module creation fix in `start_skill()`
+2. **Issue 2:** Proficiency update for existing skills + logging
+3. **Issue 6:** Synchronous content save + frontend pre-load
+
+### Phase 2 (Important - UX)
+4. **Issue 3:** Proficiency visual update fix
+5. **Issue 7:** Case-insensitive module lookup
+
+### Phase 3 (Enhancement)
+6. **Issue 5:** Task tracking implementation
+7. **Issue 8:** Proficiency prediction UI
+
+---
+
+## Files to Modify
+
+### Backend
+- `backend/app/services/skill_progress_service.py` - Module creation, proficiency update
+- `backend/app/routes/skills.py` - Logging, sync content save, task endpoint
+- `backend/app/models/skill_progress.py` - Add tasks_completed field
+
+### Frontend
+- `frontend/src/components/skills/SkillDetailModal.jsx` - Visual refresh, task UI, content preload
+
+### Database Migration Needed
+- Add `tasks_completed JSONB` column to `user_module_progress` table
+
+---
+---
+
+# PREVIOUS: Original Implementation Plan
+
 ## Overview
 
 This plan addresses three major issues identified in the system:

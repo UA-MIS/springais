@@ -29,7 +29,9 @@ Rules:
 - Don't force skills into categories that don't fit
 - A skill can only belong to one category
 - Categories should have at least 2 skills to be meaningful
-- Single skills that don't fit elsewhere can be grouped as "Other Skills"
+- IMPORTANT: Programming languages and frameworks (C#, .NET, Python, JavaScript, React, Java, TypeScript, etc.) MUST go in a "Programming & Development" category, never in "Other Skills"
+- Only use "Other Skills" as an absolute last resort for truly obscure skills that don't fit any logical category
+- If a skill involves writing code, configuring systems, or technical work, it belongs in a technical category
 - Module names should be actionable learning objectives
 - Keep category names concise (2-4 words)
 
@@ -166,17 +168,17 @@ def _create_fallback_grouping(skills: List[str]) -> Dict[str, Any]:
         "programming": {
             "name": "Programming & Development",
             "emoji": "code",
-            "keywords": ["python", "java", "javascript", "react", "node", "sql", "html", "css", "api", "code", "develop"],
+            "keywords": ["python", "java", "javascript", "react", "node", "sql", "html", "css", "api", "code", "develop", "c#", "csharp", "c++", ".net", "asp.net", "typescript", "angular", "vue", "django", "flask", "spring", "ruby", "php", "go", "golang", "rust", "kotlin", "swift", "scala", "programming", "software", "backend", "frontend", "fullstack"],
         },
         "cloud": {
             "name": "Cloud & Infrastructure",
             "emoji": "cloud",
-            "keywords": ["aws", "azure", "gcp", "cloud", "docker", "kubernetes", "devops", "terraform"],
+            "keywords": ["aws", "azure", "gcp", "cloud", "docker", "kubernetes", "devops", "terraform", "jenkins", "ci/cd", "cicd", "ansible", "puppet", "chef", "infrastructure", "serverless", "lambda", "ec2", "s3"],
         },
         "data": {
             "name": "Data & Analytics",
             "emoji": "chart",
-            "keywords": ["data", "analytics", "machine learning", "ml", "ai", "tableau", "power bi", "statistics"],
+            "keywords": ["data", "analytics", "machine learning", "ml", "ai", "tableau", "power bi", "statistics", "pandas", "numpy", "scikit", "tensorflow", "pytorch", "deep learning", "nlp", "etl", "spark", "hadoop", "snowflake", "databricks"],
         },
         "leadership": {
             "name": "Leadership & Management",

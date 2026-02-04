@@ -84,10 +84,11 @@ export default function ResumeUpload({ onSkillsExtracted, clearSkills, theme }) 
 
     // Generate AI-powered skill groupings with personalized learning modules
     // Do this BEFORE notifying parent, so groupings exist when skills are refreshed
+    // Pass source='resume' so skills start at proficiency 3 (assumed proficient)
     const skillNames = selectedSkills.map(s => s.name);
     if (skillNames.length > 0 && generateSkillGroupings) {
       try {
-        await generateSkillGroupings(skillNames);
+        await generateSkillGroupings(skillNames, null, 'resume');
       } catch (err) {
         console.error('Failed to generate skill groupings:', err);
       }

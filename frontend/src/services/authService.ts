@@ -6,6 +6,7 @@ export interface User {
   name: string;
   role?: string | null;
   department?: string;
+  account_type: 'personal' | 'hiring_manager';
 }
 
 export interface LoginResponse {

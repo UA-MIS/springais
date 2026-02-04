@@ -4,7 +4,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import engine, Base
-from app.routes import auth_router, matches_router, skills_router, patterns_router, roadmap_router
+from app.routes import auth_router, hiring_manager_router, matches_router, skills_router, patterns_router, roadmap_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,4 +53,5 @@ app.include_router(matches_router, prefix="/api")
 app.include_router(skills_router, prefix="/api")
 app.include_router(patterns_router, prefix="/api")
 app.include_router(roadmap_router, prefix="/api")
+app.include_router(hiring_manager_router, prefix="/api")
 app.include_router(auth_router)

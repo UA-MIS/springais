@@ -16,6 +16,7 @@ from .base import Base, TimestampMixin
 if TYPE_CHECKING:
     from .career_path import CareerPath
     from .employee import Employee
+    from .hm_saved_job import HMSavedJob
     from .match import Match
     from .roadmap import SavedRoadmap
 
@@ -45,6 +46,13 @@ class UserProfile(Base, TimestampMixin):
     resume_file_url: Mapped[str | None] = mapped_column(String)
     skill_assessment_scores: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     onboarding_complete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Account type: 'personal' (default) or 'hiring_manager'
+    account_type: Mapped[str] = mapped_column(
+        String(20),
+        default="personal",
+        server_default="personal",
+        nullable=False,
+    )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # LLM-extracted skill columns
@@ -74,6 +82,12 @@ class UserProfile(Base, TimestampMixin):
     saved_roadmaps: Mapped[list["SavedRoadmap"]] = relationship(
         "SavedRoadmap",
         back_populates="user_profile",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    hm_saved_jobs: Mapped[list["HMSavedJob"]] = relationship(
+        "HMSavedJob",
+        back_populates="hm_user",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
