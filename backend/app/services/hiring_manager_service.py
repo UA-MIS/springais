@@ -22,6 +22,7 @@ from ..models.job_posting import JobPosting
 from ..models.match import Match
 from ..models.user_profile import UserProfile
 from ..models.skill_embedding import SkillEmbedding
+from ..utils.text import normalize_skill_text
 from ..schemas.hiring_manager import (
     HMSavedJobResponse,
     HMSavedJobsListResponse,
@@ -274,29 +275,28 @@ class HiringManagerService:
     # Semantic Skill Matching (pgvector)
     # ============================================================
 
-    def _get_job_skill_embeddings(
+    def _get_skill_embeddings_by_name(
         self,
-        job_posting_id: str,
-        required_skills: List[str],
+        skill_names: List[str],
     ) -> dict:
         """
-        Get embeddings for job's required skills from skill_embeddings table.
+        Get embeddings for skills by their normalized text.
+
+        Looks up any existing embedding for each skill (regardless of source).
+        This matches how the matching service builds skill embeddings.
 
         Returns dict of skill_name -> embedding vector
         """
-        if not required_skills:
+        if not skill_names:
             return {}
 
         embeddings = {}
-        for skill in required_skills:
-            # Query for job skill embedding
+        for skill in skill_names:
+            normalized = normalize_skill_text(skill)
+            # Query for any embedding with this normalized text
             result = (
                 self.db.query(SkillEmbedding)
-                .filter(
-                    SkillEmbedding.source_type == "job_posting",
-                    SkillEmbedding.source_id == job_posting_id,
-                    SkillEmbedding.skill_text == skill,
-                )
+                .filter(SkillEmbedding.normalized_text == normalized)
                 .first()
             )
             if result and result.embedding is not None:
@@ -352,13 +352,26 @@ class HiringManagerService:
             logger.debug(f"pgvector query failed: {e}")
             return 0.0, None
 
+    def _get_job_required_skills(self, job: JobPosting) -> List[str]:
+        """
+        Get the effective required skills for a job posting.
+
+        Uses LLM-extracted skills if available, falls back to regex-extracted.
+        This matches the logic in matching_service.py.
+        """
+        if job.llm_required_skills:
+            return [
+                s["name"] for s in job.llm_required_skills
+                if isinstance(s, dict) and s.get("name")
+            ]
+        return job.required_skills or []
+
     def _compute_transferable_skills(
         self,
         user_id: str,
-        job_posting_id: str,
+        job: JobPosting,
         matched_skills: List[str],
-        skill_gaps: List[str],
-    ) -> List[str]:
+    ) -> Tuple[List[str], List[str]]:
         """
         Compute transferable skills for a candidate using pgvector semantic matching.
 
@@ -367,50 +380,61 @@ class HiringManagerService:
 
         Args:
             user_id: The candidate's user profile ID
-            job_posting_id: The job posting ID
+            job: The job posting object
             matched_skills: Already matched skills (to exclude)
-            skill_gaps: Skills identified as gaps (these are what we check for transferable)
 
         Returns:
-            List of transferable skills in format "Required Skill (via User Skill)"
+            Tuple of (transferable_skills, true_skill_gaps)
+            - transferable_skills: List in format "Required Skill (via User Skill)"
+            - true_skill_gaps: Skills that are genuine gaps (similarity < 0.50)
         """
         transferable = []
+        true_gaps = []
 
-        # Get job skill embeddings for the skill gaps
-        # (matched skills already have high similarity, so we only check gaps)
-        job_skill_embeddings = self._get_job_skill_embeddings(job_posting_id, skill_gaps)
+        # Get full list of required skills from job (like matching service does)
+        required_skills = self._get_job_required_skills(job)
+        if not required_skills:
+            return transferable, true_gaps
 
-        if not job_skill_embeddings:
-            logger.debug(f"No job skill embeddings found for gaps: {skill_gaps}")
-            return transferable
+        # Get embeddings for all required skills
+        skill_embeddings = self._get_skill_embeddings_by_name(required_skills)
 
         matched_lower = {s.lower() for s in matched_skills}
 
-        for skill_gap in skill_gaps:
-            job_embedding = job_skill_embeddings.get(skill_gap)
-            if job_embedding is None:
+        for required_skill in required_skills:
+            # Skip already matched skills
+            if required_skill.lower() in matched_lower:
+                continue
+
+            skill_embedding = skill_embeddings.get(required_skill)
+            if skill_embedding is None:
+                # No embedding - count as gap
+                true_gaps.append(required_skill)
                 continue
 
             # Use pgvector to find best matching user skill
             similarity, user_skill = self._pgvector_best_match(
-                list(job_embedding), user_id
+                list(skill_embedding), user_id
             )
 
-            # Check if it's a transferable skill (>= 0.50 but < 0.65)
-            if (
-                similarity >= SKILL_TRANSFERABLE_THRESHOLD
-                and similarity < SKILL_MATCH_THRESHOLD
-                and user_skill
-            ):
-                # Don't include if it's already in matched skills
+            # Categorize based on similarity threshold
+            if similarity >= SKILL_MATCH_THRESHOLD:
+                # High similarity - should have been in matched_skills
+                # This shouldn't happen often, but skip it
+                continue
+            elif similarity >= SKILL_TRANSFERABLE_THRESHOLD and user_skill:
+                # Transferable skill (>= 0.50 but < 0.65)
                 if user_skill.lower() not in matched_lower:
-                    transferable.append(f"{skill_gap} (via {user_skill})")
+                    transferable.append(f"{required_skill} (via {user_skill})")
                     logger.debug(
-                        f"Transferable skill found: '{user_skill}' -> '{skill_gap}' "
+                        f"Transferable skill found: '{user_skill}' -> '{required_skill}' "
                         f"(similarity: {similarity:.3f})"
                     )
+            else:
+                # True gap (< 0.50)
+                true_gaps.append(required_skill)
 
-        return transferable
+        return transferable, true_gaps
 
     # ============================================================
     # Candidate Interest (ANONYMIZED)
@@ -499,25 +523,17 @@ class HiringManagerService:
             # Compute transferable skills on-demand using pgvector semantic matching
             transferable_skills = []
             final_skill_gaps = match.skill_gaps or []
-            if match.user_id and match.skill_gaps:
+            if match.user_id:
                 try:
-                    transferable_skills = self._compute_transferable_skills(
+                    transferable_skills, final_skill_gaps = self._compute_transferable_skills(
                         user_id=str(match.user_id),
-                        job_posting_id=job_posting_id,
+                        job=job,
                         matched_skills=match.matched_skills or [],
-                        skill_gaps=match.skill_gaps,
                     )
-                    # Remove skills from gaps that are now transferable
-                    # Transferable format: "Required Skill (via User Skill)"
-                    transferable_required = {
-                        t.split(" (via ")[0] for t in transferable_skills
-                    }
-                    final_skill_gaps = [
-                        gap for gap in match.skill_gaps
-                        if gap not in transferable_required
-                    ]
                 except Exception as e:
                     logger.warning(f"Failed to compute transferable skills: {e}")
+                    # Fall back to stored skill_gaps
+                    final_skill_gaps = match.skill_gaps or []
 
             # Collect final skill gaps for aggregate statistics
             all_skill_gaps.extend(final_skill_gaps)
