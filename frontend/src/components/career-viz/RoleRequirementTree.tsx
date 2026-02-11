@@ -1,92 +1,174 @@
-import { useMemo, useState, useEffect, useCallback } from 'react'
+import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import ReactFlow, { Background, Controls, Position } from 'reactflow'
 import type { Edge, Node, NodeChange } from 'reactflow'
 
-import { SkillNode, SkillNodeData } from './SkillNode'
+import { SkillNode } from './SkillNode'
+import type { SkillNodeData } from './SkillNode'
 import { SkillPlanEdge } from './SkillPlanEdge'
-import { useTheme, themeColors } from '../../context/ThemeContext'
 import api from '../../services/api'
+import { useTheme, themeColors } from '../../context/ThemeContext'
 
 const nodeTypes = { skillNode: SkillNode }
 const edgeTypes = { skillPlanEdge: SkillPlanEdge }
 
-type Props = {
-  roleId: string  // This is now the job_id from the match
-  jobId?: string  // Explicit job ID if available
-  onPlanGenerated?: (summary: any) => void  // Callback with plan summary
-  onNodesReceived?: (nodes: Node<SkillNodeData>[], edges: Edge[]) => void  // Callback with nodes and edges for path extraction
-  onNodeClick?: (nodeId: string, nodeData: SkillNodeData) => void  // Callback for node clicks
-  selectedPath?: string | null  // Filter by path/category
-  isCustomizing?: boolean
+// Category color mapping for edges
+const CATEGORY_EDGE_COLORS: Record<string, string> = {
+  Technical: '#06b6d4',
+  Leadership: '#eab308',
+  Domain: '#c026d3',
+  Tools: '#22c55e',
 }
 
-// Radial layout: places nodes in concentric circles around the root
+type Props = {
+  roleId: string
+  jobId?: string
+  onPlanGenerated?: (summary: any) => void
+  onNodesReceived?: (nodes: Node<SkillNodeData>[], edges: Edge[]) => void
+  onNodeClick?: (nodeId: string, nodeData: SkillNodeData) => void
+  selectedPath?: string | null
+  isCustomizing?: boolean
+  matchedSkills?: string[]
+  transferableSkills?: string[]
+}
+
+// Normalize skill name for comparison
+function normalizeSkill(s: string): string {
+  return s.toLowerCase().trim()
+}
+
+// Parse transferable skill name, stripping the "(via ...)" suffix
+// Backend returns strings like "Project Management (via Project Management Life Cycle (PMLC))"
+function parseTransferableSkillName(s: string): string {
+  const viaIndex = s.indexOf(' (via ')
+  return viaIndex >= 0 ? s.substring(0, viaIndex) : s
+}
+
+// Polygon forking-tree layout: category hubs at polygon vertices, skills fan outward
 function radialLayout(
   nodes: Array<Node<SkillNodeData>>,
   edges: Array<Edge>,
   centerX: number,
   centerY: number
 ): Array<Node<SkillNodeData>> {
-  // Build adjacency from edges (parent -> children)
   const children = new Map<string, string[]>()
   for (const edge of edges) {
     if (!children.has(edge.source)) children.set(edge.source, [])
     children.get(edge.source)!.push(edge.target)
   }
 
-  // Find root (node with no incoming edges)
   const hasParent = new Set(edges.map((e) => e.target))
   const root = nodes.find((n) => !hasParent.has(n.id))
   if (!root) return nodes
 
   const positioned = new Map<string, { x: number; y: number }>()
 
-  // BFS to get levels
-  const levels: string[][] = []
-  const visited = new Set<string>()
-  let queue = [root.id]
-  visited.add(root.id)
+  const nodeMap = new Map<string, Node<SkillNodeData>>()
+  for (const n of nodes) {
+    nodeMap.set(n.id, n)
+  }
 
-  while (queue.length > 0) {
-    levels.push([...queue])
-    const nextQueue: string[] = []
-    for (const nodeId of queue) {
-      const nodeChildren = children.get(nodeId) || []
-      for (const childId of nodeChildren) {
-        if (!visited.has(childId)) {
-          visited.add(childId)
-          nextQueue.push(childId)
+  const nodeWidth = 80
+  const nodeHeight = 80
+
+  // Place root (YOU) at center
+  positioned.set(root.id, { x: centerX - nodeWidth / 2, y: centerY - nodeHeight / 2 })
+
+  // Place target node slightly above center if present
+  const targetNode = nodes.find((n) => n.data.kind === 'target')
+  if (targetNode) {
+    positioned.set(targetNode.id, { x: centerX - nodeWidth / 2, y: centerY - 60 - nodeHeight / 2 })
+  }
+
+  // Identify category hubs (level 1 children of root)
+  const categoryHubIds = children.get(root.id) || []
+  // Filter out target node from category hubs
+  const hubs = categoryHubIds.filter((id) => {
+    const n = nodeMap.get(id)
+    return n && n.data.kind !== 'target'
+  })
+
+  const N = hubs.length
+  if (N === 0) {
+    return nodes.map((n) => ({
+      ...n,
+      position: positioned.get(n.id) || n.position,
+    }))
+  }
+
+  // Polygon parameters
+  const hubRadius = 450
+  const startAngle = -Math.PI / 2 // first hub at top
+  const angleStep = (2 * Math.PI) / N
+  const rowSpacing = 120
+  const nodeSpacing = 90
+
+  // Collect all skill descendants for each hub (BFS from hub, excluding root)
+  function collectDescendants(hubId: string): string[] {
+    const result: string[] = []
+    const queue = [hubId]
+    const visited = new Set<string>([hubId])
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      const kids = children.get(current) || []
+      for (const kid of kids) {
+        if (!visited.has(kid)) {
+          visited.add(kid)
+          result.push(kid)
+          queue.push(kid)
         }
       }
     }
-    queue = nextQueue
+    return result
   }
 
-  // Position nodes in concentric circles with better spacing
-  const nodeWidth = 160
-  const nodeHeight = 50
-  const levelRadius = [0, 180, 350, 500] // Distance from center for each level - increased spacing
+  hubs.forEach((hubId, index) => {
+    const angle = startAngle + index * angleStep
+    const hx = centerX + hubRadius * Math.cos(angle)
+    const hy = centerY + hubRadius * Math.sin(angle)
 
-  for (let level = 0; level < levels.length; level++) {
-    const nodesAtLevel = levels[level]
-    const radius = levelRadius[Math.min(level, levelRadius.length - 1)]
+    // Position the hub
+    positioned.set(hubId, { x: hx - nodeWidth / 2, y: hy - nodeHeight / 2 })
 
-    if (level === 0) {
-      // Root at center
-      positioned.set(nodesAtLevel[0], { x: centerX - nodeWidth / 2, y: centerY - nodeHeight / 2 })
-    } else {
-      // Distribute around the circle
-      const angleStep = (2 * Math.PI) / nodesAtLevel.length
-      const startAngle = -Math.PI / 2 // Start from top
+    // Outward unit vector (from center to hub)
+    const dist = Math.hypot(hx - centerX, hy - centerY) || 1
+    const outX = (hx - centerX) / dist
+    const outY = (hy - centerY) / dist
 
-      nodesAtLevel.forEach((nodeId, index) => {
-        const angle = startAngle + index * angleStep
-        const x = centerX + radius * Math.cos(angle) - nodeWidth / 2
-        const y = centerY + radius * Math.sin(angle) - nodeHeight / 2
-        positioned.set(nodeId, { x, y })
-      })
+    // Perpendicular vector (90-degree rotation for side-to-side spread)
+    const perpX = -outY
+    const perpY = outX
+
+    // Gather all skill descendants of this hub
+    const skills = collectDescendants(hubId)
+    if (skills.length === 0) return
+
+    // Arrange skills into expanding rows: row k has (k + 2) nodes capacity
+    const rows: string[][] = []
+    let remaining = [...skills]
+    let rowIndex = 0
+    while (remaining.length > 0) {
+      const rowCapacity = rowIndex + 2
+      const rowNodes = remaining.splice(0, rowCapacity)
+      rows.push(rowNodes)
+      rowIndex++
     }
-  }
+
+    // Position each row
+    rows.forEach((rowNodes, k) => {
+      const M = rowNodes.length
+      // Base position: hub + (k+1) * rowSpacing along outward direction
+      const baseX = hx + (k + 1) * rowSpacing * outX
+      const baseY = hy + (k + 1) * rowSpacing * outY
+
+      rowNodes.forEach((nodeId, j) => {
+        // Offset along perpendicular to spread nodes in the row
+        const offset = (j - (M - 1) / 2) * nodeSpacing
+        const x = baseX + offset * perpX
+        const y = baseY + offset * perpY
+        positioned.set(nodeId, { x: x - nodeWidth / 2, y: y - nodeHeight / 2 })
+      })
+    })
+  })
 
   return nodes.map((n) => ({
     ...n,
@@ -94,8 +176,8 @@ function radialLayout(
   }))
 }
 
-export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesReceived, onNodeClick, selectedPath, isCustomizing }: Props) {
-  const { theme, isDark, isGame } = useTheme()
+export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesReceived, onNodeClick, selectedPath, isCustomizing, matchedSkills, transferableSkills }: Props) {
+  const { theme, isDark } = useTheme()
   const colors = themeColors[theme]
   const [treeData, setTreeData] = useState<{ nodes: Node<SkillNodeData>[]; edges: Edge[] } | null>(null)
   const [loading, setLoading] = useState(false)
@@ -103,9 +185,12 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
   const [planGenerated, setPlanGenerated] = useState(false)
   const [customPositions, setCustomPositions] = useState<Record<string, { x: number; y: number }>>({})
 
-  // The effective job ID to use
   const effectiveJobId = jobId || roleId
-  const layoutStorageKey = `springais-skill-plan-layout:${effectiveJobId}`
+  const layoutStorageKey = `springais-skill-plan-layout-v2:${effectiveJobId}`
+
+  // Build match sets for cross-referencing (Issue 4)
+  const matchedSet = useMemo(() => new Set((matchedSkills || []).map(normalizeSkill)), [matchedSkills])
+  const transferableSet = useMemo(() => new Set((transferableSkills || []).map(s => normalizeSkill(parseTransferableSkillName(s)))), [transferableSkills])
 
   useEffect(() => {
     try {
@@ -125,13 +210,28 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
       const response = await api.post(`/skills/plan/${effectiveJobId}`)
       const data = response.data
 
-      // Convert API response to React Flow format
-      const nodes: Node<SkillNodeData>[] = data.nodes.map((n: any) => ({
-        id: n.id,
-        type: 'skillNode',
-        position: n.position || { x: 0, y: 0 },
-        data: n.data,
-      }))
+      const nodes: Node<SkillNodeData>[] = data.nodes.map((n: any) => {
+        const nodeData: SkillNodeData = {
+          ...n.data,
+          category: n.data.category || (n.data.kind === 'path' ? n.data.label : undefined),
+        }
+        // Cross-reference with match data (Issue 4)
+        if (nodeData.kind === 'skill') {
+          const label = normalizeSkill(nodeData.label)
+          if (matchedSet.has(label)) {
+            nodeData.has = true
+          } else if (transferableSet.has(label)) {
+            nodeData.has = true
+            nodeData.transferable = true
+          }
+        }
+        return {
+          id: n.id,
+          type: 'skillNode',
+          position: n.position || { x: 0, y: 0 },
+          data: nodeData,
+        }
+      })
 
       const edges: Edge[] = data.edges.map((e: any) => ({
         id: e.id,
@@ -142,15 +242,26 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
         style: e.style || { stroke: 'rgba(255,255,255,0.55)', strokeWidth: 2 },
       }))
 
+      // Infer category from parent edges for skill nodes missing category
+      const categoryFromEdge = new Map<string, string>()
+      for (const edge of edges) {
+        const sourceNode = nodes.find(n => n.id === edge.source)
+        if (sourceNode && sourceNode.data.kind === 'path') {
+          categoryFromEdge.set(edge.target, sourceNode.data.label)
+        }
+      }
+      for (const node of nodes) {
+        if (node.data.kind === 'skill' && !node.data.category) {
+          node.data.category = categoryFromEdge.get(node.id)
+        }
+      }
+
       setTreeData({ nodes, edges })
       setPlanGenerated(true)
-      
-      // Notify parent of plan generation with summary
+
       if (onPlanGenerated && data.summary) {
         onPlanGenerated(data.summary)
       }
-      
-      // Notify parent of nodes and edges for path extraction
       if (onNodesReceived) {
         onNodesReceived(nodes, edges)
       }
@@ -162,51 +273,71 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
     }
   }
 
+  // Build a lookup of nodeId -> category for edge coloring
+  const nodeCategoryMap = useMemo(() => {
+    if (!treeData) return new Map<string, string>()
+    const map = new Map<string, string>()
+    for (const node of treeData.nodes) {
+      if (node.data.category) {
+        map.set(node.id, node.data.category)
+      }
+    }
+    return map
+  }, [treeData])
+
+  // Build a lookup of nodeId -> has skill
+  const nodeHasMap = useMemo(() => {
+    if (!treeData) return new Map<string, boolean>()
+    const map = new Map<string, boolean>()
+    for (const node of treeData.nodes) {
+      map.set(node.id, node.data.has === true || node.data.kind === 'role')
+    }
+    return map
+  }, [treeData])
+
   const { nodes, edges } = useMemo(() => {
     if (!treeData) return { nodes: [] as Array<Node<SkillNodeData>>, edges: [] as Array<Edge> }
 
-    // Filter nodes/edges by selected path if provided
     let filteredNodes = treeData.nodes
     let filteredEdges = treeData.edges
 
     if (selectedPath) {
-      // Filter to show only nodes connected to the selected path category
       const pathNodeId = filteredNodes.find(n => n.data.kind === 'path' && n.data.label === selectedPath)?.id
       if (pathNodeId) {
         const connectedNodeIds = new Set<string>([pathNodeId])
-        // Add all skills connected to this path
         filteredEdges.forEach(edge => {
           if (edge.source === pathNodeId || connectedNodeIds.has(edge.source)) {
             connectedNodeIds.add(edge.target)
           }
         })
-        // Include the role node
         const roleNode = filteredNodes.find(n => n.data.kind === 'role')
         if (roleNode) connectedNodeIds.add(roleNode.id)
-        
+        const targetNode = filteredNodes.find(n => n.data.kind === 'target')
+        if (targetNode) connectedNodeIds.add(targetNode.id)
+
         filteredNodes = filteredNodes.filter(n => connectedNodeIds.has(n.id))
         filteredEdges = filteredEdges.filter(e => connectedNodeIds.has(e.source) && connectedNodeIds.has(e.target))
       }
     }
 
-    // Use radial layout centered in the container - adjust center for better view
+    // Responsive center: scale with node count to give more space for larger graphs
+    const nodeCount = filteredNodes.length
     const centerX = 500
-    const centerY = 400
+    const centerY = 500
     const bundleStrength = 0.55
     const layoutedNodes = radialLayout(filteredNodes, filteredEdges, centerX, centerY).map((node) => {
       const override = customPositions[node.id]
       if (!override) return node
-      return {
-        ...node,
-        position: override,
-      }
+      return { ...node, position: override }
     })
+
     const rootNodeId = layoutedNodes.find((n) => n.data.kind === 'role')?.id ?? 'role'
 
     const nodeSizeForKind = (kind?: SkillNodeData['kind']) => {
-      if (kind === 'role') return { width: 100, height: 100 }
-      if (kind === 'path') return { width: 90, height: 90 }
-      return { width: 50, height: 50 }
+      if (kind === 'role') return { width: 90, height: 90 }
+      if (kind === 'target') return { width: 80, height: 80 }
+      if (kind === 'path') return { width: 70, height: 70 }
+      return { width: 48, height: 48 }
     }
 
     const getNodeRadius = (nodeId: string) => {
@@ -220,10 +351,7 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
       const node = layoutedNodes.find((n) => n.id === nodeId)
       if (!node) return { x: 0, y: 0 }
       const { width, height } = nodeSizeForKind(node.data.kind)
-      return {
-        x: node.position.x + width / 2,
-        y: node.position.y + height / 2,
-      }
+      return { x: node.position.x + width / 2, y: node.position.y + height / 2 }
     }
 
     const getClosestPosition = (fromId: string, toId: string) => {
@@ -237,17 +365,12 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
       return dy > 0 ? Position.Bottom : Position.Top
     }
 
-    // Apply theme-aware edge styles with better opacity and stroke width
+    const rootCenter = getNodeCenter(rootNodeId)
+
     const themedEdges = filteredEdges.map((edge) => {
-      const isAccent = edge.style?.stroke?.includes('255,230,0') || edge.style?.stroke?.includes('34, 197, 94')
-      const isYellow = edge.style?.stroke?.includes('255,230,0')
-      const isGreen = edge.style?.stroke?.includes('34, 197, 94')
-      const isBackground = !isAccent
-      const bundleGroup = edge.source || 'role'
       const sourceNode = layoutedNodes.find((n) => n.id === edge.source)
       const targetNode = layoutedNodes.find((n) => n.id === edge.target)
       const isRootEdge = edge.source === rootNodeId
-      const isSkillEdge = sourceNode?.data.kind === 'skill' || targetNode?.data.kind === 'skill'
       const isPathEdge = sourceNode?.data.kind === 'path' || targetNode?.data.kind === 'path'
       const isDirectEdge = isRootEdge || isPathEdge
       const sourcePosition = getClosestPosition(edge.source, edge.target)
@@ -263,16 +386,17 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
       const ux = dx / dist
       const uy = dy / dist
 
-      const customSource = {
-        x: sourceCenter.x + ux * sourceRadius,
-        y: sourceCenter.y + uy * sourceRadius,
-      }
-      const customTarget = {
-        x: targetCenter.x - ux * targetRadius,
-        y: targetCenter.y - uy * targetRadius,
-      }
-      
-      const rootCenter = getNodeCenter(rootNodeId)
+      const customSource = { x: sourceCenter.x + ux * sourceRadius, y: sourceCenter.y + uy * sourceRadius }
+      const customTarget = { x: targetCenter.x - ux * targetRadius, y: targetCenter.y - uy * targetRadius }
+
+      // Determine category color for this edge
+      const sourceCat = nodeCategoryMap.get(edge.source)
+      const targetCat = nodeCategoryMap.get(edge.target)
+      const edgeCat = sourceCat || targetCat || ''
+      const categoryColor = CATEGORY_EDGE_COLORS[edgeCat] || 'rgba(255, 255, 255, 0.2)'
+
+      const sourceHas = nodeHasMap.get(edge.source) ?? false
+      const targetHas = nodeHasMap.get(edge.target) ?? false
 
       return {
         ...edge,
@@ -280,35 +404,26 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
         targetPosition,
         data: {
           ...edge.data,
-          bundle: isBackground && !isDirectEdge,
-          bundleGroup,
+          bundle: !isDirectEdge,
           bundleHub: rootCenter,
           bundleStrength,
           isRootEdge,
           isDirectEdge,
-          customSource: isDirectEdge || isSkillEdge ? customSource : undefined,
-          customTarget: isDirectEdge || isSkillEdge ? customTarget : undefined,
+          customSource: isDirectEdge ? customSource : undefined,
+          customTarget: isDirectEdge ? customTarget : undefined,
+          mastered: sourceHas && targetHas,
+          sourceHas,
+          targetHas,
+          categoryColor,
+          animated: true,
         },
         style: {
           ...edge.style,
-          stroke: isAccent
-            ? edge.style.stroke // Keep accent colors (yellow for paths, green for skills user has)
-            : isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)',
-          strokeWidth: isAccent ? 2.5 : 1.75,
-          opacity: selectedPath 
-            ? (isYellow ? 1 : (isGreen ? 0.6 : 0.2))
-            : (isAccent ? 1 : 0.45),
+          stroke: categoryColor,
+          strokeWidth: 1.5,
+          opacity: 0.3,
         },
-        markerEnd: isBackground
-          ? undefined
-          : {
-              ...edge.markerEnd,
-              color: isYellow
-                ? 'rgba(255,230,0,0.80)'
-                : isGreen
-                  ? 'rgba(34, 197, 94, 0.80)'
-                  : isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)',
-            },
+        markerEnd: undefined, // Clean look without arrows
       }
     })
 
@@ -321,7 +436,7 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
     }))
 
     return { nodes: themedNodes, edges: themedEdges }
-  }, [treeData, isDark, selectedPath, isCustomizing, customPositions])
+  }, [treeData, selectedPath, isCustomizing, customPositions, nodeCategoryMap, nodeHasMap])
 
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -336,7 +451,7 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
         try {
           localStorage.setItem(layoutStorageKey, JSON.stringify(next))
         } catch {
-          // Ignore storage failures (quota or disabled)
+          // Ignore storage failures
         }
         return next
       })
@@ -344,74 +459,105 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
     [isCustomizing, layoutStorageKey],
   )
 
-  // Show generate button if plan not yet generated
-  if (!planGenerated) {
+  // Auto-generate plan on mount
+  useEffect(() => {
+    if (!planGenerated && !loading) {
+      generatePlan()
+    }
+  }, [effectiveJobId])
+
+  // Theme-aware colors for loading/error states
+  const loadingSpinnerBorder = isDark ? 'rgba(255, 230, 0, 0.2)' : theme === 'game' ? 'rgba(139, 90, 43, 0.3)' : 'rgba(255, 230, 0, 0.2)'
+  const loadingSpinnerTop = '#FFE600'
+  const loadingText = colors.textMuted
+  const bgDotColor = isDark
+    ? 'rgba(255, 255, 255, 0.03)'
+    : theme === 'game'
+      ? 'rgba(139, 90, 43, 0.06)'
+      : 'rgba(0, 0, 0, 0.04)'
+  const controlsBg = isDark
+    ? 'rgba(10, 10, 15, 0.8)'
+    : theme === 'game'
+      ? 'rgba(40, 35, 30, 0.9)'
+      : 'rgba(255, 255, 255, 0.9)'
+  const controlsBorder = isDark
+    ? '1px solid rgba(255, 255, 255, 0.1)'
+    : theme === 'game'
+      ? `1px solid ${colors.border}`
+      : `1px solid ${colors.border}`
+
+  if (loading) {
     return (
-      <div
-        className="mt-4 rounded-lg p-8 text-center"
-        style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
-          border: `1px solid ${colors.cardBorder}`,
-        }}
-      >
-        <p className="mb-4" style={{ color: colors.textMuted }}>
-          Generate a personalized skill development plan based on your current skills and this role's requirements.
-        </p>
-        <button
-          onClick={generatePlan}
-          disabled={loading}
-          className="px-6 py-3 rounded-md font-semibold transition-colors"
-          style={{
-            backgroundColor: loading ? colors.textMuted : colors.accent,
-            color: '#2E2E38',
-          }}
-        >
-          {loading ? 'Generating Plan...' : 'Generate Skill Plan'}
-        </button>
-        {error && (
-          <p className="mt-4 text-red-500">{error}</p>
-        )}
+      <div className="flex items-center justify-center" style={{ height: '100%', minHeight: 400 }}>
+        <div className="text-center">
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            border: `3px solid ${loadingSpinnerBorder}`,
+            borderTopColor: loadingSpinnerTop,
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px',
+          }} />
+          <p style={{ color: loadingText, fontSize: '14px' }}>
+            Generating skill constellation...
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center" style={{ height: '100%', minHeight: 400 }}>
+        <div className="text-center">
+          <p style={{ color: '#ef4444', fontSize: '14px', marginBottom: '12px' }}>{error}</p>
+          <button
+            onClick={generatePlan}
+            style={{
+              padding: '8px 20px',
+              borderRadius: '6px',
+              background: '#FFE600',
+              color: '#1A1A24',
+              fontWeight: 600,
+              fontSize: '13px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Retry
+          </button>
+        </div>
       </div>
     )
   }
 
   if (!treeData || nodes.length === 0) {
     return (
-      <div
-        className="mt-4 rounded-lg p-4 text-sm"
-        style={{
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg,
-          border: `1px solid ${colors.cardBorder}`,
-          color: colors.textMuted,
-        }}
-      >
-        No skills found for this role. The job posting may not have skill requirements defined.
+      <div className="flex items-center justify-center" style={{ height: '100%', minHeight: 400 }}>
+        <p style={{ color: colors.textMuted, fontSize: '14px' }}>
+          No skill data available for this role.
+        </p>
       </div>
     )
   }
 
   return (
-    <div
-      className="h-full overflow-hidden rounded-xl"
-      style={{
-        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.3)' : colors.cardBg,
-        border: 'none',
-      }}
-    >
+    <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        onNodeClick={(_, node) => {
+        onNodeClick={(_: React.MouseEvent, node: Node<SkillNodeData>) => {
           if (onNodeClick) {
             onNodeClick(node.id, node.data)
           }
         }}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.25}
-        maxZoom={2}
+        fitViewOptions={{ padding: 0.3 }}
+        minZoom={0.2}
+        maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
         nodesDraggable={isCustomizing === true}
         nodesConnectable={false}
@@ -419,18 +565,21 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
         zoomOnDoubleClick={false}
         onNodesChange={handleNodesChange}
         style={{ background: 'transparent' }}
-        defaultEdgeOptions={{
-          type: 'skillPlanEdge',
-        }}
+        defaultEdgeOptions={{ type: 'skillPlanEdge' }}
       >
-        <Controls />
-        <Background 
-          color={isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'} 
-          gap={18} 
-          size={1} 
+        <Controls
+          style={{
+            background: controlsBg,
+            border: controlsBorder,
+            borderRadius: '8px',
+          }}
+        />
+        <Background
+          color={bgDotColor}
+          gap={30}
+          size={1}
         />
       </ReactFlow>
     </div>
   )
 }
-

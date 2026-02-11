@@ -172,7 +172,7 @@ export default function RoleDetailPage() {
       {/* Header with back button and role title */}
       <div className="mb-6">
         <button
-          onClick={() => navigate('/matches')}
+          onClick={() => navigate(-1)}
           className="mb-4 px-3 py-2 rounded-md text-sm font-semibold transition-colors inline-flex items-center gap-2"
           style={{
             backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
@@ -182,7 +182,7 @@ export default function RoleDetailPage() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Back to Matches
+          Back
         </button>
 
         <h1

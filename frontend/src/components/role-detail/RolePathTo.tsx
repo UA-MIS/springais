@@ -1,352 +1,419 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import type { Node, Edge } from 'reactflow'
 import { Match } from '../../services/mockMatchData'
-import { useTheme, themeColors } from '../../context/ThemeContext'
 import { RoleRequirementTree } from '../career-viz/RoleRequirementTree'
 import { NetworkSidebar } from './NetworkSidebar'
-import api from '../../services/api'
 import type { SkillNodeData } from '../career-viz/SkillNode'
+import { useTheme, themeColors } from '../../context/ThemeContext'
 
 interface RolePathToProps {
   match: Match
 }
 
-interface RoleStats {
-  avgTimeToPromotion: number | null
-  commonPath: string | null
-  successRate: number | null
+// Normalize skill name for comparison (lowercase, trimmed)
+function normalizeSkill(s: string): string {
+  return s.toLowerCase().trim()
 }
 
-interface SkillPlanSummary {
-  total_skills: number
-  skills_have: number
-  skills_need: number
-  match_percent: number
-  skills_have_list: string[]
-  skills_need_list: string[]
+// Parse transferable skill name, stripping the "(via ...)" suffix
+// Backend returns strings like "Project Management (via Project Management Life Cycle (PMLC))"
+function parseTransferableSkillName(s: string): string {
+  const viaIndex = s.indexOf(' (via ')
+  return viaIndex >= 0 ? s.substring(0, viaIndex) : s
 }
 
 export default function RolePathTo({ match }: RolePathToProps) {
-  const { theme, isDark, isGame } = useTheme()
+  const { theme, isDark } = useTheme()
   const colors = themeColors[theme]
-  const [roleStats, setRoleStats] = useState<RoleStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [planSummary, setPlanSummary] = useState<SkillPlanSummary | null>(null)
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [selectedNode, setSelectedNode] = useState<{ id: string; data: SkillNodeData } | null>(null)
-  const [planNodes, setPlanNodes] = useState<any[]>([])
-  const [planEdges, setPlanEdges] = useState<any[]>([])
-  const [customizeMode, setCustomizeMode] = useState(false)
+  const [treeNodes, setTreeNodes] = useState<Node<SkillNodeData>[]>([])
+  const [isCustomizing, setIsCustomizing] = useState(false)
 
-  // Use the job ID from the match for the skill plan
-  const jobId = match.job_id || match.id
+  // Build sets for match cross-referencing
+  const matchedSet = useMemo(() => new Set(match.matched_skills.map(normalizeSkill)), [match.matched_skills])
+  const transferableSet = useMemo(() => new Set((match.transferable_skills || []).map(s => normalizeSkill(parseTransferableSkillName(s)))), [match.transferable_skills])
 
-  // Fetch real statistics from API
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Try to get transition data for this role
-        const response = await api.get(`/patterns/role/${encodeURIComponent(match.job_title)}`)
-        const transitions = response.data?.transitions || []
-
-        if (transitions.length > 0) {
-          // Calculate average time and success rate from transitions
-          const avgTime = transitions.reduce((sum: number, t: any) => sum + (t.avg_time_to_promotion_years || 0), 0) / transitions.length
-          const avgSuccess = transitions.reduce((sum: number, t: any) => sum + (t.success_rate || 0), 0) / transitions.length
-
-          setRoleStats({
-            avgTimeToPromotion: avgTime,
-            successRate: avgSuccess * 100,
-            commonPath: transitions[0]?.target_role || null
-          })
-        }
-      } catch (error) {
-        console.error('Failed to fetch role stats:', error)
-        // Use fallback values if API fails
-        setRoleStats(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchStats()
-  }, [match.job_title])
-
-  // Extract paths from plan nodes and calculate progress using edges
-  const paths = useMemo(() => {
-    if (!planNodes.length || !planEdges.length) return []
-    
-    return planNodes
-      .filter((node: any) => node.data?.kind === 'path')
-      .map((node: any) => {
-        const pathName = node.data?.label || ''
-        const pathNodeId = node.id
-        
-        // Find all skills connected to this path via edges
-        const pathSkillIds = new Set<string>()
-        planEdges.forEach((edge: any) => {
-          if (edge.source === pathNodeId) {
-            pathSkillIds.add(edge.target)
-          }
-        })
-        
-        // Get the actual skill nodes
-        const pathSkills = planNodes.filter((n: any) => 
-          n.data?.kind === 'skill' && pathSkillIds.has(n.id)
-        )
-        
-        const totalSkills = pathSkills.length
-        const skillsHave = pathSkills.filter((n: any) => n.data?.has).length
-        const progress = totalSkills > 0 ? (skillsHave / totalSkills) * 100 : 0
-
-        // Map category names to emojis
-        const emojiMap: Record<string, string> = {
-          'Technical': '☁️',
-          'Leadership': '👥',
-          'Domain': '💼',
-          'Tools': '🛠️',
-        }
-
+  // Cross-reference tree nodes with match data to fix skill counts (Issue 4)
+  const correctedNodes = useMemo(() => {
+    return treeNodes.map(node => {
+      if (node.data.kind !== 'skill') return node
+      const label = normalizeSkill(node.data.label)
+      const isMatched = matchedSet.has(label)
+      const isTransferable = transferableSet.has(label)
+      if (isMatched || isTransferable) {
         return {
-          name: pathName,
-          emoji: emojiMap[pathName] || '📚',
-          progress: Math.round(progress),
-          type: pathName === 'Technical' ? 'Technical' : pathName === 'Leadership' ? 'Soft Skills' : 'Core',
-          nodeId: pathNodeId,
+          ...node,
+          data: {
+            ...node.data,
+            has: true,
+            transferable: isTransferable && !isMatched,
+          },
         }
-      })
-  }, [planNodes, planEdges])
-
-  // Network stats calculation
-  const networkStats = useMemo(() => {
-    if (!planSummary) {
-      return {
-        completed: 0,
-        inProgress: 0,
-        available: 0,
-        match: match.overall_score ? Math.round(match.overall_score * 100) : 0,
       }
-    }
+      return node
+    })
+  }, [treeNodes, matchedSet, transferableSet])
 
+  // Extract paths/categories from the corrected tree nodes
+  const paths = useMemo(() => {
+    const pathNodes = correctedNodes.filter(n => n.data.kind === 'path')
+    return pathNodes.map(node => {
+      const categorySkills = correctedNodes.filter(n =>
+        n.data.kind === 'skill' && n.data.category === node.data.label
+      )
+      const masteredCount = categorySkills.filter(n => n.data.has).length
+      const totalCount = categorySkills.length
+      const progress = totalCount > 0 ? (masteredCount / totalCount) * 100 : 0
+
+      const emojiMap: Record<string, string> = {
+        Technical: '',
+        Leadership: '',
+        Domain: '',
+        Tools: '',
+      }
+
+      return {
+        name: node.data.label,
+        emoji: emojiMap[node.data.label] || '',
+        progress,
+        type: `${masteredCount}/${totalCount} skills`,
+        nodeId: node.id,
+      }
+    })
+  }, [correctedNodes])
+
+  // Overall progress from corrected nodes
+  const { masteredCount, gapCount, transferableCount, totalCount } = useMemo(() => {
+    const skills = correctedNodes.filter(n => n.data.kind === 'skill')
+    const mastered = skills.filter(n => n.data.has && !n.data.transferable).length
+    const transferable = skills.filter(n => n.data.transferable).length
     return {
-      completed: planSummary.skills_have,
-      inProgress: 0, // Will be enhanced later with progress API
-      available: planSummary.skills_need,
-      match: planSummary.match_percent,
+      masteredCount: mastered,
+      transferableCount: transferable,
+      gapCount: skills.length - mastered - transferable,
+      totalCount: skills.length,
     }
-  }, [planSummary, match.overall_score])
+  }, [correctedNodes])
 
-  const handlePlanGenerated = (summary: SkillPlanSummary) => {
-    setPlanSummary(summary)
-  }
-
-  const handleNodeClick = (nodeId: string, nodeData: SkillNodeData) => {
+  const handleNodeClick = useCallback((nodeId: string, nodeData: SkillNodeData) => {
     setSelectedNode({ id: nodeId, data: nodeData })
-  }
+  }, [])
 
-  const handleNodeDeselect = () => {
-    setSelectedNode(null)
-  }
+  const handleNodesReceived = useCallback((nodes: Node<SkillNodeData>[], _edges: Edge[]) => {
+    setTreeNodes(nodes)
+  }, [])
 
-  // Fetch plan nodes and edges for path extraction
-  const handlePlanNodesReceived = (nodes: any[], edges: any[]) => {
-    setPlanNodes(nodes)
-    setPlanEdges(edges)
-  }
+  const handlePlanGenerated = useCallback((_summary: any) => {
+    // Plan summary available if needed for future features
+  }, [])
+
+  const matchPercent = Math.round(match.overall_score * 100)
+
+  // Theme-aware colors
+  const wrapperBg = isDark
+    ? 'radial-gradient(ellipse at 30% 20%, rgba(6, 182, 212, 0.04) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(192, 38, 211, 0.03) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(10, 10, 15, 1) 0%, rgba(5, 5, 10, 1) 100%)'
+    : theme === 'game'
+      ? 'radial-gradient(ellipse at 30% 20%, rgba(139, 90, 43, 0.06) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(64, 156, 155, 0.04) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #1a1510 0%, #15120d 100%)'
+      : `linear-gradient(135deg, ${colors.cardBg} 0%, ${colors.pageBg} 100%)`
+  const wrapperBorder = isDark
+    ? '1px solid rgba(255, 255, 255, 0.06)'
+    : theme === 'game'
+      ? `1px solid ${colors.cardBorder}`
+      : `1px solid ${colors.border}`
+  const headerBg = isDark
+    ? 'rgba(0, 0, 0, 0.3)'
+    : theme === 'game'
+      ? 'rgba(0, 0, 0, 0.3)'
+      : 'rgba(0, 0, 0, 0.03)'
+  const headerBorder = isDark
+    ? '1px solid rgba(255, 255, 255, 0.06)'
+    : theme === 'game'
+      ? `1px solid ${colors.border}`
+      : `1px solid ${colors.border}`
+  const textMain = colors.textPrimary
+  const textSub = colors.textMuted
+  const overlayBg = isDark
+    ? 'rgba(5, 5, 10, 0.85)'
+    : theme === 'game'
+      ? 'rgba(26, 21, 16, 0.9)'
+      : 'rgba(255, 255, 255, 0.9)'
+  const overlayBorder = isDark
+    ? '1px solid rgba(255, 255, 255, 0.08)'
+    : theme === 'game'
+      ? `1px solid ${colors.border}`
+      : `1px solid ${colors.border}`
+  const dividerColor = isDark ? 'rgba(255,255,255,0.08)' : theme === 'game' ? colors.border : colors.border
+  const statLabelColor = isDark ? 'rgba(255, 255, 255, 0.35)' : colors.textMuted
+  const treeCenterBg = isDark
+    ? 'radial-gradient(circle at 50% 50%, rgba(255, 230, 0, 0.02) 0%, transparent 60%)'
+    : theme === 'game'
+      ? 'radial-gradient(circle at 50% 50%, rgba(255, 230, 0, 0.02) 0%, transparent 60%)'
+      : 'radial-gradient(circle at 50% 50%, rgba(255, 230, 0, 0.04) 0%, transparent 60%)'
+  const bottomBg = isDark
+    ? 'rgba(0, 0, 0, 0.2)'
+    : theme === 'game'
+      ? 'rgba(0, 0, 0, 0.2)'
+      : 'rgba(0, 0, 0, 0.02)'
+  const bottomBorder = headerBorder
+  const tagMatchedColor = '#22c55e'
+  const tagGapColor = '#f59e0b'
+  const tagTransferableColor = '#a78bfa'
 
   return (
-    <div
-      className="network-container"
-      style={{
-        background: isDark ? '#1A1A24' : colors.cardBg,
-        borderRadius: '16px',
-        minHeight: '700px',
-        position: 'relative',
+    <div className="space-y-0" style={{ margin: '-24px -24px 0 -24px' }}>
+      <div style={{
+        background: wrapperBg,
+        borderRadius: '12px',
         overflow: 'hidden',
-        border: isDark ? 'none' : `1px solid ${colors.cardBorder}`,
-      }}
-    >
-      {/* Network Header */}
-      <div
-        className="network-header"
-        style={{
-          padding: '32px 40px',
-          borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : colors.cardBorder}`,
+        border: wrapperBorder,
+      }}>
+        {/* Header bar */}
+        <div style={{
+          padding: '20px 24px',
+          borderBottom: headerBorder,
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          gap: '16px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <h2
-            style={{
-              fontSize: '24px',
-              fontWeight: 600,
-              color: colors.textPrimary,
-            }}
-          >
-            Skill Development Network
-          </h2>
-          <button
-            onClick={() => setCustomizeMode((v) => !v)}
-            className="px-3 py-2 rounded-md text-xs font-semibold transition-colors"
-            style={{
-              backgroundColor: customizeMode ? colors.accent : 'transparent',
-              color: customizeMode ? '#1A1A24' : colors.textSecondary,
-              border: `1px solid ${customizeMode ? colors.accent : colors.cardBorder}`,
-            }}
-          >
-            {customizeMode ? 'Done' : 'Customize'}
-          </button>
+          justifyContent: 'space-between',
+          background: headerBg,
+        }}>
+          <div>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: textMain,
+              margin: 0,
+              letterSpacing: '-0.3px',
+            }}>
+              Path to {match.job_title}
+            </h3>
+            <p style={{
+              fontSize: '12px',
+              color: textSub,
+              margin: '4px 0 0 0',
+            }}>
+              Interactive skill constellation - click nodes to explore
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* Match badge */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 14px',
+              background: 'rgba(255, 230, 0, 0.08)',
+              border: '1px solid rgba(255, 230, 0, 0.2)',
+              borderRadius: '20px',
+            }}>
+              <span style={{ fontSize: '12px', color: textSub }}>Match</span>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#FFE600' }}>{matchPercent}%</span>
+            </div>
+
+            {/* Customize layout toggle */}
+            <button
+              onClick={() => setIsCustomizing(!isCustomizing)}
+              style={{
+                padding: '6px 14px',
+                background: isCustomizing ? 'rgba(255, 230, 0, 0.15)' : (isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)'),
+                border: `1px solid ${isCustomizing ? 'rgba(255, 230, 0, 0.3)' : (isDark || theme === 'game' ? 'rgba(255, 255, 255, 0.1)' : colors.border)}`,
+                borderRadius: '6px',
+                color: isCustomizing ? '#FFE600' : textSub,
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              {isCustomizing ? 'Done' : 'Customize'}
+            </button>
+          </div>
         </div>
-        <div
-          className="network-stats"
-          style={{
+
+        {/* Main content: sidebar + tree */}
+        <div style={{
+          display: 'flex',
+          height: '650px',
+        }}>
+          {/* Sidebar */}
+          <div style={{
+            width: '260px',
+            flexShrink: 0,
+          }}>
+            <NetworkSidebar
+              paths={paths}
+              selectedPath={selectedPath}
+              onPathSelect={setSelectedPath}
+              selectedNode={selectedNode}
+              onNodeDeselect={() => setSelectedNode(null)}
+              masteredCount={masteredCount + transferableCount}
+              totalCount={totalCount}
+            />
+          </div>
+
+          {/* Skill Tree */}
+          <div style={{
+            flex: 1,
+            position: 'relative',
+            background: treeCenterBg,
+          }}>
+            <RoleRequirementTree
+              roleId={match.job_id}
+              jobId={match.job_id}
+              onPlanGenerated={handlePlanGenerated}
+              onNodesReceived={handleNodesReceived}
+              onNodeClick={handleNodeClick}
+              selectedPath={selectedPath}
+              isCustomizing={isCustomizing}
+              matchedSkills={match.matched_skills}
+              transferableSkills={match.transferable_skills}
+            />
+
+            {/* Skill gap summary overlay (bottom) */}
+            {totalCount > 0 && (
+              <div style={{
+                position: 'absolute',
+                bottom: '16px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                gap: '12px',
+                padding: '8px 16px',
+                background: overlayBg,
+                border: overlayBorder,
+                borderRadius: '20px',
+                backdropFilter: 'blur(8px)',
+              }}>
+                <Stat label="Mastered" value={masteredCount} color="#22c55e" labelColor={statLabelColor} />
+                <div style={{ width: '1px', background: dividerColor }} />
+                {transferableCount > 0 && (
+                  <>
+                    <Stat label="Transferable" value={transferableCount} color="#a78bfa" labelColor={statLabelColor} />
+                    <div style={{ width: '1px', background: dividerColor }} />
+                  </>
+                )}
+                <Stat label="Gaps" value={gapCount} color="#f59e0b" labelColor={statLabelColor} />
+                <div style={{ width: '1px', background: dividerColor }} />
+                <Stat label="Total" value={totalCount} color={textSub} labelColor={statLabelColor} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom section: Skill gap quick view */}
+        <div style={{
+          padding: '20px 24px',
+          borderTop: bottomBorder,
+          background: bottomBg,
+        }}>
+          <div style={{
             display: 'flex',
-            gap: '32px',
-          }}
-        >
-          <div className="network-stat" style={{ textAlign: 'center' }}>
-            <div
-              className="network-stat-value"
-              style={{
-                fontSize: '28px',
+            gap: '24px',
+            flexWrap: 'wrap',
+          }}>
+            {/* Matched skills */}
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <div style={{
+                fontSize: '10px',
                 fontWeight: 700,
-                color: colors.accent,
-              }}
-            >
-              {networkStats.completed}
-            </div>
-            <div
-              className="network-stat-label"
-              style={{
-                fontSize: '11px',
-                color: isDark ? 'rgba(255, 255, 255, 0.45)' : colors.textMuted,
+                color: statLabelColor,
                 textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Completed
+                letterSpacing: '1px',
+                marginBottom: '10px',
+              }}>
+                Your Skills ({match.matched_skills.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {match.matched_skills.map(skill => (
+                  <span key={skill} style={{
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: tagMatchedColor,
+                    background: `${tagMatchedColor}14`,
+                    border: `1px solid ${tagMatchedColor}33`,
+                    borderRadius: '4px',
+                  }}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="network-stat" style={{ textAlign: 'center' }}>
-            <div
-              className="network-stat-value"
-              style={{
-                fontSize: '28px',
+
+            {/* Skill gaps */}
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <div style={{
+                fontSize: '10px',
                 fontWeight: 700,
-                color: colors.accent,
-              }}
-            >
-              {networkStats.inProgress}
-            </div>
-            <div
-              className="network-stat-label"
-              style={{
-                fontSize: '11px',
-                color: isDark ? 'rgba(255, 255, 255, 0.45)' : colors.textMuted,
+                color: statLabelColor,
                 textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              In Progress
+                letterSpacing: '1px',
+                marginBottom: '10px',
+              }}>
+                Skill Gaps ({match.skill_gaps.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {match.skill_gaps.map(skill => (
+                  <span key={skill} style={{
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: tagGapColor,
+                    background: `${tagGapColor}14`,
+                    border: `1px solid ${tagGapColor}33`,
+                    borderRadius: '4px',
+                  }}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="network-stat" style={{ textAlign: 'center' }}>
-            <div
-              className="network-stat-value"
-              style={{
-                fontSize: '28px',
-                fontWeight: 700,
-                color: colors.accent,
-              }}
-            >
-              {networkStats.available}
-            </div>
-            <div
-              className="network-stat-label"
-              style={{
-                fontSize: '11px',
-                color: isDark ? 'rgba(255, 255, 255, 0.45)' : colors.textMuted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Available
-            </div>
-          </div>
-          <div className="network-stat" style={{ textAlign: 'center' }}>
-            <div
-              className="network-stat-value"
-              style={{
-                fontSize: '28px',
-                fontWeight: 700,
-                color: colors.accent,
-              }}
-            >
-              {networkStats.match}%
-            </div>
-            <div
-              className="network-stat-label"
-              style={{
-                fontSize: '11px',
-                color: isDark ? 'rgba(255, 255, 255, 0.45)' : colors.textMuted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
-              Match
-            </div>
+
+            {/* Transferable skills if available */}
+            {match.transferable_skills && match.transferable_skills.length > 0 && (
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: statLabelColor,
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '10px',
+                }}>
+                  Transferable ({match.transferable_skills.length})
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {match.transferable_skills.map(skill => (
+                    <span key={skill} style={{
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      color: tagTransferableColor,
+                      background: `${tagTransferableColor}14`,
+                      border: `1px solid ${tagTransferableColor}33`,
+                      borderRadius: '4px',
+                    }}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* Network Body */}
-      <div
-        className="network-body"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '300px 1fr',
-        }}
-      >
-        {/* Sidebar */}
-        <NetworkSidebar
-          paths={paths}
-          selectedPath={selectedPath}
-          onPathSelect={setSelectedPath}
-          selectedNode={selectedNode}
-          onNodeDeselect={handleNodeDeselect}
-        />
-
-        {/* Canvas */}
-        <div
-          className="network-canvas"
-          style={{
-            position: 'relative',
-            padding: '40px',
-          }}
-        >
-          <div style={{ height: '500px' }}>
-            <style>
-              {`
-                @keyframes nodeWiggle {
-                  0% { transform: rotate(-1.2deg); }
-                  50% { transform: rotate(1.2deg); }
-                  100% { transform: rotate(-1.2deg); }
-                }
-              `}
-            </style>
-            <RoleRequirementTree
-              roleId={match.job_title}
-              jobId={jobId}
-              onPlanGenerated={handlePlanGenerated}
-              onNodesReceived={handlePlanNodesReceived}
-              onNodeClick={handleNodeClick}
-              selectedPath={selectedPath}
-              isCustomizing={customizeMode}
-            />
-          </div>
-        </div>
+// Small stat display for the bottom overlay
+function Stat({ label, value, color, labelColor }: { label: string; value: number; color: string; labelColor: string }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: '16px', fontWeight: 700, color }}>{value}</div>
+      <div style={{ fontSize: '9px', color: labelColor, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {label}
       </div>
     </div>
   )
