@@ -1261,6 +1261,7 @@ async def generate_skill_plan(
                     "kind": "skill",
                     "has": skill_info["has"],
                     "required": skill_info["required"],
+                    "category": category,
                 }
             ))
 

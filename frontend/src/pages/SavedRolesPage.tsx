@@ -146,7 +146,7 @@ export default function SavedRolesPage() {
               <div key={saved.match_id} className="relative">
                 <MatchCard
                   match={match}
-                  onViewDetails={(id) => navigate(`/matches/${id}`)}
+                  onViewDetails={(id) => navigate(`/role/${id}`)}
                   onSave={() => handleUnsave(saved.match_id)}
                 />
                 <button

@@ -1,7 +1,9 @@
+import { memo } from 'react'
 import type { EdgeProps } from 'reactflow'
 import { getBezierPath, getStraightPath } from 'reactflow'
+import { useTheme } from '../../context/ThemeContext'
 
-export function SkillPlanEdge({
+export const SkillPlanEdge = memo(function SkillPlanEdge({
   id,
   sourceX,
   sourceY,
@@ -13,6 +15,7 @@ export function SkillPlanEdge({
   markerEnd,
   data,
 }: EdgeProps) {
+  const { isDark, isGame } = useTheme()
   const bundleHub = data?.bundleHub as { x: number; y: number } | undefined
   const isBundled = data?.bundle === true && bundleHub
   const isRootEdge = data?.isRootEdge === true
@@ -20,6 +23,10 @@ export function SkillPlanEdge({
   const bundleStrength = typeof data?.bundleStrength === 'number' ? data.bundleStrength : 0.55
   const customSource = data?.customSource as { x: number; y: number } | undefined
   const customTarget = data?.customTarget as { x: number; y: number } | undefined
+  const sourceHas = data?.sourceHas === true
+  const targetHas = data?.targetHas === true
+  const categoryColor = (data?.categoryColor as string) || (isDark || isGame ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)')
+  const animated = data?.animated !== false
 
   const effectiveSourceX = customSource?.x ?? sourceX
   const effectiveSourceY = customSource?.y ?? sourceY
@@ -58,26 +65,80 @@ export function SkillPlanEdge({
     return `M ${effectiveSourceX},${effectiveSourceY} Q ${c1x},${c1y} ${hubX},${hubY} Q ${c2x},${c2y} ${effectiveTargetX},${effectiveTargetY}`
   })()
 
-  const strokeOpacity = isBundled
-    ? Math.min((style.opacity as number | undefined) ?? 1, 0.5)
-    : (style.opacity as number | undefined) ?? 1
-
   const pathToRender = isDirectEdge ? straightPath : bundledPath
 
-  return (
-    <path
-      id={id}
-      className="react-flow__edge-path"
-      d={pathToRender}
-      fill="none"
-      stroke={style.stroke || 'rgba(255,255,255,0.55)'}
-      strokeWidth={style.strokeWidth || 2}
-      strokeOpacity={strokeOpacity}
-      markerEnd={isBundled ? undefined : markerEnd}
-      style={{
-        transition: 'stroke-opacity 0.2s, stroke-width 0.2s',
-      }}
-    />
-  )
-}
+  // Determine edge visual style based on node states
+  const bothMastered = sourceHas && targetHas
+  const oneMastered = sourceHas || targetHas
 
+  const defaultStroke = isDark || isGame ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'
+
+  const strokeColor = bothMastered
+    ? categoryColor
+    : oneMastered
+      ? categoryColor
+      : (style.stroke as string) || defaultStroke
+
+  const strokeOpacity = bothMastered
+    ? 0.7
+    : oneMastered
+      ? 0.35
+      : (style.opacity as number) ?? 0.12
+
+  const strokeWidth = bothMastered
+    ? 2.5
+    : oneMastered
+      ? 1.8
+      : (style.strokeWidth as number) || 1
+
+  // Unique gradient ID for this edge
+  const gradientId = `edge-gradient-${id}`
+
+  return (
+    <g>
+      {/* Gradient definition for mastered edges */}
+      {oneMastered && (
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={categoryColor} stopOpacity={sourceHas ? 0.8 : 0.1} />
+            <stop offset="100%" stopColor={categoryColor} stopOpacity={targetHas ? 0.8 : 0.1} />
+          </linearGradient>
+        </defs>
+      )}
+
+      {/* Glow layer for mastered connections */}
+      {bothMastered && (
+        <path
+          d={pathToRender}
+          fill="none"
+          stroke={categoryColor}
+          strokeWidth={strokeWidth + 4}
+          strokeOpacity={0.12}
+          style={{ filter: 'blur(3px)' }}
+        />
+      )}
+
+      {/* Main edge path */}
+      <path
+        id={id}
+        className="react-flow__edge-path"
+        d={pathToRender}
+        fill="none"
+        stroke={oneMastered ? `url(#${gradientId})` : strokeColor}
+        strokeWidth={strokeWidth}
+        strokeOpacity={oneMastered ? 1 : strokeOpacity}
+        markerEnd={isBundled ? undefined : markerEnd}
+        style={{
+          transition: 'stroke-opacity 0.3s, stroke-width 0.3s',
+        }}
+      />
+
+      {/* Animated pulse along mastered edges */}
+      {bothMastered && animated && (
+        <circle r="2" fill={categoryColor} opacity="0.6">
+          <animateMotion dur="3s" repeatCount="indefinite" path={pathToRender} />
+        </circle>
+      )}
+    </g>
+  )
+})

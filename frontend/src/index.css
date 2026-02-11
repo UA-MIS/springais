@@ -158,3 +158,128 @@ button:hover:not(:disabled) {
 .animate-pulse-subtle {
   animation: pulse-subtle 0.3s ease-in-out;
 }
+
+/* --- PoE Skill Tree Animations --- */
+@keyframes poe-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes poe-pulse-subtle {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes nodeWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(1.5deg); }
+  75% { transform: rotate(-1.5deg); }
+}
+
+/* PoE Skill Tree - React Flow overrides (dark theme default) */
+.dark .react-flow__controls {
+  background: rgba(10, 10, 15, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .react-flow__controls-button {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  fill: rgba(255, 255, 255, 0.6) !important;
+}
+
+.dark .react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.dark .react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+.dark .react-flow__minimap {
+  background: rgba(10, 10, 15, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+}
+
+/* Light theme React Flow overrides */
+.light .react-flow__controls {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+.light .react-flow__controls-button {
+  background: transparent !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  fill: #475569 !important;
+}
+
+.light .react-flow__controls-button:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: #1e293b !important;
+  fill: #1e293b !important;
+}
+
+.light .react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+.light .react-flow__minimap {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+}
+
+/* Game (medieval) theme React Flow overrides */
+.game .react-flow__controls {
+  background: rgba(40, 35, 30, 0.9) !important;
+  border: 1px solid rgba(139, 90, 43, 0.3) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+.game .react-flow__controls-button {
+  background: transparent !important;
+  color: #c4b998 !important;
+  border-bottom: 1px solid rgba(139, 90, 43, 0.2) !important;
+  fill: #c4b998 !important;
+}
+
+.game .react-flow__controls-button:hover {
+  background: rgba(139, 90, 43, 0.15) !important;
+  color: #e8dcc4 !important;
+  fill: #e8dcc4 !important;
+}
+
+.game .react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+.game .react-flow__minimap {
+  background: rgba(40, 35, 30, 0.85) !important;
+  border: 1px solid rgba(139, 90, 43, 0.3) !important;
+  border-radius: 8px !important;
+}
