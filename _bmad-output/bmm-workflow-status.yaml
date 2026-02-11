@@ -19,11 +19,11 @@ generated: "2025-12-17"
 project: "SpringAIS"
 project_type: "software"
 selected_track: "method"
-field_type: "greenfield"
+field_type: "brownfield"
 brainstorm_requested: true
 research_requested: true
 product_brief_requested: true
-workflow_path: "method-greenfield"
+workflow_path: "method-brownfield"
 workflow_status:
   phase_0_discovery:
     name: "Discovery (Optional)"
@@ -44,7 +44,7 @@ workflow_status:
         status: "optional"
         agent: "analyst"
         command: "/bmad:bmm:workflows:create-product-brief"
-        note: "Strategic product planning (recommended for greenfield)"
+        note: "Strategic product planning"
 
   phase_1_planning:
     name: "Planning"
