@@ -1,2 +1,0 @@
-data/job_data_*.sql.gz filter=lfs diff=lfs merge=lfs -text
-data/*.sql filter=lfs diff=lfs merge=lfs -text
