@@ -24,6 +24,7 @@ from app.config import get_openai_client
 from app.models.user_profile import UserProfile
 from app.models.job_posting import JobPosting
 from app.schemas.roadmap import (
+    MilestoneCertification,
     RoadmapGenerateRequest,
     RoadmapResponse,
     RoadmapPhase,
@@ -202,7 +203,7 @@ class RoadmapService:
         roadmap_data = await self._call_gpt_with_retry(prompt)
 
         # Build and return response
-        return self._build_response(user, request, roadmap_data)
+        return self._build_response(user, request, roadmap_data, include_certifications=request.include_certifications)
 
     def _fetch_target_roles(
         self,
@@ -363,7 +364,7 @@ class RoadmapService:
                 "Follow the numbered order exactly (Target 1 first, then Target 2, etc.)."
             )
 
-        return ROADMAP_GENERATION_PROMPT.format(
+        prompt = ROADMAP_GENERATION_PROMPT.format(
             user_name=user.full_name or "User",
             current_role=user.current_role or "Not specified",
             years_experience=user.years_experience or "Not specified",
@@ -378,6 +379,70 @@ class RoadmapService:
             include_certifications="Yes" if request.include_certifications else "No",
             timeline_preference=request.timeline_preference or "Standard/Balanced",
             success_patterns_section=success_patterns,
+        )
+
+        # Inject known certifications from badge catalog (Phase B)
+        if request.include_certifications:
+            cert_injection = self._get_cert_injection(target_roles)
+            if cert_injection:
+                prompt += "\n\n" + cert_injection
+
+        return prompt
+
+    def _get_cert_injection(self, target_roles: List[dict]) -> str:
+        """Build a certification injection string from the badge catalog for target role skills."""
+        from app.models.badge import BadgeCatalog, BadgeSkillMapping
+
+        # Collect all required skills from target roles
+        all_skills = set()
+        for role in target_roles:
+            skills = role.get("required_skills", [])
+            if isinstance(skills, list):
+                for s in skills:
+                    if isinstance(s, dict):
+                        all_skills.add(s.get("name", "").lower())
+                    elif isinstance(s, str):
+                        all_skills.add(s.lower())
+
+        if not all_skills:
+            return ""
+
+        # Query badges that match these skills via skill mappings
+        from sqlalchemy import func
+        subq = (
+            self.db.query(
+                BadgeSkillMapping.badge_id,
+                func.max(BadgeSkillMapping.mapping_confidence).label("max_confidence"),
+            )
+            .filter(BadgeSkillMapping.skill_name.in_(list(all_skills)))
+            .group_by(BadgeSkillMapping.badge_id)
+            .subquery()
+        )
+
+        results = (
+            self.db.query(BadgeCatalog, subq.c.max_confidence)
+            .join(subq, BadgeCatalog.id == subq.c.badge_id)
+            .filter(BadgeCatalog.is_active == True)
+            .order_by(subq.c.max_confidence.desc())
+            .limit(20)
+            .all()
+        )
+
+        if not results:
+            return ""
+
+        cert_lines = []
+        for badge, confidence in results:
+            cost_str = f"${badge.estimated_cost_usd:.0f}" if badge.estimated_cost_usd else "N/A"
+            cert_lines.append(
+                f"- {badge.name} ({badge.issuer}, {cost_str}, {badge.difficulty_level or 'N/A'})"
+            )
+
+        return (
+            "## KNOWN CERTIFICATIONS FOR TARGET ROLE SKILLS:\n"
+            + "\n".join(cert_lines)
+            + "\n\nWhen creating certification milestones, reference these REAL certifications "
+            "with their exact names. Do NOT invent certification names or URLs."
         )
 
     async def _call_gpt_with_retry(self, prompt: str) -> dict:
@@ -453,7 +518,8 @@ class RoadmapService:
         self,
         user: UserProfile,
         request: RoadmapGenerateRequest,
-        data: dict
+        data: dict,
+        include_certifications: bool = False,
     ) -> RoadmapResponse:
         """Build the RoadmapResponse from GPT output."""
 
@@ -462,6 +528,13 @@ class RoadmapService:
         for phase_data in data.get("phases", []):
             milestones = []
             for m_data in phase_data.get("milestones", []):
+                # Parse structured cert data from resources (Phase B)
+                resources = m_data.get("resources", [])
+                certifications = []
+
+                if include_certifications:
+                    certifications = self._extract_certifications(resources)
+
                 milestones.append(RoadmapMilestone(
                     id=m_data.get("id", f"m-{uuid4().hex[:8]}"),
                     title=m_data.get("title", "Untitled"),
@@ -471,8 +544,9 @@ class RoadmapService:
                     estimated_duration_months=m_data.get("estimated_duration_months", 1),
                     prerequisites=m_data.get("prerequisites", []),
                     skills_to_develop=m_data.get("skills_to_develop", []),
-                    resources=m_data.get("resources", []),
+                    resources=resources,
                     success_indicators=m_data.get("success_indicators", []),
+                    certifications=certifications,
                 ))
 
             phases.append(RoadmapPhase(
@@ -499,6 +573,44 @@ class RoadmapService:
             emphasis_applied=request.emphasis,
             customization_notes=data.get("customization_notes"),
         )
+
+    def _extract_certifications(self, resources: List[str]) -> List[MilestoneCertification]:
+        """
+        Match milestone resource strings against the badge catalog
+        and return structured MilestoneCertification objects.
+        Deduplicates by badge name to avoid repeats within a milestone.
+        """
+        from app.models.badge import BadgeCatalog
+
+        certifications = []
+        seen_names: set = set()
+
+        for resource in resources:
+            resource_lower = resource.lower()
+
+            # Try to match against known badges by name
+            resource_safe = resource_lower[:50].replace("%", r"\%").replace("_", r"\_")
+            badge = (
+                self.db.query(BadgeCatalog)
+                .filter(
+                    BadgeCatalog.is_active == True,
+                    BadgeCatalog.name.ilike(f"%{resource_safe}%", escape="\\"),
+                )
+                .first()
+            )
+
+            if badge and badge.name not in seen_names:
+                seen_names.add(badge.name)
+                certifications.append(MilestoneCertification(
+                    name=badge.name,
+                    provider=badge.issuer,
+                    url=badge.url,
+                    difficulty_level=badge.difficulty_level,
+                    estimated_cost_usd=badge.estimated_cost_usd,
+                    estimated_hours=badge.estimated_hours,
+                ))
+
+        return certifications
 
     def _calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """Calculate API cost."""

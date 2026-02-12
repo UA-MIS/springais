@@ -1,3 +1,4 @@
+from .badge import BadgeCatalog, BadgeInteraction, BadgeSkillMapping, UserBadge
 from .base import Base, TimestampMixin
 from .career_path import CareerPath
 from .employee import Employee
@@ -14,6 +15,9 @@ from .skill_taxonomy import SEED_SKILLS, SkillTaxonomy, get_seed_skills
 from .user_profile import UserProfile
 
 __all__ = [
+    "BadgeCatalog",
+    "BadgeInteraction",
+    "BadgeSkillMapping",
     "Base",
     "TimestampMixin",
     "PerformanceMetrics",
@@ -29,6 +33,7 @@ __all__ = [
     "RoadmapEdit",
     "SkillEmbedding",
     "SkillModule",
+    "UserBadge",
     "UserModuleProgress",
     "UserProfile",
     "UserSkill",

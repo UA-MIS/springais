@@ -16,6 +16,11 @@ class EYResourceSchema(BaseModel):
     type: str
     badge_available: bool = False
     description: str
+    # Badge integration fields (ADR-003: additive, non-breaking)
+    badge_id: Optional[str] = None
+    issuer: Optional[str] = None
+    image_url: Optional[str] = None
+    difficulty_level: Optional[str] = None
 
 class ModuleSchema(BaseModel):
     id: str

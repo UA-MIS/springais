@@ -4,21 +4,37 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import engine, Base
-from app.routes import auth_router, hiring_manager_router, matches_router, skills_router, patterns_router, roadmap_router
+from app.routes import auth_router, badges_router, hiring_manager_router, matches_router, skills_router, patterns_router, roadmap_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    print("Starting SpringAIS backend...")
+    print("Starting SkillBridge backend...")
     # Create tables (will be populated by migrations later)
     Base.metadata.create_all(bind=engine)
+
+    # Seed badge catalog if empty
+    from app.database import SessionLocal
+    from app.models.badge import BadgeCatalog
+    db = SessionLocal()
+    try:
+        badge_count = db.query(BadgeCatalog).count()
+        if badge_count == 0:
+            from app.data.badge_seed import seed_badge_catalog
+            count = seed_badge_catalog(db)
+            print(f"Seeded badge catalog with {count} badges")
+        else:
+            print(f"Badge catalog already has {badge_count} entries")
+    finally:
+        db.close()
+
     yield
     # Shutdown
-    print("Shutting down SpringAIS backend...")
+    print("Shutting down SkillBridge backend...")
 
 app = FastAPI(
-    title="SpringAIS API",
-    description="AI-powered talent mobility platform for EY",
+    title="SkillBridge API",
+    description="AI-powered talent mobility platform",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -39,7 +55,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 @app.get("/")
 async def root():
     return {
-        "message": "SpringAIS API",
+        "message": "SkillBridge API",
         "status": "running",
         "version": "1.0.0"
     }
@@ -49,6 +65,7 @@ async def health():
     return {"status": "healthy"}
 
 # Include routers
+app.include_router(badges_router, prefix="/api")
 app.include_router(matches_router, prefix="/api")
 app.include_router(skills_router, prefix="/api")
 app.include_router(patterns_router, prefix="/api")

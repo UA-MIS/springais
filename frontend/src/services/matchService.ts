@@ -138,6 +138,7 @@ export async function saveMatch(match: Match, mode: MatchMode): Promise<void> {
     },
     skill_gaps: match.skill_gaps,
     matched_skills: match.matched_skills,
+    transferable_skills: match.transferable_skills || [],
     explanation: match.explanation,
   });
 }
@@ -179,6 +180,7 @@ export interface SavedMatch {
   };
   skill_gaps: string[];
   matched_skills: string[];
+  transferable_skills: string[];
   explanation: string | null;
   saved_at: string;
 }

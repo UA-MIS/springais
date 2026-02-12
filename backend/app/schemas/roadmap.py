@@ -71,6 +71,16 @@ class RoadmapGenerateRequest(BaseModel):
         }
 
 
+class MilestoneCertification(BaseModel):
+    """Structured certification data on a roadmap milestone."""
+    name: str
+    provider: str
+    url: str
+    difficulty_level: Optional[str] = None
+    estimated_cost_usd: Optional[float] = None
+    estimated_hours: Optional[int] = None
+
+
 class RoadmapMilestone(BaseModel):
     """A single milestone in the roadmap."""
     id: str = Field(..., description="Unique milestone ID")
@@ -83,6 +93,11 @@ class RoadmapMilestone(BaseModel):
     skills_to_develop: List[str] = Field(default=[], description="Skills associated with this milestone")
     resources: List[str] = Field(default=[], description="Recommended resources/actions")
     success_indicators: List[str] = Field(default=[], description="How to know this milestone is complete")
+    # Badge integration (ADR-003: additive, non-breaking)
+    certifications: List[MilestoneCertification] = Field(
+        default=[],
+        description="Structured certification data (Phase B+)"
+    )
 
 
 class RoadmapPhase(BaseModel):

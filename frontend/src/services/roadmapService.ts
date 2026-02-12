@@ -18,6 +18,15 @@ export interface RoadmapGenerateRequest {
   timeline_preference?: string;
 }
 
+export interface MilestoneCertification {
+  name: string;
+  provider: string;
+  url: string;
+  difficulty_level?: string;
+  estimated_cost_usd?: number;
+  estimated_hours?: number;
+}
+
 export interface RoadmapMilestone {
   id: string;
   title: string;
@@ -29,6 +38,7 @@ export interface RoadmapMilestone {
   skills_to_develop: string[];
   resources: string[];
   success_indicators: string[];
+  certifications?: MilestoneCertification[];
 }
 
 export interface RoadmapPhase {

@@ -3,6 +3,7 @@ import { Match } from '../../services/mockMatchData'
 import { useTheme, themeColors } from '../../context/ThemeContext'
 import { getDeepAnalysis, DeepAnalysis } from '../../services/matchService'
 import ProgressRing from '../common/ProgressRing'
+import FormattedJobDescription from './FormattedJobDescription'
 
 interface RoleOverviewProps {
   match: Match
@@ -147,9 +148,12 @@ export default function RoleOverview({ match }: RoleOverviewProps) {
           <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
             Job Description
           </h3>
-          <p className="text-sm leading-relaxed" style={{ color: colors.textSecondary }}>
-            {match.job_description}
-          </p>
+          <FormattedJobDescription
+            text={match.job_description}
+            textColor={colors.textSecondary}
+            headingColor={colors.textPrimary}
+            mutedColor={colors.textMuted}
+          />
         </div>
       )}
 
