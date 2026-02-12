@@ -15,6 +15,10 @@ export interface EYResource {
   type: string;
   badge_available: boolean;
   description: string;
+  badge_id?: string;
+  issuer?: string;
+  image_url?: string;
+  difficulty_level?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
 }
 
 export interface Module {

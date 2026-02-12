@@ -16,7 +16,7 @@ const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'first_login',
     name: 'The Journey Begins',
-    description: 'Log into SpringAIS for the first time',
+    description: 'Log into SkillBridge for the first time',
     icon: '🏰',
     xpReward: 100,
     goldReward: 50,

@@ -334,6 +334,7 @@ async def save_match(
         growth_potential_score=payload.scores.role_fit,
         skill_gaps=payload.skill_gaps,
         matched_skills=payload.matched_skills,
+        transferable_skills=payload.transferable_skills,
         explanation=payload.explanation,
     )
 
@@ -406,6 +407,7 @@ async def get_saved_matches(
                 scores=scores,
                 skill_gaps=match.skill_gaps or [],
                 matched_skills=match.matched_skills or [],
+                transferable_skills=match.transferable_skills or [],
                 explanation=match.explanation,
                 saved_at=match.created_at.isoformat() if match.created_at else "",
             ))

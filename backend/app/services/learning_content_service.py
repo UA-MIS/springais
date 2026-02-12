@@ -213,11 +213,11 @@ Consider how this skill applies to your current EY engagement. Discuss with your
 
         "ey_resources": [
             {
-                "title": "EY Badges",
-                "url": EY_RESOURCES["badges"],
+                "title": f"EY Badges for {skill_name}",
+                "url": f"https://www.credly.com/organizations/ey/badges?search={skill_encoded}",
                 "type": "badge",
                 "badge_available": True,
-                "description": "Check if an EY Badge is available for this skill"
+                "description": f"Search EY badges related to {skill_name}"
             },
             {
                 "title": "EY Virtual Academy",

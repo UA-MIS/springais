@@ -15,6 +15,7 @@ import {
   toggleModuleTask,
   PROFICIENCY_LABELS
 } from '../../services/skillProgressService';
+import BadgeSection from '../badges/BadgeSection';
 
 export default function SkillDetailModal({ skill, onClose, onUpdate, onRefresh, onMarkComplete }) {
   const modalRef = useRef(null);
@@ -316,6 +317,7 @@ export default function SkillDetailModal({ skill, onClose, onUpdate, onRefresh, 
         );
       case 'certification':
       case 'badge':
+      case 'ey_badge':
         return (
           <svg className="w-5 h-5 text-ey-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
@@ -328,7 +330,6 @@ export default function SkillDetailModal({ skill, onClose, onUpdate, onRefresh, 
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
         );
-      case 'ey_badge':
       case 'ey_course':
         return (
           <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -617,21 +618,8 @@ export default function SkillDetailModal({ skill, onClose, onUpdate, onRefresh, 
                   </div>
                 )}
 
-                {skill.certifications && skill.certifications.length > 0 && (
-                  <div>
-                    <label className="text-xs font-medium text-ey-gray uppercase">Certifications</label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {skill.certifications.map((cert, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 bg-ey-yellow/15 text-ey-confident-black rounded-md text-sm font-medium"
-                        >
-                          {cert}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Badge Discovery Section (Phase B) */}
+                <BadgeSection skillName={skill.name} />
 
                 {skill.notes && (
                   <div>
@@ -899,7 +887,7 @@ export default function SkillDetailModal({ skill, onClose, onUpdate, onRefresh, 
                                             rel="noopener noreferrer"
                                             className="flex items-center gap-3 p-3 bg-white border border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors group"
                                           >
-                                            {getResourceIcon('ey_badge')}
+                                            {getResourceIcon(resource.type || 'ey_badge')}
                                             <div className="flex-1 min-w-0">
                                               <p className="text-sm font-medium text-ey-confident-black group-hover:text-purple-700 truncate">
                                                 {resource.title}

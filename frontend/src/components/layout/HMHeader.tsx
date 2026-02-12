@@ -30,15 +30,29 @@ export default function HMHeader() {
       {/* Top row: Logo and user actions */}
       <div className="px-6 py-3 flex items-center justify-between">
         <div className="flex items-center">
-          <h1
-            className="text-2xl font-bold"
-            style={{
-              color: colors.accent,
-              textShadow: isGame ? '0 0 20px rgba(255, 230, 0, 0.3)' : 'none',
-            }}
-          >
-            {adventureState.enabled ? '⚔️ SpringAIS' : 'SpringAIS'}
-          </h1>
+          <div className="flex flex-col">
+            <h1
+              className="text-2xl font-bold"
+              style={{
+                color: colors.accent,
+                textShadow: isGame ? '0 0 20px rgba(255, 230, 0, 0.3)' : 'none',
+              }}
+            >
+              {adventureState.enabled ? '⚔️ SkillQuest' : 'SkillBridge'}
+            </h1>
+            {adventureState.enabled && (
+              <span
+                className="text-xs"
+                style={{
+                  color: colors.textSecondary,
+                  opacity: 0.7,
+                  fontFamily: isGame ? "'Spectral', serif" : 'inherit',
+                }}
+              >
+                By SkillBridge
+              </span>
+            )}
+          </div>
           <span
             className="ml-3 text-xs px-2 py-1 rounded-full"
             style={{

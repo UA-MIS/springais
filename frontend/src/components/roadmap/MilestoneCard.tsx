@@ -13,11 +13,37 @@ import { useState } from 'react';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useRoadmap } from '../../hooks/useRoadmap';
 import { RoadmapMilestone } from '../../services/roadmapService';
+import BadgeCard from '../badges/BadgeCard';
 
 interface MilestoneCardProps {
   milestone: RoadmapMilestone;
   phaseId: string;
   isManuallyEdited?: boolean;
+}
+
+/**
+ * Detect URLs in a string and return an array of text and link elements.
+ * Uses a non-global regex via split to avoid stateful lastIndex issues.
+ */
+export function linkifyText(text: string): (string | JSX.Element)[] {
+  const urlPattern = /(https?:\/\/[^\s]+)/;
+  const parts = text.split(urlPattern);
+  return parts.map((part, i) => {
+    if (urlPattern.test(part)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:underline break-all"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
 }
 
 export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = false }: MilestoneCardProps) {
@@ -251,10 +277,29 @@ export default function MilestoneCard({ milestone, phaseId, isManuallyEdited = f
                 {milestone.resources.map((res, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <span style={{ color: colors.accent }}>-</span>
-                    <span>{res}</span>
+                    <span>{linkifyText(res)}</span>
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Certifications */}
+          {milestone.certifications && milestone.certifications.length > 0 && (
+            <div>
+              <div className="text-xs font-medium mb-2" style={{ color: colors.textMuted }}>
+                Recommended Certifications
+              </div>
+              <div className="space-y-2">
+                {milestone.certifications.map((cert, i) => (
+                  <BadgeCard
+                    key={i}
+                    badge={cert}
+                    source="roadmap"
+                    compact
+                  />
+                ))}
+              </div>
             </div>
           )}
 

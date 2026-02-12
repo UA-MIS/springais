@@ -142,6 +142,7 @@ class MatchSaveRequest(BaseModel):
     scores: MatchScores = Field(..., description="Score breakdown")
     skill_gaps: List[str] = Field(default_factory=list, description="Missing skills")
     matched_skills: List[str] = Field(default_factory=list, description="Matched skills")
+    transferable_skills: List[str] = Field(default_factory=list, description="Transferable/related skills")
     explanation: Optional[str] = Field(default=None, description="Match explanation")
 
 
@@ -264,6 +265,7 @@ class SavedMatchResponse(BaseModel):
     scores: MatchScores = Field(description="Match score breakdown")
     skill_gaps: List[str] = Field(default_factory=list, description="Missing skills")
     matched_skills: List[str] = Field(default_factory=list, description="Matched skills")
+    transferable_skills: List[str] = Field(default_factory=list, description="Transferable/related skills")
     explanation: Optional[str] = Field(default=None, description="Match explanation")
     saved_at: str = Field(description="ISO timestamp when match was saved")
 
@@ -285,6 +287,7 @@ class SavedMatchResponse(BaseModel):
                 },
                 "skill_gaps": ["Kubernetes"],
                 "matched_skills": ["Python", "AWS"],
+                "transferable_skills": ["SQL"],
                 "explanation": "This role is an excellent fit.",
                 "saved_at": "2024-01-15T10:30:00Z"
             }

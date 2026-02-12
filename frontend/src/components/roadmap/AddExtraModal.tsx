@@ -10,6 +10,8 @@
 import { useState } from 'react';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useRoadmap } from '../../hooks/useRoadmap';
+import BadgeSearch from '../badges/BadgeSearch';
+import { Badge } from '../../services/badgeService';
 
 interface AddExtraModalProps {
   phaseId: string;
@@ -33,6 +35,16 @@ export default function AddExtraModal({ phaseId, onClose }: AddExtraModalProps) 
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('achievement');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleBadgeSelect = (badge: Badge) => {
+    setTitle(badge.name);
+    const parts = [badge.issuer];
+    if (badge.url) parts.push(badge.url);
+    if (badge.difficulty_level) parts.push(`Difficulty: ${badge.difficulty_level}`);
+    if (badge.estimated_cost_usd != null) parts.push(`~$${badge.estimated_cost_usd}`);
+    setDescription(parts.join(' | '));
+    setCategory('certification');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +82,22 @@ export default function AddExtraModal({ phaseId, onClose }: AddExtraModalProps) 
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Badge Search (shown when certification is selected) */}
+          {category === 'certification' && (
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: colors.textPrimary }}>
+                Search Certifications
+              </label>
+              <BadgeSearch
+                onSelect={handleBadgeSelect}
+                placeholder="Search for a certification..."
+              />
+              <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
+                Select from known certifications or type your own below
+              </p>
+            </div>
+          )}
+
           {/* Title */}
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: colors.textPrimary }}>

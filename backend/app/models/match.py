@@ -48,6 +48,7 @@ class Match(Base, TimestampMixin):
     growth_potential_score: Mapped[float] = mapped_column(Numeric, nullable=False)
     skill_gaps: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
     matched_skills: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    transferable_skills: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False, server_default="[]")
     explanation: Mapped[str | None] = mapped_column(Text)
 
     employee: Mapped["Employee"] = relationship(
