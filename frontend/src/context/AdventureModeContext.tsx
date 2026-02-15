@@ -1,6 +1,15 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  ReactNode,
+} from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from './AuthContext';
+import { progressionApi, ProgressionState, QUERY_KEYS } from '../services/progressionService';
 
-// Achievement definitions
+// Achievement definitions (kept for backward compatibility until Epic 4 replaces with server achievements)
 interface Achievement {
   id: string;
   name: string;
@@ -11,7 +20,6 @@ interface Achievement {
   condition: string;
 }
 
-// Predefined achievements
 const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'first_login',
@@ -113,15 +121,6 @@ const ACHIEVEMENTS: Achievement[] = [
     condition: '7-day streak',
   },
   {
-    id: 'mini_game_master',
-    name: 'Game Champion',
-    description: 'Win a mini-game',
-    icon: '🎮',
-    xpReward: 150,
-    goldReward: 100,
-    condition: 'Win mini-game',
-  },
-  {
     id: 'profile_complete',
     name: 'Identity Forged',
     description: 'Complete your profile information',
@@ -141,63 +140,46 @@ const ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
-// XP required for each level (exponential curve)
-function xpForLevel(level: number): number {
-  return Math.floor(100 * Math.pow(1.5, level - 1));
-}
-
-// Calculate level from total XP
-function levelFromXP(totalXP: number): { level: number; currentXP: number; xpToNext: number } {
-  let level = 1;
-  let xpRemaining = totalXP;
-
-  while (xpRemaining >= xpForLevel(level)) {
-    xpRemaining -= xpForLevel(level);
-    level++;
-  }
-
-  return {
-    level,
-    currentXP: xpRemaining,
-    xpToNext: xpForLevel(level),
-  };
-}
-
-// Get title based on level
-function getTitleForLevel(level: number): string {
-  if (level < 5) return 'Novice';
-  if (level < 10) return 'Apprentice';
-  if (level < 15) return 'Journeyman';
-  if (level < 20) return 'Adept';
-  if (level < 25) return 'Expert';
-  if (level < 30) return 'Master';
-  if (level < 40) return 'Grandmaster';
-  return 'Legend';
-}
-
 interface AdventureModeState {
-  // Core state
+  // Core state (from server)
   enabled: boolean;
   totalXP: number;
   gold: number;
-  unlockedAchievements: string[];
-  loginStreak: number;
-  lastLoginDate: string | null;
-  completedSkillsCount: number;
-  visitedPages: string[];
-
-  // Computed
   level: number;
   currentXP: number;
   xpToNextLevel: number;
   title: string;
+  loginStreak: number;
+  lastLoginDate: string | null;
 
-  // Recent events (for notifications)
+  // Loading state
+  loading: boolean;
+
+  // Server-provided counts
+  unlockedAchievementsCount: number;
+
+  // Legacy fields (kept for backward compatibility, will be removed in later epics)
+  unlockedAchievements: string[];
+  completedSkillsCount: number;
+  visitedPages: string[];
+
+  // Recent events (for notifications -- client-side only)
   recentXPGain: number | null;
   recentGoldGain: number | null;
   recentAchievement: Achievement | null;
   levelUpPending: boolean;
   newLevel: number | null;
+  newTitle: string | null;
+  levelUpCoinBonus: number | null;
+  unlockedFeatures: string[];
+
+  // Quest completion notification
+  recentQuestComplete: {
+    questName: string;
+    xpReward: number;
+    goldReward: number;
+    cosmeticReward?: string;
+  } | null;
 }
 
 interface AdventureModeContextType {
@@ -208,12 +190,12 @@ interface AdventureModeContextType {
   enableAdventureMode: () => void;
   disableAdventureMode: () => void;
 
-  // Progression
+  // Progression (optimistic client-side updates; server mutations added in Story 8.3)
   addXP: (amount: number, source?: string) => void;
   addGold: (amount: number, source?: string) => void;
   spendGold: (amount: number) => boolean;
 
-  // Achievements
+  // Achievements (legacy client-side, replaced by server in Epic 4)
   unlockAchievement: (achievementId: string) => void;
   getAchievements: () => Achievement[];
   isAchievementUnlocked: (achievementId: string) => boolean;
@@ -222,239 +204,179 @@ interface AdventureModeContextType {
   incrementSkillsCompleted: () => void;
   trackPageVisit: (page: string) => void;
 
+  // Server mutations (Story 8.3)
+  recordLogin: () => void;
+  recordVisit: (page: string) => void;
+
   // Notifications
   clearRecentXP: () => void;
   clearRecentGold: () => void;
   clearRecentAchievement: () => void;
   clearLevelUp: () => void;
-
-  // Mini-game
-  completeMiniGame: (won: boolean, goldEarned: number) => void;
+  clearQuestComplete: () => void;
 }
 
-const AdventureModeContext = createContext<AdventureModeContextType | undefined>(undefined);
-
-const STORAGE_KEY = 'springais-adventure-mode';
-
-function loadState(): Partial<AdventureModeState> {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch (e) {
-    console.error('Failed to load adventure mode state:', e);
-  }
-  return {};
-}
-
-function saveState(state: Partial<AdventureModeState>) {
-  try {
-    const toSave = {
-      enabled: state.enabled,
-      totalXP: state.totalXP,
-      gold: state.gold,
-      unlockedAchievements: state.unlockedAchievements,
-      loginStreak: state.loginStreak,
-      lastLoginDate: state.lastLoginDate,
-      completedSkillsCount: state.completedSkillsCount,
-      visitedPages: state.visitedPages,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-  } catch (e) {
-    console.error('Failed to save adventure mode state:', e);
-  }
-}
+const AdventureModeContext = createContext<AdventureModeContextType | undefined>(
+  undefined
+);
 
 export function AdventureModeProvider({ children }: { children: ReactNode }) {
-  const savedState = loadState();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [enabled, setEnabled] = useState(savedState.enabled ?? false);
-  const [totalXP, setTotalXP] = useState(savedState.totalXP ?? 0);
-  const [gold, setGold] = useState(savedState.gold ?? 100); // Start with 100 gold
-  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>(
-    savedState.unlockedAchievements ?? []
-  );
-  const [loginStreak, setLoginStreak] = useState(savedState.loginStreak ?? 0);
-  const [lastLoginDate, setLastLoginDate] = useState<string | null>(
-    savedState.lastLoginDate ?? null
-  );
-  const [completedSkillsCount, setCompletedSkillsCount] = useState(
-    savedState.completedSkillsCount ?? 0
-  );
-  const [visitedPages, setVisitedPages] = useState<string[]>(
-    savedState.visitedPages ?? []
-  );
+  // Fetch progression from server (Story 8.2)
+  const { data: progression, isLoading } = useQuery<ProgressionState>({
+    queryKey: QUERY_KEYS.progression,
+    queryFn: progressionApi.getProgression,
+    enabled: !!user,
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
+  });
 
-  // Notification state (not persisted)
+  // Toggle adventure mode via API mutation
+  const toggleMutation = useMutation({
+    mutationFn: progressionApi.toggleAdventureMode,
+    onSuccess: (data) => {
+      queryClient.setQueryData<ProgressionState>(QUERY_KEYS.progression, (old) =>
+        old
+          ? { ...old, adventure_mode_enabled: data.adventure_mode_enabled }
+          : old
+      );
+    },
+  });
+
+  // Record login mutation (Story 8.3)
+  const loginMutation = useMutation({
+    mutationFn: progressionApi.recordLogin,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progression });
+    },
+  });
+
+  // Record visit mutation (Story 8.3)
+  const visitMutation = useMutation({
+    mutationFn: progressionApi.recordVisit,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progression });
+    },
+  });
+
+  // Notification state (client-side only, not persisted)
   const [recentXPGain, setRecentXPGain] = useState<number | null>(null);
   const [recentGoldGain, setRecentGoldGain] = useState<number | null>(null);
-  const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
+  const [recentAchievement, setRecentAchievement] =
+    useState<Achievement | null>(null);
   const [levelUpPending, setLevelUpPending] = useState(false);
   const [newLevel, setNewLevel] = useState<number | null>(null);
+  const [newTitle, setNewTitle] = useState<string | null>(null);
+  const [levelUpCoinBonus, setLevelUpCoinBonus] = useState<number | null>(null);
+  const [unlockedFeatures, setUnlockedFeatures] = useState<string[]>([]);
+  const [recentQuestComplete, setRecentQuestComplete] = useState<AdventureModeState['recentQuestComplete']>(null);
 
-  // Calculate level info
-  const { level, currentXP, xpToNext } = levelFromXP(totalXP);
-  const title = getTitleForLevel(level);
+  // Legacy client-side state (kept until Epics 4/5 replace with server equivalents)
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>(
+    []
+  );
+  const [completedSkillsCount, setCompletedSkillsCount] = useState(0);
+  const [visitedPages, setVisitedPages] = useState<string[]>([]);
 
-  // Unlock achievement helper - defined before useEffects that use it
-  const unlockAchievementInternal = useCallback((achievementId: string, skipRewards = false) => {
-    if (unlockedAchievements.includes(achievementId)) return;
+  // Derive state from server data. When not logged in or not loaded, use defaults.
+  // AC #5: On logout, state is cleared (user becomes null, so serverData is null).
+  const serverData = user ? progression : undefined;
+  const enabled = serverData?.adventure_mode_enabled ?? false;
+  const totalXP = serverData?.xp_total ?? 0;
+  const gold = serverData?.coin_balance ?? 0;
+  const level = serverData?.level ?? 1;
+  const title = serverData?.title ?? 'Apprentice';
+  const loginStreak = serverData?.login_streak ?? 0;
+  const lastLoginDate = serverData?.last_login_date ?? null;
+  const currentXP = serverData?.current_level_xp ?? 0;
+  const xpToNextLevel = serverData?.xp_to_next_level ?? 0;
 
-    const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
-    if (!achievement) return;
-
-    setUnlockedAchievements(prev => [...prev, achievementId]);
-    setRecentAchievement(achievement);
-
-    // Grant rewards (unless skipped to prevent loops)
-    if (!skipRewards) {
-      if (achievement.xpReward > 0) {
-        setTotalXP(prev => prev + achievement.xpReward);
-        setRecentXPGain(prev => (prev || 0) + achievement.xpReward);
-      }
-      if (achievement.goldReward > 0) {
-        setGold(prev => prev + achievement.goldReward);
-        setRecentGoldGain(prev => (prev || 0) + achievement.goldReward);
-      }
-    }
-
-    // Auto-clear notification after 5 seconds
-    setTimeout(() => setRecentAchievement(null), 5000);
-  }, [unlockedAchievements]);
-
-  // Check login streak on mount
-  useEffect(() => {
-    const today = new Date().toDateString();
-    if (lastLoginDate !== today) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      if (lastLoginDate === yesterday.toDateString()) {
-        // Consecutive day
-        setLoginStreak(prev => prev + 1);
-      } else if (lastLoginDate !== null) {
-        // Streak broken
-        setLoginStreak(1);
-      } else {
-        // First login ever
-        setLoginStreak(1);
-      }
-      setLastLoginDate(today);
-    }
-  }, [lastLoginDate]);
-
-  // Persist state changes
-  useEffect(() => {
-    saveState({
-      enabled,
-      totalXP,
-      gold,
-      unlockedAchievements,
-      loginStreak,
-      lastLoginDate,
-      completedSkillsCount,
-      visitedPages,
-    });
-  }, [enabled, totalXP, gold, unlockedAchievements, loginStreak, lastLoginDate, completedSkillsCount, visitedPages]);
-
-  // Check for level-based achievements
-  useEffect(() => {
-    if (level >= 5 && !unlockedAchievements.includes('level_5')) {
-      unlockAchievementInternal('level_5', true);
-    }
-    if (level >= 10 && !unlockedAchievements.includes('level_10')) {
-      unlockAchievementInternal('level_10', true);
-    }
-    if (level >= 20 && !unlockedAchievements.includes('level_20')) {
-      unlockAchievementInternal('level_20', true);
-    }
-  }, [level, unlockedAchievements, unlockAchievementInternal]);
-
-  // Check for login streak achievements
-  useEffect(() => {
-    if (loginStreak >= 3 && !unlockedAchievements.includes('daily_login_3')) {
-      unlockAchievementInternal('daily_login_3');
-    }
-    if (loginStreak >= 7 && !unlockedAchievements.includes('daily_login_7')) {
-      unlockAchievementInternal('daily_login_7');
-    }
-  }, [loginStreak, unlockedAchievements, unlockAchievementInternal]);
-
-  // Check for skills completed achievement
-  useEffect(() => {
-    if (completedSkillsCount >= 5 && !unlockedAchievements.includes('skill_master')) {
-      unlockAchievementInternal('skill_master');
-    }
-  }, [completedSkillsCount, unlockedAchievements, unlockAchievementInternal]);
-
-  // Check for explorer achievement
-  useEffect(() => {
-    const requiredPages = ['/matches', '/profile', '/saved', '/roadmap'];
-    const hasVisitedAll = requiredPages.every(page => visitedPages.includes(page));
-    if (hasVisitedAll && !unlockedAchievements.includes('explorer')) {
-      unlockAchievementInternal('explorer');
-    }
-  }, [visitedPages, unlockedAchievements, unlockAchievementInternal]);
-
-  // Grant first login achievement
-  useEffect(() => {
-    if (enabled && !unlockedAchievements.includes('first_login')) {
-      unlockAchievementInternal('first_login');
-    }
-  }, [enabled, unlockedAchievements, unlockAchievementInternal]);
-
+  // Actions
   const toggleAdventureMode = useCallback(() => {
-    setEnabled(prev => !prev);
-  }, []);
+    if (user) {
+      toggleMutation.mutate();
+    }
+  }, [user, toggleMutation]);
 
   const enableAdventureMode = useCallback(() => {
-    setEnabled(true);
-  }, []);
+    if (user && !enabled) {
+      toggleMutation.mutate();
+    }
+  }, [user, enabled, toggleMutation]);
 
   const disableAdventureMode = useCallback(() => {
-    setEnabled(false);
-  }, []);
-
-  const addXP = useCallback((amount: number, _source?: string) => {
-    const prevLevel = levelFromXP(totalXP).level;
-    const newTotalXP = totalXP + amount;
-    setTotalXP(newTotalXP);
-    setRecentXPGain(amount);
-
-    // Check for level up
-    const newLevelInfo = levelFromXP(newTotalXP);
-    if (newLevelInfo.level > prevLevel) {
-      setLevelUpPending(true);
-      setNewLevel(newLevelInfo.level);
-      // Grant bonus gold on level up
-      const levelUpGold = newLevelInfo.level * 25;
-      setGold(prev => prev + levelUpGold);
+    if (user && enabled) {
+      toggleMutation.mutate();
     }
+  }, [user, enabled, toggleMutation]);
 
-    // Auto-clear notification after 3 seconds
-    setTimeout(() => setRecentXPGain(null), 3000);
-  }, [totalXP]);
+  // Progression actions -- optimistic client-side updates with deferred server refetch.
+  const addXP = useCallback(
+    (amount: number, _source?: string) => {
+      setRecentXPGain(amount);
+      queryClient.setQueryData<ProgressionState>(QUERY_KEYS.progression, (old) => {
+        if (!old) return old;
+        return { ...old, xp_total: old.xp_total + amount };
+      });
+      setTimeout(() => setRecentXPGain(null), 3000);
+      // Refetch real server values after a short delay so HUD shows persisted data
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progression });
+      }, 1500);
+    },
+    [queryClient]
+  );
 
-  const addGold = useCallback((amount: number, _source?: string) => {
-    setGold(prev => prev + amount);
-    setRecentGoldGain(amount);
+  const addGold = useCallback(
+    (amount: number, _source?: string) => {
+      setRecentGoldGain(amount);
+      queryClient.setQueryData<ProgressionState>(QUERY_KEYS.progression, (old) => {
+        if (!old) return old;
+        return { ...old, coin_balance: old.coin_balance + amount };
+      });
+      setTimeout(() => setRecentGoldGain(null), 3000);
+      // Refetch real server values after a short delay so HUD shows persisted data
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progression });
+      }, 1500);
+    },
+    [queryClient]
+  );
 
-    // Auto-clear notification after 3 seconds
-    setTimeout(() => setRecentGoldGain(null), 3000);
-  }, []);
+  const spendGold = useCallback(
+    (amount: number): boolean => {
+      if (gold >= amount) {
+        queryClient.setQueryData<ProgressionState>(QUERY_KEYS.progression, (old) => {
+          if (!old) return old;
+          return { ...old, coin_balance: old.coin_balance - amount };
+        });
+        return true;
+      }
+      return false;
+    },
+    [gold, queryClient]
+  );
 
-  const spendGold = useCallback((amount: number): boolean => {
-    if (gold >= amount) {
-      setGold(prev => prev - amount);
-      return true;
-    }
-    return false;
-  }, [gold]);
-
-  const unlockAchievement = useCallback((achievementId: string) => {
-    unlockAchievementInternal(achievementId);
-  }, [unlockAchievementInternal]);
+  // Achievement functions (legacy client-side, will be replaced in Epic 4)
+  const unlockAchievement = useCallback(
+    (achievementId: string) => {
+      if (!unlockedAchievements.includes(achievementId)) {
+        const achievement = ACHIEVEMENTS.find((a) => a.id === achievementId);
+        if (achievement) {
+          setUnlockedAchievements((prev) => [...prev, achievementId]);
+          setRecentAchievement(achievement);
+          setTimeout(() => setRecentAchievement(null), 5000);
+          // Refetch progression so HUD achievement count updates
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progression });
+          }, 1500);
+        }
+      }
+    },
+    [unlockedAchievements, queryClient]
+  );
 
   const getAchievements = useCallback(() => ACHIEVEMENTS, []);
 
@@ -464,56 +386,77 @@ export function AdventureModeProvider({ children }: { children: ReactNode }) {
   );
 
   const incrementSkillsCompleted = useCallback(() => {
-    setCompletedSkillsCount(prev => prev + 1);
-    // Grant XP for completing a skill
-    addXP(75, 'Skill completed');
-    addGold(25, 'Skill completed');
-  }, [addXP, addGold]);
+    setCompletedSkillsCount((prev) => prev + 1);
+  }, []);
 
-  const trackPageVisit = useCallback((page: string) => {
-    if (!visitedPages.includes(page)) {
-      setVisitedPages(prev => [...prev, page]);
+  const trackPageVisit = useCallback(
+    (page: string) => {
+      if (!visitedPages.includes(page)) {
+        setVisitedPages((prev) => [...prev, page]);
+      }
+    },
+    [visitedPages]
+  );
+
+  // Server mutation wrappers (Story 8.3)
+  const recordLogin = useCallback(() => {
+    if (user) {
+      loginMutation.mutate();
     }
-  }, [visitedPages]);
+  }, [user, loginMutation]);
 
+  const recordVisit = useCallback(
+    (page: string) => {
+      if (user) {
+        visitMutation.mutate(page);
+      }
+    },
+    [user, visitMutation]
+  );
+
+  // Notification helpers
   const clearRecentXP = useCallback(() => setRecentXPGain(null), []);
   const clearRecentGold = useCallback(() => setRecentGoldGain(null), []);
-  const clearRecentAchievement = useCallback(() => setRecentAchievement(null), []);
+  const clearRecentAchievement = useCallback(
+    () => setRecentAchievement(null),
+    []
+  );
   const clearLevelUp = useCallback(() => {
     setLevelUpPending(false);
     setNewLevel(null);
+    setNewTitle(null);
+    setLevelUpCoinBonus(null);
+    setUnlockedFeatures([]);
   }, []);
 
-  const completeMiniGame = useCallback((won: boolean, goldEarned: number) => {
-    if (won) {
-      addGold(goldEarned, 'Mini-game');
-      addXP(50, 'Mini-game victory');
-      if (!unlockedAchievements.includes('mini_game_master')) {
-        unlockAchievement('mini_game_master');
-      }
-    } else {
-      addXP(25, 'Mini-game participation');
-    }
-  }, [addGold, addXP, unlockedAchievements, unlockAchievement]);
+  const clearQuestComplete = useCallback(() => setRecentQuestComplete(null), []);
+
+  const unlockedAchievementsCount = serverData?.unlocked_achievements_count ?? 0;
 
   const state: AdventureModeState = {
     enabled,
     totalXP,
     gold,
-    unlockedAchievements,
-    loginStreak,
-    lastLoginDate,
-    completedSkillsCount,
-    visitedPages,
     level,
     currentXP,
-    xpToNextLevel: xpToNext,
+    xpToNextLevel,
     title,
+    loginStreak,
+    lastLoginDate,
+    loading: !!user && isLoading,
+    unlockedAchievementsCount,
+    unlockedAchievements,
+    completedSkillsCount,
+    visitedPages,
     recentXPGain,
     recentGoldGain,
     recentAchievement,
     levelUpPending,
     newLevel,
+    newTitle,
+    levelUpCoinBonus,
+    unlockedFeatures,
+    recentQuestComplete,
   };
 
   return (
@@ -531,11 +474,13 @@ export function AdventureModeProvider({ children }: { children: ReactNode }) {
         isAchievementUnlocked,
         incrementSkillsCompleted,
         trackPageVisit,
+        recordLogin,
+        recordVisit,
         clearRecentXP,
         clearRecentGold,
         clearRecentAchievement,
         clearLevelUp,
-        completeMiniGame,
+        clearQuestComplete,
       }}
     >
       {children}
@@ -546,7 +491,9 @@ export function AdventureModeProvider({ children }: { children: ReactNode }) {
 export function useAdventureMode() {
   const context = useContext(AdventureModeContext);
   if (!context) {
-    throw new Error('useAdventureMode must be used within AdventureModeProvider');
+    throw new Error(
+      'useAdventureMode must be used within AdventureModeProvider'
+    );
   }
   return context;
 }
@@ -558,45 +505,58 @@ export const fantasyText: Record<string, string> = {
   'My Profile': 'Hero Sheet',
   'Saved Roles': 'Quest Log',
   'Career Roadmap': 'Adventure Path',
+  Store: "Merchant's Armory",
+  Quests: "Adventurer's Guild",
+  'Success Patterns': 'Victory Scrolls',
 
   // Page titles
   'Role Matches': 'Available Quests',
-  'Profile': 'Character Stats',
+  Profile: 'Character Stats',
 
   // Actions
-  'Save': 'Mark Quest',
+  Save: 'Mark Quest',
   'Save Role': 'Mark Quest',
-  'Generate': 'Forge Path',
+  Generate: 'Forge Path',
   'Generate Roadmap': 'Forge Your Path',
-  'Complete': 'Conquer',
+  Complete: 'Conquer',
   'View Details': 'Inspect Quest',
-  'View': 'Inspect',
+  View: 'Inspect',
 
   // Status
   'In Progress': 'Active Quest',
-  'Completed': 'Victory!',
-  'Pending': 'Awaiting Hero',
+  Completed: 'Victory!',
+  Pending: 'Awaiting Hero',
   'Not Started': 'Uncharted',
 
   // Metrics
   'Match Score': 'Destiny Alignment',
-  'Skills': 'Abilities',
-  'Experience': 'Battle Wisdom',
-  'Progress': 'Journey Progress',
+  Skills: 'Abilities',
+  Experience: 'Battle Wisdom',
+  Progress: 'Journey Progress',
   'Skill Gap': 'Abilities to Master',
   'Required Skills': 'Required Abilities',
 
   // Roles
   'Current Role': 'Current Class',
   'Target Role': 'Destiny Class',
-  'Recommended': 'Fate-Chosen',
+  Recommended: 'Fate-Chosen',
+
+  // Economy & Store (FR-026.1)
+  Inventory: 'Treasure Chest',
+  Purchase: 'Acquire',
+  Equip: 'Don',
+  Unequip: 'Remove',
+  Coins: 'Gold',
+  'Side Quest': 'Adventure',
+  'Start Quest': 'Accept Quest',
+  'Level Up': 'Promotion',
 
   // Misc
-  'Dashboard': 'Command Center',
-  'Settings': 'Preferences',
-  'Logout': 'Rest at Camp',
-  'Search': 'Seek',
-  'Filter': 'Refine Search',
+  Dashboard: 'Command Center',
+  Settings: 'Preferences',
+  Logout: 'Rest at Camp',
+  Search: 'Seek',
+  Filter: 'Refine Search',
 };
 
 export function getFantasyText(text: string, adventureMode: boolean): string {

@@ -7,6 +7,7 @@ Endpoints:
 - GET /auth/me
 """
 
+import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -21,6 +22,8 @@ from app.utils.security import (
     hash_password,
     verify_password,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -42,6 +45,14 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)) -> AuthRes
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Create progression row on registration (Story 5.4)
+    try:
+        from app.services.progression_service import progression_service
+        progression_service.ensure_progression_exists(db, user.id)
+        db.commit()
+    except Exception:
+        logger.exception("Failed to create progression for user %s", user.id)
 
     token = create_jwt_token({"user_id": str(user.id), "email": user.email})
     return AuthResponse(

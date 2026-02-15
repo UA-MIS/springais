@@ -4,10 +4,13 @@ import Header from './Header';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 import { useAdventureMode } from '../../context/AdventureModeContext';
 import { AdventureHUD, NotificationToasts } from '../game';
+import { AvatarCompanion, CharacterSheet, WalkthroughOverlay } from '../avatar';
+import { useCedric } from '../../context/CedricContext';
 
 export default function MainLayout() {
   const { theme, isDark, isGame } = useTheme();
   const { state: adventureState, trackPageVisit } = useAdventureMode();
+  const { state: cedricState, advanceWalkthrough, completeWalkthrough, skipWalkthrough } = useCedric();
   const location = useLocation();
   const colors = themeColors[theme];
 
@@ -85,6 +88,21 @@ export default function MainLayout() {
 
       {/* Notification Toasts */}
       <NotificationToasts />
+
+      {/* Cedric Avatar Companion */}
+      <AvatarCompanion />
+
+      {/* Character Sheet Panel (Story 7.3) */}
+      <CharacterSheet />
+
+      {/* Walkthrough Overlay (A3 fix: now rendered in component tree) */}
+      <WalkthroughOverlay
+        isActive={cedricState.walkthroughActive}
+        currentStep={cedricState.walkthroughStep}
+        onStepComplete={advanceWalkthrough}
+        onComplete={completeWalkthrough}
+        onSkip={skipWalkthrough}
+      />
 
       {/* Global CSS for animations */}
       <style>{`

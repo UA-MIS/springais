@@ -13,6 +13,9 @@ import { useSavedRoles } from '../context/SavedRolesContext';
 import { RoadmapProvider } from '../context/RoadmapContext';
 import { RoadmapViewer } from '../components/roadmap';
 import { useAdventureMode, getFantasyText } from '../context/AdventureModeContext';
+import NarratorWrapper from '../components/avatar/NarratorWrapper';
+import { ORACLE_PHASES } from '../components/avatar/cedricNarratorConfig';
+import { LOADING_MESSAGES } from '../components/avatar/cedricMessages';
 import {
   generateRoadmap,
   getSavedRoadmaps,
@@ -703,12 +706,18 @@ export default function RoadmapPage() {
                 </div>
               )}
 
-              {isGenerating && (
+              <NarratorWrapper
+                isLoading={isGenerating}
+                phases={ORACLE_PHASES}
+                completionDialogue={LOADING_MESSAGES.oraclePhases[4]}
+                errorMessage={error}
+                onRetry={handleGenerate}
+              >
                 <div className="p-4 rounded-lg text-center" style={{ backgroundColor: isDark ? 'rgba(255, 230, 0, 0.1)' : 'rgba(255, 230, 0, 0.15)', color: colors.textSecondary }}>
                   <p className="text-sm">This uses GPT-5.2 with reasoning capabilities and may take 1-2 minutes.</p>
                   <p className="text-sm mt-2">We're creating a comprehensive, personalized plan just for you.</p>
                 </div>
-              )}
+              </NarratorWrapper>
             </div>
           </div>
         </>

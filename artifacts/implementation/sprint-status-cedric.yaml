@@ -1,0 +1,232 @@
+project: SpringAIS Cedric Avatar Companion System
+date: 2026-02-12
+status: stories_complete
+total_epics: 8
+total_stories: 42
+
+epics:
+  - id: cedric-epic-1
+    name: "Avatar Component Foundation"
+    phase: 1
+    assigned_to: dev-1
+    stories: 6
+    dependencies: none
+    status: ready_for_development
+    stories_list:
+      - "1.1: CedricContext Provider with Core State (L)"
+      - "1.2: AvatarSprite Component with Layered Rendering (M)"
+      - "1.3: Pedestal and NamePlate Components (S)"
+      - "1.4: AvatarCompanion Root Component (M)"
+      - "1.5: Placeholder Sprite Assets (S)"
+      - "1.6: Barrel Export and Integration Test (S)"
+    immediately_startable:
+      - "1.1: CedricContext Provider"
+      - "1.2: AvatarSprite Component"
+      - "1.3: Pedestal and NamePlate"
+      - "1.5: Placeholder Sprite Assets"
+
+  - id: cedric-epic-2
+    name: "Onboarding Walkthrough Quest"
+    phase: 1
+    assigned_to: dev-1
+    stories: 7
+    dependencies: [cedric-epic-1, cedric-epic-3 (Story 3.1)]
+    status: blocked_by_epic_1
+    stories_list:
+      - "2.1: Install react-joyride and WalkthroughOverlay (M)"
+      - "2.2: Walkthrough Step Definitions and Dialogue (M)"
+      - "2.3: First-Time User Detection and Adventure Mode Prompt (M)"
+      - "2.4: Walkthrough Step Completion Detection and Rewards (L)"
+      - "2.5: Backend -- Walkthrough Fields, Migration, Endpoints (M)"
+      - "2.6: Seed Data -- Squire's Trial Quest and Emblem (S)"
+      - "2.7: Walkthrough Completion Celebration (M)"
+    immediately_startable:
+      - "2.5: Backend migration and endpoints (no frontend deps)"
+
+  - id: cedric-epic-3
+    name: "Speech Bubble System"
+    phase: 1
+    assigned_to: dev-2
+    stories: 5
+    dependencies: none
+    status: ready_for_development
+    notes: "Dev-2 starts here, parallel with Epic 1"
+    stories_list:
+      - "3.1: SpeechBubble Component with Theme Variants (M)"
+      - "3.2: Typing Animation (S)"
+      - "3.3: Framer Motion Entrance/Exit Animations (S)"
+      - "3.4: Priority Speech Queue in CedricContext (M)"
+      - "3.5: cedricMessages.ts Dialogue Configuration (S)"
+    immediately_startable:
+      - "3.1: SpeechBubble Component"
+      - "3.4: Priority Queue (after Epic 1 Story 1.1)"
+      - "3.5: cedricMessages.ts"
+
+  - id: cedric-epic-4
+    name: "Idle Animations & Reactions"
+    phase: 2
+    assigned_to: dev-2
+    stories: 5
+    dependencies: [cedric-epic-1, cedric-epic-3]
+    status: blocked_by_epic_3
+    stories_list:
+      - "4.1: CSS Sprite Sheet Idle Animations (M)"
+      - "4.2: Inactivity Timer and State Progression (M)"
+      - "4.3: Framer Motion Reaction Animations (L)"
+      - "4.4: Animation Queue with Collapse Rules (M)"
+      - "4.5: Integrate Reactions with AdventureModeContext Events (M)"
+
+  - id: cedric-epic-5
+    name: "Roadmap Assistant / Loading Narrator"
+    phase: 2
+    assigned_to: dev-1
+    stories: 5
+    dependencies: [cedric-epic-1, cedric-epic-2, cedric-epic-3]
+    status: blocked_by_epic_2
+    stories_list:
+      - "5.1: useCedricNarrator Hook (M)"
+      - "5.2: Oracle Sequence Phase Configuration (S)"
+      - "5.3: AvatarLoadingStage Component (M)"
+      - "5.4: Completion Animation Sequence (M)"
+      - "5.5: Integrate Narrator with Existing Pages (M)"
+
+  - id: cedric-epic-6
+    name: "Contextual Guidance System"
+    phase: 2
+    assigned_to: dev-2
+    stories: 5
+    dependencies: [cedric-epic-1, cedric-epic-3, cedric-epic-4]
+    status: blocked_by_epic_4
+    stories_list:
+      - "6.1: Page Configuration Map (M)"
+      - "6.2: First-Visit Detection and Route Change Listener (M)"
+      - "6.3: Anti-Annoyance Protocol (M)"
+      - "6.4: Proactive Suggestion System (M)"
+      - "6.5: Quiet Mode and Tip Tracking Persistence (S)"
+
+  - id: cedric-epic-7
+    name: "Store Live Preview & Interactions"
+    phase: 3
+    assigned_to: dev-1
+    stories: 4
+    dependencies: [cedric-epic-1, cedric-epic-5]
+    status: blocked_by_epic_5
+    stories_list:
+      - "7.1: Avatar Preview Mode on StorePage (M)"
+      - "7.2: Hover-to-Preview for Store Items (M)"
+      - "7.3: CharacterSheet Popup (M)"
+      - "7.4: Cursor Tracking on Hover (S)"
+
+  - id: cedric-epic-8
+    name: "Non-Adventure Mode Variant & Polish"
+    phase: 3
+    assigned_to: dev-2
+    stories: 5
+    dependencies: [cedric-epic-1, cedric-epic-6]
+    status: blocked_by_epic_6
+    stories_list:
+      - "8.1: Modern/Professional Variant (M)"
+      - "8.2: Minimize to Icon and Drag to Reposition (M)"
+      - "8.3: prefers-reduced-motion Support (S)"
+      - "8.4: Responsive Adjustments (M)"
+      - "8.5: Accessibility Features (M)"
+
+story_summary:
+  total: 42
+  by_size:
+    small: 11
+    medium: 24
+    large: 7
+  by_phase:
+    phase_1: 18
+    phase_2: 15
+    phase_3: 9
+  by_developer:
+    dev_1: 22
+    dev_2: 20
+
+developer_assignment:
+  dev_1:
+    - "Epic 1: Avatar Component Foundation (6 stories)"
+    - "Epic 2: Onboarding Walkthrough Quest (7 stories)"
+    - "Epic 5: Roadmap Assistant / Loading Narrator (5 stories)"
+    - "Epic 7: Store Live Preview & Interactions (4 stories)"
+  dev_2:
+    - "Epic 3: Speech Bubble System (5 stories)"
+    - "Epic 4: Idle Animations & Reactions (5 stories)"
+    - "Epic 6: Contextual Guidance System (5 stories)"
+    - "Epic 8: Non-Adventure Mode Variant & Polish (5 stories)"
+
+critical_path:
+  - "Epic 1 Stories 1.1+1.2+1.3+1.5 (parallel) -> 1.4 -> 1.6"
+  - "Then: Epic 2 (Dev-1) and Epic 4 (Dev-2, after Epic 3)"
+  - "Then: Epic 5 (Dev-1, after Epic 2) and Epic 6 (Dev-2, after Epic 4)"
+  - "Then: Epic 7 (Dev-1) and Epic 8 (Dev-2)"
+
+parallelization_opportunities:
+  - "Epic 1 (Dev-1) and Epic 3 (Dev-2) run in parallel from day one"
+  - "Epic 1 Stories 1.1, 1.2, 1.3, 1.5 are all independent and can start simultaneously"
+  - "Epic 2 Story 2.5 (backend) can start in parallel with frontend stories"
+  - "Epic 3 Stories 3.1, 3.4, 3.5 can start in parallel"
+  - "Epic 5 Stories 5.1 and 5.2 can start in parallel"
+  - "Epic 7 Stories 7.3 and 7.4 are independent of 7.1/7.2"
+  - "Epic 8 Stories 8.1, 8.2, 8.3 can all start in parallel"
+
+new_dependency:
+  package: "react-joyride"
+  version: "^2.9"
+  size: "~25KB"
+  license: "MIT"
+  purpose: "Walkthrough spotlight overlay with custom tooltip rendering"
+  installed_in: "Epic 2 Story 2.1"
+
+backend_changes:
+  new_migration: "031_add_walkthrough_fields.py"
+  new_model_fields:
+    - "user_progression.walkthrough_step (Integer, default 0)"
+    - "user_progression.walkthrough_completed (Boolean, default False)"
+  new_endpoints:
+    - "POST /api/progression/walkthrough-step"
+    - "POST /api/progression/complete-onboarding"
+  modified_endpoints:
+    - "GET /api/progression (add walkthrough fields to response)"
+  seed_data:
+    - "quest_seed.py: 'The Squire's Trial' quest (level 0)"
+    - "cosmetic_seed.py: 'Squire's Trial Emblem' cosmetic"
+  reward_config:
+    - "walkthrough_step: RewardConfig(xp=50, coins=25)"
+
+frontend_new_files:
+  - "frontend/src/context/CedricContext.tsx"
+  - "frontend/src/components/avatar/AvatarCompanion.tsx"
+  - "frontend/src/components/avatar/AvatarSprite.tsx"
+  - "frontend/src/components/avatar/SpeechBubble.tsx"
+  - "frontend/src/components/avatar/CharacterSheet.tsx"
+  - "frontend/src/components/avatar/WalkthroughOverlay.tsx"
+  - "frontend/src/components/avatar/CedricTooltip.tsx"
+  - "frontend/src/components/avatar/AvatarLoadingStage.tsx"
+  - "frontend/src/components/avatar/useCedricNarrator.ts"
+  - "frontend/src/components/avatar/cedricMessages.ts"
+  - "frontend/src/components/avatar/cedricPageConfig.ts"
+  - "frontend/src/components/avatar/cedricAnimations.ts"
+  - "frontend/src/components/avatar/cedricAnimations.css"
+  - "frontend/src/components/avatar/cedricNarratorConfig.ts"
+  - "frontend/src/components/avatar/walkthroughSteps.ts"
+  - "frontend/src/components/avatar/Pedestal.tsx"
+  - "frontend/src/components/avatar/NamePlate.tsx"
+  - "frontend/src/components/avatar/FloatingText.tsx"
+  - "frontend/src/components/avatar/ConfettiEffect.tsx"
+  - "frontend/src/components/avatar/ModernGuideIcon.tsx"
+  - "frontend/src/components/avatar/QuestCompleteBanner.tsx"
+  - "frontend/src/components/avatar/index.ts"
+  - "frontend/src/hooks/usePrefersReducedMotion.ts"
+  - "frontend/src/hooks/useBreakpoint.ts"
+
+frontend_modified_files:
+  - "frontend/src/App.tsx (add CedricProvider)"
+  - "frontend/src/components/layout/MainLayout.tsx (render AvatarCompanion)"
+  - "frontend/src/components/layout/Sidebar.tsx (add data-tour attributes)"
+  - "frontend/src/services/progressionService.ts (add walkthrough types/methods)"
+  - "frontend/src/pages/RoadmapPage.tsx (integrate loading narrator)"
+  - "frontend/src/pages/StorePage.tsx (avatar preview, data-tour attributes)"
+  - "frontend/src/components/matches/MatchResultsPage.tsx (generic narrator, data-tour)"

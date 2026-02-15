@@ -3,7 +3,7 @@ import { useAdventureMode } from '../../context/AdventureModeContext';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 
 export default function NotificationToasts() {
-  const { state, clearRecentXP, clearRecentGold, clearRecentAchievement, clearLevelUp } = useAdventureMode();
+  const { state, clearRecentXP, clearRecentGold, clearRecentAchievement, clearLevelUp, clearQuestComplete } = useAdventureMode();
   const { theme } = useTheme();
   const colors = themeColors[theme];
 
@@ -195,8 +195,91 @@ export default function NotificationToasts() {
             >
               Level {state.newLevel || state.level}
             </div>
+            {state.newTitle && (
+              <div
+                className="text-lg mt-1"
+                style={{
+                  color: '#FFE600',
+                  fontFamily: "'Cinzel', serif",
+                }}
+              >
+                {state.newTitle}
+              </div>
+            )}
             <div className="text-sm mt-2" style={{ color: '#c4b998' }}>
-              +{(state.newLevel || state.level) * 25} bonus gold!
+              +{state.levelUpCoinBonus ?? (state.newLevel || state.level) * 25} bonus gold!
+            </div>
+            {state.unlockedFeatures && state.unlockedFeatures.length > 0 && (
+              <div className="mt-3 text-sm" style={{ color: '#c4b998' }}>
+                <div className="text-xs uppercase tracking-wider mb-1" style={{ color: '#FFE600' }}>
+                  Unlocked
+                </div>
+                {state.unlockedFeatures.map((feature: string) => (
+                  <div key={feature} className="text-sm" style={{ color: '#e8dcc4' }}>
+                    {feature}
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Quest Complete Toast */}
+        {state.recentQuestComplete && (
+          <motion.div
+            key="quest-toast"
+            initial={{ x: 100, opacity: 0, scale: 0.8 }}
+            animate={{ x: 0, opacity: 1, scale: 1 }}
+            exit={{ x: 100, opacity: 0, scale: 0.8 }}
+            className="px-6 py-5 rounded-xl cursor-pointer pointer-events-auto"
+            onClick={clearQuestComplete}
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 26, 42, 0.98) 0%, rgba(30, 50, 70, 0.98) 100%)',
+              border: '3px solid #60C0FF',
+              boxShadow: '0 0 40px rgba(96, 192, 255, 0.4), inset 0 0 20px rgba(96, 192, 255, 0.1)',
+            }}
+          >
+            <div className="flex items-center gap-4">
+              <motion.span
+                className="text-4xl"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  rotate: [0, -5, 5, 0],
+                }}
+                transition={{ duration: 0.6, repeat: 1 }}
+              >
+                ⚔️
+              </motion.span>
+              <div>
+                <div
+                  className="text-xs uppercase tracking-widest mb-1"
+                  style={{ color: '#60C0FF' }}
+                >
+                  Quest Complete!
+                </div>
+                <div
+                  className="text-lg font-bold mb-1"
+                  style={{
+                    color: '#e8dcc4',
+                    fontFamily: theme === 'game' ? "'Cinzel', serif" : 'inherit',
+                  }}
+                >
+                  {state.recentQuestComplete.questName}
+                </div>
+                <div className="flex gap-3 text-sm">
+                  {state.recentQuestComplete.xpReward > 0 && (
+                    <span style={{ color: '#22c55e' }}>+{state.recentQuestComplete.xpReward} XP</span>
+                  )}
+                  {state.recentQuestComplete.goldReward > 0 && (
+                    <span style={{ color: '#FFE600' }}>+{state.recentQuestComplete.goldReward} Gold</span>
+                  )}
+                </div>
+                {state.recentQuestComplete.cosmeticReward && (
+                  <div className="mt-2 text-sm" style={{ color: '#c4a0ff' }}>
+                    {state.recentQuestComplete.cosmeticReward}
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

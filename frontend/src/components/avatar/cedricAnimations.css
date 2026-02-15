@@ -1,0 +1,229 @@
+/* Cedric Avatar Animation Keyframes */
+/* CSS sprite sheet animations for pixel art character */
+
+.cedric-sprite {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Idle breathing: 4 frames at 2fps (2s cycle) */
+.cedric-sprite--idle {
+  animation: cedric-idle 2s steps(4) infinite;
+}
+
+@keyframes cedric-idle {
+  from { transform: translateY(0); }
+  25% { transform: translateY(-1px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(1px); }
+  to { transform: translateY(0); }
+}
+
+/* Look around: slow head turn effect */
+.cedric-sprite--lookAround {
+  animation: cedric-lookAround 2s ease-in-out 1;
+}
+
+@keyframes cedric-lookAround {
+  0%, 100% { transform: scaleX(1); }
+  30% { transform: scaleX(-1); }
+  70% { transform: scaleX(1); }
+}
+
+/* Sitting: slight downward settle */
+.cedric-sprite--sitting {
+  animation: cedric-sitting 4s ease-in-out infinite;
+}
+
+@keyframes cedric-sitting {
+  0%, 100% { transform: translateY(4px); }
+  50% { transform: translateY(5px); }
+}
+
+/* Sleeping: slow bob with ZZZ effect */
+.cedric-sprite--sleeping {
+  animation: cedric-sleeping 4s ease-in-out infinite;
+}
+
+@keyframes cedric-sleeping {
+  0%, 100% { transform: translateY(4px) rotate(-2deg); }
+  50% { transform: translateY(6px) rotate(2deg); }
+}
+
+/* Wake up: quick spring back */
+.cedric-sprite--wakeUp {
+  animation: cedric-wakeUp 0.8s ease-out 1;
+}
+
+@keyframes cedric-wakeUp {
+  0% { transform: translateY(4px) scale(0.95); }
+  40% { transform: translateY(-4px) scale(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Jump XP: small hop */
+.cedric-sprite--jumpXP {
+  animation: cedric-jumpXP 0.5s ease-out 1;
+}
+
+@keyframes cedric-jumpXP {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+/* Celebrate Level Up: big jump with scale */
+.cedric-sprite--celebrateLevelUp {
+  animation: cedric-celebrateLevelUp 1.5s ease-out 1;
+}
+
+@keyframes cedric-celebrateLevelUp {
+  0% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-16px) scale(1.1); }
+  40% { transform: translateY(-8px) scale(1.05); }
+  60% { transform: translateY(-12px) scale(1.08); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* Catch Coin: slight reach up */
+.cedric-sprite--catchCoin {
+  animation: cedric-catchCoin 0.6s ease-in 1;
+}
+
+@keyframes cedric-catchCoin {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-3px) scaleY(1.05); }
+  100% { transform: translateY(0); }
+}
+
+/* Hold Trophy: lift up */
+.cedric-sprite--holdTrophy {
+  animation: cedric-holdTrophy 1.2s ease-out 1;
+}
+
+@keyframes cedric-holdTrophy {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-8px) scale(1.05); }
+  100% { transform: translateY(-4px) scale(1.02); }
+}
+
+/* Victory Pose: triumphant jump */
+.cedric-sprite--victoryPose {
+  animation: cedric-victoryPose 1.5s ease-out 1;
+}
+
+@keyframes cedric-victoryPose {
+  0% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-16px) rotate(-5deg); }
+  50% { transform: translateY(-8px) rotate(5deg); }
+  75% { transform: translateY(-12px) rotate(0); }
+  100% { transform: translateY(0) rotate(0); }
+}
+
+/* Spin New Item: rotation */
+.cedric-sprite--spinNewItem {
+  animation: cedric-spinNewItem 0.8s ease-in-out 1;
+}
+
+@keyframes cedric-spinNewItem {
+  0% { transform: rotateY(0deg); }
+  50% { transform: rotateY(180deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+/* Wave Hello */
+.cedric-sprite--waveHello {
+  animation: cedric-waveHello 1s ease-in-out 1;
+}
+
+@keyframes cedric-waveHello {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-5deg); }
+  40% { transform: rotate(5deg); }
+  60% { transform: rotate(-5deg); }
+  80% { transform: rotate(5deg); }
+}
+
+/* Thinking: slight tilt with bob */
+.cedric-sprite--thinking {
+  animation: cedric-thinking 2s ease-in-out infinite;
+}
+
+@keyframes cedric-thinking {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-1px) rotate(2deg); }
+  75% { transform: translateY(-1px) rotate(-2deg); }
+}
+
+/* Reading: gentle nod */
+.cedric-sprite--reading {
+  animation: cedric-reading 3s ease-in-out infinite;
+}
+
+@keyframes cedric-reading {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+
+/* Pointing: slight lean */
+.cedric-sprite--pointing {
+  animation: cedric-pointing 1.5s ease-in-out infinite;
+}
+
+@keyframes cedric-pointing {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(2px); }
+}
+
+/* Confused: wobble */
+.cedric-sprite--confused {
+  animation: cedric-confused 1s ease-in-out infinite;
+}
+
+@keyframes cedric-confused {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+/* Excited: bouncy */
+.cedric-sprite--excited {
+  animation: cedric-excited 0.6s ease-in-out infinite;
+}
+
+@keyframes cedric-excited {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.03); }
+}
+
+/* Looking Far: lean forward */
+.cedric-sprite--lookingFar {
+  animation: cedric-lookingFar 2s ease-in-out infinite;
+}
+
+@keyframes cedric-lookingFar {
+  0%, 100% { transform: translateX(0) scaleX(1); }
+  50% { transform: translateX(3px) scaleX(1.02); }
+}
+
+/* Tracing Lines: side-to-side movement */
+.cedric-sprite--tracingLines {
+  animation: cedric-tracingLines 2s ease-in-out infinite;
+}
+
+@keyframes cedric-tracingLines {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* Looking Up: slight upward tilt */
+.cedric-sprite--lookingUp {
+  animation: cedric-lookingUp 3s ease-in-out infinite;
+}
+
+@keyframes cedric-lookingUp {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-2px) rotate(-3deg); }
+}

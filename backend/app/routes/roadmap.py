@@ -122,6 +122,18 @@ async def generate_roadmap(
         # Update the roadmap_id to be the saved ID for consistency
         roadmap.roadmap_id = str(saved_roadmap.id)
 
+        # Fire-and-forget gamification hook (Story 5.3 -- roadmap_generated)
+        try:
+            from app.services.reward_hook_service import reward_hook_service
+            reward_hook_service.process_action(
+                db, current_user.id, "roadmap_generated",
+                f"roadmap:{saved_roadmap.id}"
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Gamification failed for roadmap %s", saved_roadmap.id)
+
         logger.info(f"Roadmap generated and saved: {saved_roadmap.id}")
         return roadmap
 
@@ -553,6 +565,19 @@ async def complete_milestone_with_skills(
     # Toggle milestone to completed
     progress_service = RoadmapProgressService(db)
     result = progress_service.toggle_milestone(roadmap_uuid, milestone_id, request.phase_id)
+
+    # Fire-and-forget gamification hook (Story 5.3 -- milestone_passed)
+    if result.get("status") == "completed":
+        try:
+            from app.services.reward_hook_service import reward_hook_service
+            reward_hook_service.process_action(
+                db, current_user.id, "milestone_passed",
+                f"milestone:{milestone_id}"
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Gamification failed for milestone %s", milestone_id)
 
     # Only boost skills if milestone is now completed
     boosted_skills = []

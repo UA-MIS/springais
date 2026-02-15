@@ -11,6 +11,8 @@ import { useMatches } from '../../context/MatchesContext';
 import { useToast } from '../../context/ToastContext';
 import { useSkillsContext } from '../../context/SkillsContext';
 import { useAdventureMode, getFantasyText } from '../../context/AdventureModeContext';
+import NarratorWrapper from '../avatar/NarratorWrapper';
+import { MATCH_LOADING_PHASES } from '../avatar/cedricNarratorConfig';
 
 // Threshold for switching to virtual scrolling
 const VIRTUAL_SCROLL_THRESHOLD = 50;
@@ -298,9 +300,14 @@ export default function MatchResultsPage() {
 
       {/* Match Cards */}
       {loading && matches.length === 0 ? (
-        <div className="py-12 text-center" style={{ color: colors.textMuted }}>
-          Loading matches...
-        </div>
+        <NarratorWrapper
+          isLoading={true}
+          phases={MATCH_LOADING_PHASES}
+        >
+          <div className="py-12 text-center" style={{ color: colors.textMuted }}>
+            Loading matches...
+          </div>
+        </NarratorWrapper>
       ) : error ? (
         <div className="py-12 text-center" style={{ color: colors.textMuted }}>
           {error}

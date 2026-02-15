@@ -188,7 +188,28 @@ async def complete_module(
     service = SkillProgressService(db, user_profile=current_user)
     try:
         result = service.complete_module(current_user.id, skill_name, UUID(module_id))
-        return {"status": "completed", "completed_at": result.completed_at.isoformat()}
+
+        # Fire-and-forget gamification hook (Story 5.2)
+        reward_result = None
+        try:
+            from app.services.reward_hook_service import reward_hook_service
+            reward_result = reward_hook_service.process_action(
+                db, current_user.id, "module_completed", f"module:{module_id}"
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Gamification failed for module %s", module_id)
+
+        response = {"status": "completed", "completed_at": result.completed_at.isoformat()}
+        if reward_result is not None:
+            response["gamification"] = {
+                "xp_awarded": reward_result.xp_awarded,
+                "coins_awarded": reward_result.coins_awarded,
+                "level_up": reward_result.level_up,
+                "new_level": reward_result.new_level,
+            }
+        return response
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -833,6 +854,17 @@ async def upload_resume(
         )
 
         logger.info(f"Uploaded resume, extracted {len(normalized_skills)} skills, vectorization scheduled in background")
+
+        # Fire-and-forget gamification hook (Story 5.4 -- resume_uploaded)
+        try:
+            from app.services.reward_hook_service import reward_hook_service
+            reward_hook_service.process_action(
+                db, _current_user.id, "resume_uploaded", f"resume:{_current_user.id}"
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Gamification failed for resume upload")
 
         return ResumeUploadResponse(
             filename=file.filename,

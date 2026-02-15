@@ -283,3 +283,9 @@ button:hover:not(:disabled) {
   border: 1px solid rgba(139, 90, 43, 0.3) !important;
   border-radius: 8px !important;
 }
+
+/* Cedric speech bubble typing cursor blink */
+@keyframes cedric-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}

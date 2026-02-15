@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import { useAdventureMode } from '../../context/AdventureModeContext';
+import { Link } from 'react-router-dom';
+import { useAdventureMode, getFantasyText } from '../../context/AdventureModeContext';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import CoinFlipGame from './CoinFlipGame';
 import AchievementsPanel from './AchievementsPanel';
 
 export default function AdventureHUD() {
   const { state } = useAdventureMode();
   const { theme } = useTheme();
   const colors = themeColors[theme];
-  const [showMiniGame, setShowMiniGame] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
 
   if (!state.enabled) return null;
 
-  const xpPercent = (state.currentXP / state.xpToNextLevel) * 100;
+  const xpPercent = state.xpToNextLevel > 0
+    ? (state.currentXP / (state.currentXP + state.xpToNextLevel)) * 100
+    : 0;
 
   return (
     <>
@@ -98,14 +99,8 @@ export default function AdventureHUD() {
           </div>
         </div>
 
-        {/* Gold - Clickable for mini-game */}
-        <motion.div
-          className="flex items-center gap-2 cursor-pointer"
-          onClick={() => setShowMiniGame(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          title="Click to play Coin Flip!"
-        >
+        {/* Gold Display */}
+        <div className="flex items-center gap-2">
           <span className="text-xl">🪙</span>
           <div>
             <div
@@ -125,7 +120,7 @@ export default function AdventureHUD() {
               {state.gold.toLocaleString()}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Achievements Count - Clickable */}
         <motion.div
@@ -148,7 +143,7 @@ export default function AdventureHUD() {
               className="text-lg font-bold"
               style={{ color: colors.textPrimary }}
             >
-              {state.unlockedAchievements.length}
+              {state.unlockedAchievementsCount}
             </div>
           </div>
         </motion.div>
@@ -176,14 +171,38 @@ export default function AdventureHUD() {
             </div>
           </div>
         )}
-      </motion.div>
 
-      {/* Mini-Game Modal */}
-      <AnimatePresence>
-        {showMiniGame && (
-          <CoinFlipGame isOpen={showMiniGame} onClose={() => setShowMiniGame(false)} />
-        )}
-      </AnimatePresence>
+        {/* Quick-Access Buttons */}
+        <div
+          className="flex items-center gap-2 pl-4 border-l"
+          style={{ borderColor: colors.border }}
+        >
+          <Link
+            to="/store"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors hover:opacity-80"
+            style={{
+              background: 'linear-gradient(135deg, #8B5A2B 0%, #A0722B 100%)',
+              color: '#FFE600',
+              fontFamily: theme === 'game' ? "'Cinzel', serif" : 'inherit',
+            }}
+          >
+            {getFantasyText('Store', true)}
+          </Link>
+          {state.level >= 3 && (
+            <Link
+              to="/quests"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors hover:opacity-80"
+              style={{
+                background: 'linear-gradient(135deg, #2B5A8B 0%, #2B72A0 100%)',
+                color: '#60C0FF',
+                fontFamily: theme === 'game' ? "'Cinzel', serif" : 'inherit',
+              }}
+            >
+              {getFantasyText('Quests', true)}
+            </Link>
+          )}
+        </div>
+      </motion.div>
 
       {/* Achievements Panel */}
       <AnimatePresence>

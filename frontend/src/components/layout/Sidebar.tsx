@@ -1,17 +1,27 @@
 import { NavLink } from 'react-router-dom';
 import { useTheme, themeColors } from '../../context/ThemeContext';
+import { useAdventureMode, getFantasyText } from '../../context/AdventureModeContext';
 
-const navigation = [
-  { name: 'Match Results', href: '/matches' },
-  { name: 'Saved Roles', href: '/saved' },
-  { name: 'Career Roadmap', href: '/roadmap' },
-  { name: 'Success Patterns', href: '/success-patterns' },
-  { name: 'My Profile', href: '/profile' },
+const baseNavigation = [
+  { name: 'Match Results', href: '/matches', tourId: 'nav-matches' },
+  { name: 'Saved Roles', href: '/saved', tourId: undefined },
+  { name: 'Career Roadmap', href: '/roadmap', tourId: 'nav-roadmap' },
+  { name: 'Success Patterns', href: '/success-patterns', tourId: undefined },
+  { name: 'My Profile', href: '/profile', tourId: 'nav-profile' },
 ];
 
 export default function Sidebar() {
   const { theme, isDark, isGame } = useTheme();
   const colors = themeColors[theme];
+  const { state } = useAdventureMode();
+  const adventureEnabled = state.enabled;
+
+  // Build navigation list with conditional Store and Quests links
+  const navigation = [
+    ...baseNavigation,
+    ...(adventureEnabled ? [{ name: 'Store', href: '/store', tourId: 'nav-store' as string | undefined }] : []),
+    ...(adventureEnabled && state.level >= 3 ? [{ name: 'Quests', href: '/quests', tourId: undefined as string | undefined }] : []),
+  ];
 
   return (
     <aside
@@ -27,6 +37,7 @@ export default function Sidebar() {
           <NavLink
             key={item.name}
             to={item.href}
+            data-tour={item.tourId}
             className={({ isActive }) =>
               `flex items-center px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium ${
                 isActive
@@ -48,7 +59,7 @@ export default function Sidebar() {
               borderColor: isActive && !(isDark || isGame) ? colors.accent : undefined,
             })}
           >
-            <span>{item.name}</span>
+            <span>{getFantasyText(item.name, adventureEnabled)}</span>
           </NavLink>
         ))}
       </nav>

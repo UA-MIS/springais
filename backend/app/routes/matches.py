@@ -347,6 +347,18 @@ async def save_match(
 
     match_id = await run_in_threadpool(save_to_db)
 
+    # Fire-and-forget gamification hook (Story 5.4 -- first_match_view)
+    try:
+        from app.services.reward_hook_service import reward_hook_service
+        reward_hook_service.process_action(
+            db, current_user.id, "first_match_view",
+            f"first_match:{current_user.id}"
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("Gamification failed for first match view")
+
     # Refresh recommendations after saving a match (run in background, don't block response)
     try:
         service = SkillRecommendationService(db)

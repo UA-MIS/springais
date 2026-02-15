@@ -12,6 +12,7 @@ import { SavedRolesProvider } from './context/SavedRolesContext';
 import { SkillsProvider } from './context/SkillsContext';
 import { ToastProvider } from './context/ToastContext';
 import { AdventureModeProvider } from './context/AdventureModeContext';
+import { CedricProvider } from './context/CedricContext';
 import { HiringManagerProvider } from './context/HiringManagerContext';
 
 // Lazy load heavier page components for faster initial load
@@ -21,6 +22,8 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SavedRolesPage = lazy(() => import('./pages/SavedRolesPage'));
 const RoadmapPage = lazy(() => import('./pages/RoadmapPage'));
 const SuccessPatternPage = lazy(() => import('./components/successPatterns/SuccessPatternPage'));
+const StorePage = lazy(() => import('./pages/StorePage'));
+const QuestsPage = lazy(() => import('./pages/QuestsPage'));
 
 // Hiring Manager pages
 const HMJobBrowsePage = lazy(() => import('./pages/hm/HMJobBrowsePage'));
@@ -50,13 +53,15 @@ function App() {
           <ProtectedRoute>
             <AdventureModeProvider>
               <ToastProvider>
-                <MatchesProvider>
-                  <SavedRolesProvider>
-                    <SkillsProvider>
-                      <MainLayout />
-                    </SkillsProvider>
-                  </SavedRolesProvider>
-                </MatchesProvider>
+                <CedricProvider>
+                  <MatchesProvider>
+                    <SavedRolesProvider>
+                      <SkillsProvider>
+                        <MainLayout />
+                      </SkillsProvider>
+                    </SavedRolesProvider>
+                  </MatchesProvider>
+                </CedricProvider>
               </ToastProvider>
             </AdventureModeProvider>
           </ProtectedRoute>
@@ -68,6 +73,8 @@ function App() {
         <Route path="/saved" element={<Suspense fallback={<PageLoader />}><SavedRolesPage /></Suspense>} />
         <Route path="/roadmap" element={<Suspense fallback={<PageLoader />}><RoadmapPage /></Suspense>} />
         <Route path="/success-patterns" element={<Suspense fallback={<PageLoader />}><SuccessPatternPage /></Suspense>} />
+        <Route path="/store" element={<Suspense fallback={<PageLoader />}><StorePage /></Suspense>} />
+        <Route path="/quests" element={<Suspense fallback={<PageLoader />}><QuestsPage /></Suspense>} />
 
         {/* Role detail page - accessed when clicking a match */}
         <Route path="/role/:roleId" element={<Suspense fallback={<PageLoader />}><RoleDetailPage /></Suspense>} />

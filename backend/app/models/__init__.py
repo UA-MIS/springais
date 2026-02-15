@@ -1,6 +1,11 @@
+from .achievement import AchievementCatalog, UserAchievement
 from .badge import BadgeCatalog, BadgeInteraction, BadgeSkillMapping, UserBadge
 from .base import Base, TimestampMixin
+from .cosmetic import CosmeticCatalog, UserEquippedItem, UserInventory
 from .career_path import CareerPath
+from .page_visit import UserPageVisit
+from .progression import CoinTransaction, GamificationEvent, UserProgression
+from .quest import SideQuestCatalog, UserQuestProgress
 from .employee import Employee
 from .hm_saved_job import HMSavedJob
 from .job_posting import JobPosting
@@ -15,6 +20,8 @@ from .skill_taxonomy import SEED_SKILLS, SkillTaxonomy, get_seed_skills
 from .user_profile import UserProfile
 
 __all__ = [
+    "AchievementCatalog",
+    "UserAchievement",
     "BadgeCatalog",
     "BadgeInteraction",
     "BadgeSkillMapping",
@@ -42,4 +49,13 @@ __all__ = [
     "get_seed_skills",
     "SEED_SKILLS",
     "UserSkillRecommendation",
+    "CoinTransaction",
+    "GamificationEvent",
+    "UserPageVisit",
+    "UserProgression",
+    "SideQuestCatalog",
+    "UserQuestProgress",
+    "CosmeticCatalog",
+    "UserEquippedItem",
+    "UserInventory",
 ]
