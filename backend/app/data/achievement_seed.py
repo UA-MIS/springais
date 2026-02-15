@@ -78,6 +78,18 @@ ACHIEVEMENT_SEED_DATA: list[dict[str, Any]] = [
         "trigger_config": {"event_type": "first_match_view", "count": 1},
         "sort_order": 50,
     },
+    {
+        "id": "save_role",
+        "name": "Marked for Greatness",
+        "description": "Save a role to your quest log",
+        "icon": "bookmark",
+        "category": "onboarding",
+        "xp_reward": 25,
+        "coin_reward": 10,
+        "trigger_type": "event_based",
+        "trigger_config": {"event_type": "role_saved", "count": 1},
+        "sort_order": 55,
+    },
     # --- Learning (6) ---
     {
         "id": "first_module",

@@ -24,6 +24,9 @@ from app.models.page_visit import UserPageVisit
 from app.models.progression import CoinTransaction, GamificationEvent
 from app.models.user_profile import UserProfile
 from app.schemas.progression import (
+    ActionRequest,
+    ActionResponse,
+    AchievementBrief,
     CompleteOnboardingResponse,
     HistoryItem,
     HistoryResponse,
@@ -150,6 +153,48 @@ def record_visit(
         page=request.page,
         visit_count=visit.visit_count,
         achievements_unlocked=achievements_unlocked,
+    )
+
+
+@router.post("/action", response_model=ActionResponse)
+def record_action(
+    request: ActionRequest,
+    current_user: UserProfile = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db),
+) -> ActionResponse:
+    """Fire a gamification event for a user action. Awards XP, coins, and evaluates achievements.
+
+    The event_key includes user_id + action to ensure idempotency for one-time events.
+    """
+    from app.services.reward_hook_service import reward_hook_service
+
+    event_key = f"{request.action}:{current_user.id}"
+    result = reward_hook_service.process_action(
+        db, current_user.id, request.action, event_key
+    )
+    db.commit()
+
+    if result is None:
+        return ActionResponse()
+
+    achievements = []
+    for a in result.achievements_unlocked:
+        achievements.append(AchievementBrief(
+            id=a.get("id", ""),
+            name=a.get("name", ""),
+            description=a.get("description", ""),
+            xp_reward=a.get("xp_reward", 0),
+            coin_reward=a.get("coin_reward", 0),
+        ))
+
+    return ActionResponse(
+        xp_awarded=result.xp_awarded,
+        coins_awarded=result.coins_awarded,
+        level_up=result.level_up,
+        new_level=result.new_level,
+        new_title=result.new_title,
+        achievements_unlocked=achievements,
+        already_awarded=result.already_awarded,
     )
 
 

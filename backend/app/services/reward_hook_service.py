@@ -70,6 +70,7 @@ REWARD_CONFIG: dict[str, RewardConfig] = {
     "resume_uploaded": RewardConfig(xp=50, coins=25),
     "profile_completed": RewardConfig(xp=50, coins=25),
     "explorer_completed": RewardConfig(xp=50, coins=25),
+    "role_saved": RewardConfig(xp=25, coins=10),
     "walkthrough_step": RewardConfig(xp=50, coins=25),
 }
 

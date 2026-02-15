@@ -103,6 +103,20 @@ class RewardResultResponse(BaseModel):
     quest_updates: list[dict[str, Any]] = []
 
 
+class ActionRequest(BaseModel):
+    action: str = Field(..., min_length=1, max_length=100)
+
+
+class ActionResponse(BaseModel):
+    xp_awarded: int = 0
+    coins_awarded: int = 0
+    level_up: bool = False
+    new_level: int | None = None
+    new_title: str | None = None
+    achievements_unlocked: list[AchievementBrief] = []
+    already_awarded: bool = False
+
+
 class WalkthroughStepRequest(BaseModel):
     step: int = Field(..., ge=0, le=7)
 

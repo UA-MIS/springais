@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
-import { progressionApi, ProgressionState, QUERY_KEYS } from '../services/progressionService';
+import { progressionApi, ProgressionState, QUERY_KEYS, ActionResult } from '../services/progressionService';
 
 // Achievement definitions (kept for backward compatibility until Epic 4 replaces with server achievements)
 interface Achievement {
@@ -359,23 +359,75 @@ export function AdventureModeProvider({ children }: { children: ReactNode }) {
     [gold, queryClient]
   );
 
-  // Achievement functions (legacy client-side, will be replaced in Epic 4)
+  // Map frontend achievement IDs to backend event types
+  const EVENT_MAP: Record<string, string> = {
+    first_match: 'first_match_view',
+    save_role: 'role_saved',
+    create_roadmap: 'roadmap_generated',
+    first_login: 'first_login',
+    complete_milestone: 'milestone_passed',
+    profile_complete: 'profile_completed',
+    explorer: 'explorer_completed',
+  };
+
+  // Action mutation for firing gamification events
+  const actionMutation = useMutation({
+    mutationFn: progressionApi.recordAction,
+    onSuccess: (data: ActionResult) => {
+      if (data.already_awarded) return;
+
+      // Show achievement notification if any were unlocked
+      if (data.achievements_unlocked.length > 0) {
+        const first = data.achievements_unlocked[0];
+        const achievement = ACHIEVEMENTS.find((a) => a.id === first.id) || {
+          id: first.id,
+          name: first.name,
+          description: first.description,
+          icon: '🏆',
+          xpReward: first.xp_reward,
+          goldReward: first.coin_reward,
+          condition: '',
+        };
+        setUnlockedAchievements((prev) =>
+          data.achievements_unlocked.reduce(
+            (acc, a) => (acc.includes(a.id) ? acc : [...acc, a.id]),
+            prev
+          )
+        );
+        setRecentAchievement(achievement);
+        setTimeout(() => setRecentAchievement(null), 5000);
+      }
+
+      // Show XP/Gold notifications
+      if (data.xp_awarded > 0) {
+        setRecentXPGain(data.xp_awarded);
+        setTimeout(() => setRecentXPGain(null), 3000);
+      }
+      if (data.coins_awarded > 0) {
+        setRecentGoldGain(data.coins_awarded);
+        setTimeout(() => setRecentGoldGain(null), 3000);
+      }
+
+      // Handle level up
+      if (data.level_up && data.new_level) {
+        setLevelUpPending(true);
+        setNewLevel(data.new_level);
+        setNewTitle(data.new_title);
+      }
+
+      // Refetch progression to update HUD immediately
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progression });
+    },
+  });
+
+  // Achievement unlock -- fires backend event for persistence and reward
   const unlockAchievement = useCallback(
     (achievementId: string) => {
-      if (!unlockedAchievements.includes(achievementId)) {
-        const achievement = ACHIEVEMENTS.find((a) => a.id === achievementId);
-        if (achievement) {
-          setUnlockedAchievements((prev) => [...prev, achievementId]);
-          setRecentAchievement(achievement);
-          setTimeout(() => setRecentAchievement(null), 5000);
-          // Refetch progression so HUD achievement count updates
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progression });
-          }, 1500);
-        }
-      }
+      if (unlockedAchievements.includes(achievementId)) return;
+      const eventType = EVENT_MAP[achievementId] || achievementId;
+      actionMutation.mutate(eventType);
     },
-    [unlockedAchievements, queryClient]
+    [unlockedAchievements, actionMutation]
   );
 
   const getAchievements = useCallback(() => ACHIEVEMENTS, []);
@@ -384,6 +436,12 @@ export function AdventureModeProvider({ children }: { children: ReactNode }) {
     (achievementId: string) => unlockedAchievements.includes(achievementId),
     [unlockedAchievements]
   );
+
+  // Sync unlocked achievements from server on initial load
+  // (so isAchievementUnlocked works after page refresh)
+  const serverAchievementCount = serverData?.unlocked_achievements_count ?? 0;
+  // We track IDs client-side; the count comes from server.
+  // The HUD uses serverAchievementCount directly.
 
   const incrementSkillsCompleted = useCallback(() => {
     setCompletedSkillsCount((prev) => prev + 1);
@@ -431,7 +489,10 @@ export function AdventureModeProvider({ children }: { children: ReactNode }) {
 
   const clearQuestComplete = useCallback(() => setRecentQuestComplete(null), []);
 
-  const unlockedAchievementsCount = serverData?.unlocked_achievements_count ?? 0;
+  const unlockedAchievementsCount = Math.max(
+    serverData?.unlocked_achievements_count ?? 0,
+    unlockedAchievements.length
+  );
 
   const state: AdventureModeState = {
     enabled,

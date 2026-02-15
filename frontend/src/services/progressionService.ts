@@ -74,6 +74,22 @@ export interface VisitResult {
   }>;
 }
 
+export interface ActionResult {
+  xp_awarded: number;
+  coins_awarded: number;
+  level_up: boolean;
+  new_level: number | null;
+  new_title: string | null;
+  achievements_unlocked: Array<{
+    id: string;
+    name: string;
+    description: string;
+    xp_reward: number;
+    coin_reward: number;
+  }>;
+  already_awarded: boolean;
+}
+
 // Standardized React Query keys (Story 8.3)
 export const QUERY_KEYS = {
   progression: ['progression'] as const,
@@ -100,6 +116,9 @@ export const progressionApi = {
 
   recordVisit: (page: string) =>
     api.post<VisitResult>('/progression/visit', { page }).then((r) => r.data),
+
+  recordAction: (action: string) =>
+    api.post<ActionResult>('/progression/action', { action }).then((r) => r.data),
 
   getHistory: (type: 'event' | 'transaction', limit = 50, offset = 0) =>
     api
