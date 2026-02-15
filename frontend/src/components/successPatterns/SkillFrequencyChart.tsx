@@ -28,9 +28,9 @@ export default function SkillFrequencyChart({ data }: SkillFrequencyChartProps) 
     if (active && payload && payload.length) {
       const skill = payload[0].payload as SkillFrequency;
       return (
-        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
+        <div className="border border-white/20 p-3 rounded-sm shadow-2xl" style={{ backgroundColor: 'rgba(20, 18, 15, 0.95)' }}>
           <p className="font-semibold text-white">{skill.skill}</p>
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-white/80">
             Required for <span className="font-bold">{skill.frequency}%</span> of successful
             transitions
           </p>

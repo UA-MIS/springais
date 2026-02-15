@@ -33,12 +33,12 @@ export default function SuccessRateChart({ data }: SuccessRateChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload as TransitionData;
       return (
-        <div className="border border-white/15 bg-white/7 p-3 rounded-sm shadow-2xl backdrop-blur-md">
+        <div className="border border-white/20 p-3 rounded-sm shadow-2xl" style={{ backgroundColor: 'rgba(20, 18, 15, 0.95)' }}>
           <p className="font-semibold text-white">{label}</p>
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-white/80">
             Success Rate: <span className="font-bold">{data.successRate}%</span>
           </p>
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-white/80">
             Sample Size: <span className="font-bold">{data.sampleSize} employees</span>
           </p>
         </div>

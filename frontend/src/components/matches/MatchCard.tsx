@@ -7,6 +7,7 @@ interface MatchCardProps {
   match: Match;
   onViewDetails: (matchId: string) => void;
   onSave: (matchId: string) => void;
+  saveButtonLabel?: string;
 }
 
 function formatDate(dateString: string): string {
@@ -25,7 +26,7 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function MatchCard({ match, onViewDetails, onSave }: MatchCardProps) {
+export default function MatchCard({ match, onViewDetails, onSave, saveButtonLabel = 'Save Match' }: MatchCardProps) {
   const { theme, isDark, isGame } = useTheme();
   const colors = themeColors[theme];
   const scorePercentage = Math.round(match.overall_score * 100);
@@ -110,7 +111,7 @@ export default function MatchCard({ match, onViewDetails, onSave }: MatchCardPro
             border: `1px solid ${colors.border}`,
           }}
         >
-          Save Match
+          {saveButtonLabel}
         </button>
       </div>
     </div>

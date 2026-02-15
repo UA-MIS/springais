@@ -144,23 +144,13 @@ export default function SavedRolesPage() {
           {savedRoles.map((saved) => {
             const match = convertSavedMatchToMatch(saved)
             return (
-              <div key={saved.match_id} className="relative">
+              <div key={saved.match_id}>
                 <MatchCard
                   match={match}
                   onViewDetails={(id) => navigate(`/role/${id}`)}
                   onSave={() => handleUnsave(saved.match_id)}
+                  saveButtonLabel="Remove"
                 />
-                <button
-                  onClick={() => handleUnsave(saved.match_id)}
-                  className="absolute top-4 right-4 px-3 py-1 text-sm rounded-md transition-colors"
-                  style={{
-                    backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                    color: colors.textPrimary,
-                  }}
-                  title="Remove from saved"
-                >
-                  Remove
-                </button>
               </div>
             )
           })}

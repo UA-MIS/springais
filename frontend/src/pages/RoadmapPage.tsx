@@ -336,6 +336,7 @@ interface CustomizationPanelProps {
   onTimelinePreferenceChange: (v: string) => void;
   colors: typeof themeColors.dark;
   isDark: boolean;
+  isGame: boolean;
 }
 
 function CustomizationPanel({
@@ -349,6 +350,7 @@ function CustomizationPanel({
   onTimelinePreferenceChange,
   colors,
   isDark,
+  isGame,
 }: CustomizationPanelProps) {
   const emphasisOptions: { value: RoadmapEmphasis; label: string; description: string }[] = [
     { value: 'balanced', label: 'Balanced', description: 'Mix of technical and leadership' },
@@ -414,13 +416,13 @@ function CustomizationPanel({
           onChange={(e) => onTimelinePreferenceChange(e.target.value)}
           className="w-full p-3 rounded-lg text-sm"
           style={{
-            backgroundColor: isDark ? '#1a1a1f' : '#fff',
+            backgroundColor: isDark || isGame ? '#1a1a1f' : '#fff',
             color: colors.textPrimary,
             border: `1px solid ${colors.cardBorder}`,
           }}
         >
           {timelineOptions.map((opt) => (
-            <option key={opt} value={opt} style={{ backgroundColor: isDark ? '#1a1a1f' : '#fff', color: isDark ? '#fff' : '#1e293b' }}>
+            <option key={opt} value={opt} style={{ backgroundColor: isDark || isGame ? '#1a1a1f' : '#fff', color: isDark || isGame ? '#e8dcc4' : '#1e293b' }}>
               {opt}
             </option>
           ))}
@@ -454,7 +456,7 @@ function CustomizationPanel({
           maxLength={2000}
           className="w-full p-3 rounded-lg text-sm resize-none"
           style={{
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#fff',
+            backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : '#fff',
             color: colors.textPrimary,
             border: `1px solid ${colors.cardBorder}`,
           }}
@@ -594,6 +596,8 @@ export default function RoadmapPage() {
 
   const handleStartCreate = () => {
     setViewMode('create');
+    // Refresh saved roles so newly saved matches appear immediately
+    savedRolesContext?.refreshSavedRoles();
   };
 
   // Render the viewer wrapped in RoadmapProvider when viewing
@@ -678,6 +682,7 @@ export default function RoadmapPage() {
                 onTimelinePreferenceChange={setTimelinePreference}
                 colors={colors}
                 isDark={isDark}
+                isGame={isGame}
               />
 
               <button

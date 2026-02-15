@@ -106,13 +106,13 @@ export default function DepartmentDistributionChart({
             {/* Fixed tooltip area (no overlap) */}
             <div className="hidden md:block">
               {hovered ? (
-                <div className="pointer-events-none w-[180px] border border-white/15 bg-white/7 p-2.5 rounded-sm shadow-2xl backdrop-blur-md">
+                <div className="pointer-events-none w-[180px] border border-white/20 p-2.5 rounded-sm shadow-2xl" style={{ backgroundColor: 'rgba(20, 18, 15, 0.95)' }}>
                   <p className="text-sm font-semibold text-white">{hovered.name}</p>
-                  <p className="mt-1 text-xs text-white/60">
-                    Count: <span className="text-white/85">{hovered.value}</span>
+                  <p className="mt-1 text-xs text-white/80">
+                    Count: <span className="text-white/90">{hovered.value}</span>
                   </p>
-                  <p className="text-xs text-white/60">
-                    %: <span className="text-white/85">{((hovered.value / total) * 100).toFixed(1)}%</span>
+                  <p className="text-xs text-white/80">
+                    %: <span className="text-white/90">{((hovered.value / total) * 100).toFixed(1)}%</span>
                   </p>
                 </div>
               ) : (
