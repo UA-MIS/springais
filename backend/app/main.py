@@ -57,15 +57,13 @@ async def lifespan(app: FastAPI):
         else:
             print(f"Quest catalog already has {quest_count} entries")
 
-        # Seed cosmetic catalog if empty
-        from app.models.cosmetic import CosmeticCatalog
-        cosmetic_count = db.query(CosmeticCatalog).count()
-        if cosmetic_count == 0:
-            from app.data.cosmetic_seed import seed_cosmetic_catalog
-            count = seed_cosmetic_catalog(db)
-            print(f"Seeded cosmetic catalog with {count} cosmetics")
+        # Seed cosmetic catalog (always run to pick up new items)
+        from app.data.cosmetic_seed import seed_cosmetic_catalog
+        count = seed_cosmetic_catalog(db)
+        if count > 0:
+            print(f"Seeded cosmetic catalog with {count} new cosmetics")
         else:
-            print(f"Cosmetic catalog already has {cosmetic_count} entries")
+            print("Cosmetic catalog is up to date")
     finally:
         db.close()
 

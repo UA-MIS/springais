@@ -74,9 +74,54 @@ COSMETIC_SEED_DATA: list[dict[str, Any]] = [
 def seed_cosmetic_catalog(db: Session) -> int:
     """Seed the cosmetic catalog with medieval-themed items.
 
+    Cleans up any legacy categories (armor, boots, cape, jewelry) that may
+    remain if migration 032 hasn't run, then seeds new items.
     Returns the number of items added.
     """
-    from app.models.cosmetic import CosmeticCatalog
+    from app.models.cosmetic import CosmeticCatalog, UserInventory, UserEquippedItem
+    from app.models.quest import SideQuestCatalog, UserQuestProgress
+
+    # Clean up legacy categories that no longer exist
+    OLD_CATEGORIES = ("armor", "boots", "cape", "jewelry")
+    old_ids = [
+        r[0]
+        for r in db.query(CosmeticCatalog.id)
+        .filter(CosmeticCatalog.category.in_(OLD_CATEGORIES))
+        .all()
+    ]
+    if old_ids:
+        # 1. Delete equipped items with old slots
+        db.query(UserEquippedItem).filter(
+            UserEquippedItem.slot.in_(OLD_CATEGORIES)
+        ).delete(synchronize_session=False)
+        # 2. Delete inventory rows referencing old cosmetics
+        db.query(UserInventory).filter(
+            UserInventory.cosmetic_id.in_(old_ids)
+        ).delete(synchronize_session=False)
+        # 3. Delete quest progress for quests rewarding old cosmetics
+        quest_ids = [
+            r[0]
+            for r in db.query(SideQuestCatalog.id)
+            .filter(SideQuestCatalog.cosmetic_reward_id.in_(old_ids))
+            .all()
+        ]
+        if quest_ids:
+            db.query(UserQuestProgress).filter(
+                UserQuestProgress.quest_id.in_(quest_ids)
+            ).delete(synchronize_session=False)
+        # 4. Null out quest cosmetic_reward_id references
+        db.query(SideQuestCatalog).filter(
+            SideQuestCatalog.cosmetic_reward_id.in_(old_ids)
+        ).update(
+            {SideQuestCatalog.cosmetic_reward_id: None},
+            synchronize_session=False,
+        )
+        # 5. Delete old cosmetic catalog rows
+        db.query(CosmeticCatalog).filter(
+            CosmeticCatalog.id.in_(old_ids)
+        ).delete(synchronize_session=False)
+        db.flush()
+        logger.info(f"Cleaned up {len(old_ids)} legacy cosmetic items")
 
     count = 0
 
