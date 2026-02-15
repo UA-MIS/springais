@@ -1,24 +1,36 @@
-FROM node:18-alpine
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# Copy package files
 COPY package.json package-lock.json ./
-
-# Install dependencies
 RUN npm ci
 
-# Copy application code
 COPY . .
-
-# Build for production
 RUN npm run build
 
-# Install serve globally
-RUN npm install -g serve
+# Use nginx instead of serve for better static file handling
+FROM nginx:alpine
 
-# Expose port 8080
+# Copy built files
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Create nginx config for SPA
+RUN echo 'server { \
+    listen 8080; \
+    server_name _; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+    \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
 EXPOSE 8080
 
-# Serve the built files
-CMD ["serve", "-s", "dist", "-l", "8080"]
+CMD ["nginx", "-g", "daemon off;"]

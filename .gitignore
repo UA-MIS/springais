@@ -33,4 +33,14 @@ uploads/*
 .DS_Store
 Thumbs.db
 
-.cache/ 
+.cache/
+
+# Database backups/dumps
+*.dump
+*.dump.gz
+*.sql
+!docker/postgres-init/*.sql
+!scripts/init_database.sql
+backup_extract/
+springais_backup*
+local_backup*
