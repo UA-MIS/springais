@@ -417,6 +417,8 @@ export function AdventureModeProvider({ children }: { children: ReactNode }) {
 
       // Refetch progression to update HUD immediately
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.progression });
+      // Refetch achievements catalog so the panel shows updated unlock status
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.achievementsCatalog });
     },
   });
 

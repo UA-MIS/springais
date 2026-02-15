@@ -1,7 +1,32 @@
-import { useAdventureMode } from '../../context/AdventureModeContext';
 import { useTheme, themeColors } from '../../context/ThemeContext';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { progressionApi, QUERY_KEYS } from '../../services/progressionService';
 import GameButton from './GameButton';
+
+// Map backend lucide icon names to emojis
+const ICON_MAP: Record<string, string> = {
+  scroll: '📜',
+  'user-check': '🛡️',
+  'file-text': '📝',
+  map: '🗺️',
+  compass: '🔮',
+  bookmark: '📌',
+  'book-open': '📖',
+  award: '🏅',
+  star: '⭐',
+  zap: '⚡',
+  shield: '🛡️',
+  badge: '🎖️',
+  flame: '🔥',
+  crown: '👑',
+  trophy: '🏆',
+  globe: '🧭',
+  flag: '🚩',
+  heart: '❤️',
+  'trending-up': '🌟',
+  'dollar-sign': '💰',
+};
 
 interface AchievementsPanelProps {
   isOpen: boolean;
@@ -9,16 +34,21 @@ interface AchievementsPanelProps {
 }
 
 export default function AchievementsPanel({ isOpen, onClose }: AchievementsPanelProps) {
-  const { state, getAchievements, isAchievementUnlocked } = useAdventureMode();
   const { theme, isGame } = useTheme();
   const colors = themeColors[theme];
-  const achievements = getAchievements();
+
+  const { data, isLoading } = useQuery({
+    queryKey: QUERY_KEYS.achievementsCatalog,
+    queryFn: progressionApi.getAchievementsCatalog,
+    enabled: isOpen,
+  });
 
   if (!isOpen) return null;
 
-  const unlockedCount = state.unlockedAchievements.length;
+  const achievements = data?.achievements ?? [];
+  const unlockedCount = achievements.filter((a) => a.is_unlocked).length;
   const totalCount = achievements.length;
-  const progressPercent = (unlockedCount / totalCount) * 100;
+  const progressPercent = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
 
   return (
     <motion.div
@@ -81,74 +111,84 @@ export default function AchievementsPanel({ isOpen, onClose }: AchievementsPanel
 
         {/* Achievements Grid */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {achievements.map((achievement) => {
-              const unlocked = isAchievementUnlocked(achievement.id);
-              return (
-                <motion.div
-                  key={achievement.id}
-                  whileHover={{ scale: 1.02 }}
-                  className="p-4 rounded-xl transition-all"
-                  style={{
-                    background: unlocked
-                      ? isGame
-                        ? 'rgba(255, 230, 0, 0.1)'
-                        : 'rgba(34, 197, 94, 0.1)'
-                      : 'rgba(255, 255, 255, 0.03)',
-                    border: `1px solid ${unlocked
-                      ? isGame
-                        ? 'rgba(255, 230, 0, 0.3)'
-                        : 'rgba(34, 197, 94, 0.3)'
-                      : 'rgba(255, 255, 255, 0.1)'}`,
-                    opacity: unlocked ? 1 : 0.6,
-                  }}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="text-3xl"
-                      style={{
-                        filter: unlocked ? 'none' : 'grayscale(1)',
-                      }}
-                    >
-                      {achievement.icon}
-                    </div>
-                    <div className="flex-1">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div
+                className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent"
+                style={{ borderColor: colors.accent, borderTopColor: 'transparent' }}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {achievements.map((achievement) => {
+                const unlocked = achievement.is_unlocked;
+                const icon = ICON_MAP[achievement.icon] || '🏅';
+                return (
+                  <motion.div
+                    key={achievement.id}
+                    whileHover={{ scale: 1.02 }}
+                    className="p-4 rounded-xl transition-all"
+                    style={{
+                      background: unlocked
+                        ? isGame
+                          ? 'rgba(255, 230, 0, 0.1)'
+                          : 'rgba(34, 197, 94, 0.1)'
+                        : 'rgba(255, 255, 255, 0.03)',
+                      border: `1px solid ${unlocked
+                        ? isGame
+                          ? 'rgba(255, 230, 0, 0.3)'
+                          : 'rgba(34, 197, 94, 0.3)'
+                        : 'rgba(255, 255, 255, 0.1)'}`,
+                      opacity: unlocked ? 1 : 0.6,
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
                       <div
-                        className="font-semibold mb-1"
+                        className="text-3xl"
                         style={{
-                          color: unlocked ? colors.textPrimary : colors.textMuted,
-                          fontFamily: isGame ? "'Cinzel', serif" : 'inherit',
+                          filter: unlocked ? 'none' : 'grayscale(1)',
                         }}
                       >
-                        {achievement.name}
-                        {unlocked && (
-                          <span className="ml-2 text-sm" style={{ color: '#22c55e' }}>✓</span>
-                        )}
+                        {icon}
                       </div>
-                      <div
-                        className="text-sm mb-2"
-                        style={{ color: colors.textMuted }}
-                      >
-                        {achievement.description}
-                      </div>
-                      <div className="flex gap-3 text-xs">
-                        {achievement.xpReward > 0 && (
-                          <span style={{ color: unlocked ? '#22c55e' : colors.textMuted }}>
-                            +{achievement.xpReward} XP
-                          </span>
-                        )}
-                        {achievement.goldReward > 0 && (
-                          <span style={{ color: unlocked ? '#FFE600' : colors.textMuted }}>
-                            +{achievement.goldReward} Gold
-                          </span>
-                        )}
+                      <div className="flex-1">
+                        <div
+                          className="font-semibold mb-1"
+                          style={{
+                            color: unlocked ? colors.textPrimary : colors.textMuted,
+                            fontFamily: isGame ? "'Cinzel', serif" : 'inherit',
+                          }}
+                        >
+                          {achievement.name}
+                          {unlocked && (
+                            <span className="ml-2 text-sm" style={{ color: '#22c55e' }}>✓</span>
+                          )}
+                        </div>
+                        <div
+                          className="text-sm mb-2"
+                          style={{ color: colors.textMuted }}
+                        >
+                          {achievement.description}
+                        </div>
+                        <div className="flex gap-3 text-xs">
+                          {achievement.xp_reward > 0 && (
+                            <span style={{ color: unlocked ? '#22c55e' : colors.textMuted }}>
+                              +{achievement.xp_reward} XP
+                            </span>
+                          )}
+                          {achievement.coin_reward > 0 && (
+                            <span style={{ color: unlocked ? '#FFE600' : colors.textMuted }}>
+                              +{achievement.coin_reward} Gold
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

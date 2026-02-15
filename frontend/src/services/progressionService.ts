@@ -90,6 +90,22 @@ export interface ActionResult {
   already_awarded: boolean;
 }
 
+export interface AchievementCatalogItem {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  xp_reward: number;
+  coin_reward: number;
+  is_unlocked: boolean;
+  unlocked_at: string | null;
+}
+
+export interface AchievementCatalogResponse {
+  achievements: AchievementCatalogItem[];
+}
+
 // Standardized React Query keys (Story 8.3)
 export const QUERY_KEYS = {
   progression: ['progression'] as const,
@@ -133,5 +149,10 @@ export const progressionApi = {
   completeOnboarding: () =>
     api
       .post<CompleteOnboardingResult>('/progression/complete-onboarding')
+      .then((r) => r.data),
+
+  getAchievementsCatalog: () =>
+    api
+      .get<AchievementCatalogResponse>('/achievements/catalog')
       .then((r) => r.data),
 };
