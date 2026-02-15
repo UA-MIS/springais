@@ -83,7 +83,12 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=[
+        "http://localhost:3000",
+        "https://myskillbridge.me",
+        "http://myskillbridge.me",
+        "https://skillbridge-4t23g.ondigitalocean.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
