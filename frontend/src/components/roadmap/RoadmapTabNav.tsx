@@ -86,7 +86,7 @@ export default function RoadmapTabNav() {
           >
             <div className="flex items-center gap-2">
               <span>{tab.label}</span>
-              {tab.isPhaseTab && tab.progress && (
+              {tab.isPhaseTab && 'progress' in tab && tab.progress && (
                 <span
                   className="text-xs px-1.5 py-0.5 rounded"
                   style={{
@@ -96,7 +96,7 @@ export default function RoadmapTabNav() {
                   {tab.progress.completed}/{tab.progress.total}
                 </span>
               )}
-              {tab.isPhaseTab && tab.progress && tab.progress.percentage === 100 && (
+              {tab.isPhaseTab && 'progress' in tab && tab.progress && tab.progress.percentage === 100 && (
                 <span className="text-green-500">OK</span>
               )}
             </div>

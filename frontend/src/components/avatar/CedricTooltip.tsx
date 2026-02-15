@@ -90,6 +90,7 @@ export default function CedricTooltip({
           typing: true,
           duration: 0,
           dismissible: false,
+          suppressible: false,
         }}
         theme={speechTheme}
         onDismiss={() => {}}

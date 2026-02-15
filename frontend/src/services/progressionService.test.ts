@@ -12,7 +12,7 @@ describe('progressionService - Query Keys (Story 8.3)', () => {
   });
 
   it('storeCatalog key factory accepts category and rarity params', () => {
-    const key = QUERY_KEYS.storeCatalogWith({ category: 'armor', rarity: 'epic' });
-    expect(key).toEqual(['store', 'catalog', { category: 'armor', rarity: 'epic' }]);
+    const key = QUERY_KEYS.storeCatalogWith({ category: 'pet', rarity: 'epic' });
+    expect(key).toEqual(['store', 'catalog', { category: 'pet', rarity: 'epic' }]);
   });
 });

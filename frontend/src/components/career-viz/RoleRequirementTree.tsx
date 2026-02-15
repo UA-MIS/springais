@@ -252,7 +252,7 @@ export function RoleRequirementTree({ roleId, jobId, onPlanGenerated, onNodesRec
       }
       for (const node of nodes) {
         if (node.data.kind === 'skill' && !node.data.category) {
-          node.data.category = categoryFromEdge.get(node.id)
+          node.data.category = categoryFromEdge.get(node.id) as SkillNodeData['category']
         }
       }
 

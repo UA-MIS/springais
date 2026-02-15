@@ -42,7 +42,7 @@ QUEST_SEED_DATA: list[dict[str, Any]] = [
         "description": (
             "The Merchant Guild requests your aid in analyzing trade "
             "routes. Complete analytical modules and prove your worth "
-            "with an assessment to earn the Merchant Ring."
+            "with an assessment to earn the Merchant's Barn Owl."
         ),
         "level_required": 3,
         "xp_reward": 200,
@@ -120,7 +120,7 @@ QUEST_SEED_DATA: list[dict[str, Any]] = [
         "description": (
             "Enter the Arena and face a gauntlet of assessments. "
             "Only the most knowledgeable warriors can conquer five "
-            "assessments and claim the Arena Champion Cape."
+            "assessments and claim the Arena Champion Aura."
         ),
         "level_required": 8,
         "xp_reward": 400,

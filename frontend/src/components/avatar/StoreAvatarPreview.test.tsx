@@ -51,8 +51,8 @@ describe('StoreAvatarPreview (Stories 7.1, 7.2)', () => {
       animationState: 'idle',
     };
     mockEquippedItems = {
-      armor: { id: 'a1', name: 'Iron Chainmail', category: 'armor', rarity: 'common' },
-      boots: null,
+      aura: { id: 'a1', name: 'Fire Aura', category: 'aura', rarity: 'common' },
+      pet: null,
     };
     mockAdventureState = {
       enabled: true,
@@ -71,7 +71,7 @@ describe('StoreAvatarPreview (Stories 7.1, 7.2)', () => {
 
   it('shows equipped items from progression state', () => {
     render(<StoreAvatarPreview />);
-    expect(screen.getByTestId('equipment-layer-armor')).toBeTruthy();
+    expect(screen.getByTestId('equipment-layer-aura')).toBeTruthy();
   });
 
   it('shows pedestal and nameplate', () => {
@@ -97,67 +97,67 @@ describe('StoreAvatarPreview (Stories 7.1, 7.2)', () => {
     render(
       <StoreAvatarPreview
         previewOverrides={{
-          armor: { id: 'preview-1', name: 'Golden Armor', category: 'armor', rarity: 'legendary' },
+          aura: { id: 'preview-1', name: 'Shadow Aura', category: 'aura', rarity: 'uncommon' },
         }}
       />
     );
-    // The armor layer should show the preview item instead of Iron Chainmail
-    const armorLayer = screen.getByTestId('equipment-layer-armor');
-    expect(armorLayer.getAttribute('src')).toContain('golden-armor');
+    // The aura layer should show the preview item instead of Fire Aura
+    const auraLayer = screen.getByTestId('equipment-layer-aura');
+    expect(auraLayer.getAttribute('src')).toContain('shadow-aura');
   });
 
   it('keeps other equipped items visible during preview', () => {
     mockEquippedItems = {
-      armor: { id: 'a1', name: 'Iron Chainmail', category: 'armor', rarity: 'common' },
-      cape: { id: 'c1', name: 'Silver Cloak', category: 'cape', rarity: 'rare' },
+      aura: { id: 'a1', name: 'Fire Aura', category: 'aura', rarity: 'common' },
+      hairstyle: { id: 'h1', name: 'Viking Helmet', category: 'hairstyle', rarity: 'common' },
     };
 
     render(
       <StoreAvatarPreview
         previewOverrides={{
-          armor: { id: 'preview-1', name: 'Golden Armor', category: 'armor', rarity: 'legendary' },
+          aura: { id: 'preview-1', name: 'Shadow Aura', category: 'aura', rarity: 'uncommon' },
         }}
       />
     );
 
-    // Cape should still be visible
-    expect(screen.getByTestId('equipment-layer-cape')).toBeTruthy();
-    // Armor should show preview
-    const armorLayer = screen.getByTestId('equipment-layer-armor');
-    expect(armorLayer.getAttribute('src')).toContain('golden-armor');
+    // Hairstyle should still be visible
+    expect(screen.getByTestId('equipment-layer-hairstyle')).toBeTruthy();
+    // Aura should show preview
+    const auraLayer = screen.getByTestId('equipment-layer-aura');
+    expect(auraLayer.getAttribute('src')).toContain('shadow-aura');
   });
 
   it('reverts to actual equipped items when previewOverrides are cleared', () => {
     const { rerender } = render(
       <StoreAvatarPreview
         previewOverrides={{
-          armor: { id: 'preview-1', name: 'Golden Armor', category: 'armor', rarity: 'legendary' },
+          aura: { id: 'preview-1', name: 'Shadow Aura', category: 'aura', rarity: 'uncommon' },
         }}
       />
     );
 
     // Preview active
-    let armorLayer = screen.getByTestId('equipment-layer-armor');
-    expect(armorLayer.getAttribute('src')).toContain('golden-armor');
+    let auraLayer = screen.getByTestId('equipment-layer-aura');
+    expect(auraLayer.getAttribute('src')).toContain('shadow-aura');
 
     // Clear preview
     rerender(<StoreAvatarPreview previewOverrides={{}} />);
-    armorLayer = screen.getByTestId('equipment-layer-armor');
-    expect(armorLayer.getAttribute('src')).toContain('iron-chainmail');
+    auraLayer = screen.getByTestId('equipment-layer-aura');
+    expect(auraLayer.getAttribute('src')).toContain('fire-aura');
   });
 
   it('handles missing asset gracefully (onError hides img)', () => {
     render(
       <StoreAvatarPreview
         previewOverrides={{
-          boots: { id: 'missing-1', name: 'Nonexistent Boots', category: 'boots', rarity: 'common' },
+          pet: { id: 'missing-1', name: 'Nonexistent Pet', category: 'pet', rarity: 'common' },
         }}
       />
     );
 
-    const bootsLayer = screen.getByTestId('equipment-layer-boots');
+    const petElement = screen.getByTestId('equipment-pet');
     // Simulate image load error
-    bootsLayer.dispatchEvent(new Event('error'));
-    expect((bootsLayer as HTMLImageElement).style.display).toBe('none');
+    petElement.dispatchEvent(new Event('error'));
+    expect((petElement as HTMLImageElement).style.display).toBe('none');
   });
 });

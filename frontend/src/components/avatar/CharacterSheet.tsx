@@ -15,11 +15,10 @@ import type { CosmeticBrief } from '../../services/progressionService';
 
 const EQUIPMENT_SLOTS = [
   'banner',
-  'boots',
-  'armor',
-  'cape',
+  'pet',
+  'pedestal',
+  'aura',
   'hairstyle',
-  'jewelry',
   'emblem',
   'color_palette',
 ] as const;

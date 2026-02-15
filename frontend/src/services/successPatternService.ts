@@ -118,6 +118,7 @@ export interface FilterOptions {
   department?: string;
   roleLevel?: string;
   timePeriod?: string;
+  minSuccessRate?: number;
 }
 
 function includesNormalized(haystack: string, needle: string): boolean {

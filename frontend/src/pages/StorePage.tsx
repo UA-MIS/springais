@@ -7,7 +7,7 @@ import type { CatalogItem, InventoryItem } from '../services/storeService';
 import type { CosmeticBrief } from '../services/progressionService';
 import StoreAvatarPreview from '../components/avatar/StoreAvatarPreview';
 
-const CATEGORIES = ['all', 'armor', 'cape', 'jewelry', 'boots', 'hairstyle', 'color_palette', 'banner', 'emblem'];
+const CATEGORIES = ['all', 'pet', 'pedestal', 'aura', 'hairstyle', 'color_palette', 'banner', 'emblem'];
 
 const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af',

@@ -184,7 +184,8 @@ export default function MatchResultsPage() {
       departments: [],
       locations: [],
       min_score: 70,
-      experience_levels: []
+      experience_levels: [],
+      usOnly: true,
     });
     setCurrentPage(1);
   };

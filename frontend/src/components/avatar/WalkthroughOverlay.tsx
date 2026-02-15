@@ -8,7 +8,7 @@
  * D-CA-006: React Joyride for walkthrough engine.
  */
 
-import Joyride, { type CallbackData, STATUS, ACTIONS } from 'react-joyride';
+import Joyride, { type CallBackProps, STATUS, ACTIONS } from 'react-joyride';
 import { WALKTHROUGH_STEPS } from './walkthroughSteps';
 import CedricTooltip from './CedricTooltip';
 
@@ -27,7 +27,7 @@ export default function WalkthroughOverlay({
   onComplete,
   onSkip,
 }: WalkthroughOverlayProps) {
-  function handleCallback(data: CallbackData) {
+  function handleCallback(data: CallBackProps) {
     const { action, status, index, type } = data;
 
     if (type === 'step:after') {

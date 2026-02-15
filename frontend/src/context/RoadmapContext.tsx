@@ -336,7 +336,11 @@ export function RoadmapProvider({ children }: { children: ReactNode }) {
         payload: { roadmap: detail.roadmap, id: detail.id, title: detail.title },
       });
       dispatch({ type: 'LOAD_PROGRESS', payload: progress });
-      dispatch({ type: 'LOAD_EDIT_HISTORY', payload: editHistory });
+      dispatch({ type: 'LOAD_EDIT_HISTORY', payload: {
+        edits: editHistory.edits,
+        hasManualEdits: editHistory.has_manual_edits,
+        editMode: editHistory.edit_mode,
+      } });
     } catch (error) {
       console.error('Failed to load roadmap:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load roadmap' });

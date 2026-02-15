@@ -38,10 +38,9 @@ const mockProgressionData: ProgressionState = {
     special_title: false,
   },
   equipped_items: {
-    armor: null,
-    cape: null,
-    jewelry: null,
-    boots: null,
+    pet: null,
+    pedestal: null,
+    aura: null,
     hairstyle: null,
     color_palette: null,
     banner: null,

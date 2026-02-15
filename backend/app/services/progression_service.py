@@ -541,7 +541,7 @@ class ProgressionService:
     def _get_equipped_items(self, db: Session, user_id: UUID) -> dict:
         """Query equipped items joined with cosmetic catalog. Story 6.6."""
         all_slots = {
-            "armor": None, "cape": None, "jewelry": None, "boots": None,
+            "pet": None, "pedestal": None, "aura": None,
             "hairstyle": None, "color_palette": None, "banner": None, "emblem": None,
         }
         equipped_rows = (

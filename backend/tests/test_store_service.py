@@ -63,7 +63,7 @@ def _create_progression(db, user_id, coin_balance=500, level=5) -> UserProgressi
 
 
 def _create_catalog_item(
-    db, name="Test Armor", category="armor", rarity="common",
+    db, name="Test Pet", category="pet", rarity="common",
     coin_price=100, level_required=1, is_quest_exclusive=False, is_active=True,
 ) -> CosmeticCatalog:
     item = CosmeticCatalog(
@@ -154,30 +154,30 @@ class TestStoreCatalog:
     def test_get_catalog_returns_items_with_user_flags(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=200, level=3)
-        _create_catalog_item(db_session, name="Cheap Armor", coin_price=100, level_required=1)
-        _create_catalog_item(db_session, name="Pricey Cloak", category="cape", coin_price=500, level_required=1)
-        _create_catalog_item(db_session, name="Locked Boot", category="boots", coin_price=100, level_required=10)
+        _create_catalog_item(db_session, name="Cheap Pet", coin_price=100, level_required=1)
+        _create_catalog_item(db_session, name="Pricey Aura", category="aura", coin_price=500, level_required=1)
+        _create_catalog_item(db_session, name="Locked Pedestal", category="pedestal", coin_price=100, level_required=10)
 
         items, total = store_service.get_catalog(db_session, user.id)
 
         assert total >= 3
         by_name = {r["name"]: r for r in items}
-        assert by_name["Cheap Armor"]["is_affordable"] is True
-        assert by_name["Cheap Armor"]["is_level_locked"] is False
-        assert by_name["Pricey Cloak"]["is_affordable"] is False
-        assert by_name["Locked Boot"]["is_level_locked"] is True
+        assert by_name["Cheap Pet"]["is_affordable"] is True
+        assert by_name["Cheap Pet"]["is_level_locked"] is False
+        assert by_name["Pricey Aura"]["is_affordable"] is False
+        assert by_name["Locked Pedestal"]["is_level_locked"] is True
 
     def test_get_catalog_filters_by_category(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id)
-        _create_catalog_item(db_session, name="Filter Armor", category="armor", coin_price=100)
-        _create_catalog_item(db_session, name="Filter Cape", category="cape", coin_price=100)
+        _create_catalog_item(db_session, name="Filter Pet", category="pet", coin_price=100)
+        _create_catalog_item(db_session, name="Filter Aura", category="aura", coin_price=100)
 
-        items, _ = store_service.get_catalog(db_session, user.id, category="armor")
+        items, _ = store_service.get_catalog(db_session, user.id, category="pet")
 
         names = [i["name"] for i in items]
-        assert "Filter Armor" in names
-        assert "Filter Cape" not in names
+        assert "Filter Pet" in names
+        assert "Filter Aura" not in names
 
 
 class TestStoreInventory:
@@ -202,38 +202,38 @@ class TestStoreEquip:
     def test_equip_item(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=1000, level=5)
-        item = _create_catalog_item(db_session, category="armor", coin_price=100)
+        item = _create_catalog_item(db_session, category="pet", coin_price=100)
 
         store_service.purchase(db_session, user.id, item.id)
-        result = store_service.equip(db_session, user.id, item.id, "armor")
+        result = store_service.equip(db_session, user.id, item.id, "pet")
 
         assert isinstance(result, EquipResult)
-        assert result.slot == "armor"
-        equipped = db_session.query(UserEquippedItem).filter_by(user_id=user.id, slot="armor").first()
+        assert result.slot == "pet"
+        equipped = db_session.query(UserEquippedItem).filter_by(user_id=user.id, slot="pet").first()
         assert equipped is not None
         assert equipped.cosmetic_id == item.id
 
     def test_equip_replaces_existing_item_in_slot(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=1000, level=5)
-        item1 = _create_catalog_item(db_session, name="Armor A", category="armor", coin_price=100)
-        item2 = _create_catalog_item(db_session, name="Armor B", category="armor", coin_price=200)
+        item1 = _create_catalog_item(db_session, name="Pet A", category="pet", coin_price=100)
+        item2 = _create_catalog_item(db_session, name="Pet B", category="pet", coin_price=200)
 
         store_service.purchase(db_session, user.id, item1.id)
         store_service.purchase(db_session, user.id, item2.id)
-        store_service.equip(db_session, user.id, item1.id, "armor")
-        result = store_service.equip(db_session, user.id, item2.id, "armor")
+        store_service.equip(db_session, user.id, item1.id, "pet")
+        result = store_service.equip(db_session, user.id, item2.id, "pet")
 
         assert isinstance(result, EquipResult)
-        equipped = db_session.query(UserEquippedItem).filter_by(user_id=user.id, slot="armor").first()
+        equipped = db_session.query(UserEquippedItem).filter_by(user_id=user.id, slot="pet").first()
         assert equipped.cosmetic_id == item2.id
 
     def test_equip_fails_not_owned(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=1000, level=5)
-        item = _create_catalog_item(db_session, category="armor", coin_price=100)
+        item = _create_catalog_item(db_session, category="pet", coin_price=100)
 
-        result = store_service.equip(db_session, user.id, item.id, "armor")
+        result = store_service.equip(db_session, user.id, item.id, "pet")
 
         assert isinstance(result, str)
         assert result == "item_not_owned"
@@ -241,10 +241,10 @@ class TestStoreEquip:
     def test_equip_fails_category_slot_mismatch(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=1000, level=5)
-        item = _create_catalog_item(db_session, category="armor", coin_price=100)
+        item = _create_catalog_item(db_session, category="pet", coin_price=100)
 
         store_service.purchase(db_session, user.id, item.id)
-        result = store_service.equip(db_session, user.id, item.id, "boots")
+        result = store_service.equip(db_session, user.id, item.id, "pedestal")
 
         assert isinstance(result, str)
         assert result == "category_slot_mismatch"
@@ -252,34 +252,34 @@ class TestStoreEquip:
     def test_unequip_item(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=1000, level=5)
-        item = _create_catalog_item(db_session, category="armor", coin_price=100)
+        item = _create_catalog_item(db_session, category="pet", coin_price=100)
 
         store_service.purchase(db_session, user.id, item.id)
-        store_service.equip(db_session, user.id, item.id, "armor")
-        store_service.unequip(db_session, user.id, "armor")
+        store_service.equip(db_session, user.id, item.id, "pet")
+        store_service.unequip(db_session, user.id, "pet")
 
-        equipped = db_session.query(UserEquippedItem).filter_by(user_id=user.id, slot="armor").first()
+        equipped = db_session.query(UserEquippedItem).filter_by(user_id=user.id, slot="pet").first()
         assert equipped is None
 
     def test_unequip_empty_slot_is_noop(self, db_session):
         user = _create_user(db_session)
         # Should not raise
-        store_service.unequip(db_session, user.id, "armor")
+        store_service.unequip(db_session, user.id, "pet")
 
     def test_equip_multiple_slots(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=2000, level=5)
-        armor = _create_catalog_item(db_session, name="Multi Armor", category="armor", coin_price=100)
-        cape = _create_catalog_item(db_session, name="Multi Cape", category="cape", coin_price=100)
+        pet = _create_catalog_item(db_session, name="Multi Pet", category="pet", coin_price=100)
+        aura = _create_catalog_item(db_session, name="Multi Aura", category="aura", coin_price=100)
 
-        store_service.purchase(db_session, user.id, armor.id)
-        store_service.purchase(db_session, user.id, cape.id)
+        store_service.purchase(db_session, user.id, pet.id)
+        store_service.purchase(db_session, user.id, aura.id)
 
-        result_armor = store_service.equip(db_session, user.id, armor.id, "armor")
-        result_cape = store_service.equip(db_session, user.id, cape.id, "cape")
+        result_pet = store_service.equip(db_session, user.id, pet.id, "pet")
+        result_aura = store_service.equip(db_session, user.id, aura.id, "aura")
 
-        assert isinstance(result_armor, EquipResult)
-        assert isinstance(result_cape, EquipResult)
+        assert isinstance(result_pet, EquipResult)
+        assert isinstance(result_aura, EquipResult)
 
         equipped_count = db_session.query(UserEquippedItem).filter_by(user_id=user.id).count()
         assert equipped_count == 2
@@ -301,7 +301,7 @@ class TestStorePurchaseAdditional:
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=500, level=5)
         item = _create_catalog_item(
-            db_session, name="Golden Boots", category="boots",
+            db_session, name="Golden Throne", category="pedestal",
             rarity="epic", coin_price=100, level_required=1,
         )
 
@@ -309,8 +309,8 @@ class TestStorePurchaseAdditional:
 
         assert result.success is True
         assert result.item_id == item.id
-        assert result.item_name == "Golden Boots"
-        assert result.item_category == "boots"
+        assert result.item_name == "Golden Throne"
+        assert result.item_category == "pedestal"
         assert result.item_rarity == "epic"
         assert result.new_coin_balance == 400
 
@@ -326,10 +326,10 @@ class TestInventoryEquipStatus:
     def test_get_inventory_shows_equipped_status(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=1000, level=5)
-        item = _create_catalog_item(db_session, category="armor", coin_price=100)
+        item = _create_catalog_item(db_session, category="pet", coin_price=100)
 
         store_service.purchase(db_session, user.id, item.id)
-        store_service.equip(db_session, user.id, item.id, "armor")
+        store_service.equip(db_session, user.id, item.id, "pet")
         inventory = store_service.get_inventory(db_session, user.id)
 
         assert len(inventory) >= 1
@@ -340,11 +340,11 @@ class TestInventoryEquipStatus:
     def test_get_inventory_not_equipped_after_unequip(self, db_session):
         user = _create_user(db_session)
         _create_progression(db_session, user.id, coin_balance=1000, level=5)
-        item = _create_catalog_item(db_session, category="armor", coin_price=100)
+        item = _create_catalog_item(db_session, category="pet", coin_price=100)
 
         store_service.purchase(db_session, user.id, item.id)
-        store_service.equip(db_session, user.id, item.id, "armor")
-        store_service.unequip(db_session, user.id, "armor")
+        store_service.equip(db_session, user.id, item.id, "pet")
+        store_service.unequip(db_session, user.id, "pet")
         inventory = store_service.get_inventory(db_session, user.id)
 
         target = [inv for inv in inventory if inv.id == str(item.id)]
@@ -362,7 +362,7 @@ class TestCosmeticSeedData:
     def test_seed_data_covers_all_categories(self):
         from app.data.cosmetic_seed import COSMETIC_SEED_DATA
         categories = {item["category"] for item in COSMETIC_SEED_DATA}
-        expected = {"armor", "cape", "jewelry", "boots", "hairstyle", "color_palette", "banner", "emblem"}
+        expected = {"pet", "pedestal", "aura", "hairstyle", "color_palette", "banner", "emblem"}
         assert categories == expected
 
     def test_seed_data_covers_all_rarities(self):

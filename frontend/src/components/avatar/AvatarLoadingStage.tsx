@@ -138,6 +138,7 @@ export default function AvatarLoadingStage({
                 duration: 0,
                 typing: false,
                 dismissible: false,
+                suppressible: false,
               }}
               theme={theme}
               onDismiss={() => {}}
@@ -151,6 +152,7 @@ export default function AvatarLoadingStage({
             size={192}
             equippedItems={{}}
             animationState={AnimationState.Excited}
+            colorPalette={null}
             level={adventureState.level ?? 1}
             showPedestal={true}
             showNameplate={false}
@@ -197,6 +199,7 @@ export default function AvatarLoadingStage({
             duration: 0,
             typing: false,
             dismissible: false,
+            suppressible: false,
           }}
           theme={theme}
           onDismiss={() => {}}
@@ -210,6 +213,7 @@ export default function AvatarLoadingStage({
           size={192}
           equippedItems={{}}
           animationState={currentPhase.avatarState as AnimationState}
+          colorPalette={null}
           level={adventureState.level ?? 1}
           showPedestal={true}
           showNameplate={false}

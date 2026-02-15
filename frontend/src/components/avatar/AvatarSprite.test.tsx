@@ -71,31 +71,59 @@ describe('AvatarSprite', () => {
     expect(container.className).toContain('cedric-sprite--thinking');
   });
 
-  it('renders equipment layers with correct z-order', () => {
+  it('renders overlay equipment layers with correct z-order', () => {
     const equippedItems = {
-      boots: { id: '1', name: 'Leather Boots', category: 'boots', rarity: 'common' },
-      armor: { id: '2', name: 'Bronze Armor', category: 'armor', rarity: 'common' },
+      aura: { id: '1', name: 'Fire Aura', category: 'aura', rarity: 'common' },
+      hairstyle: { id: '2', name: 'Viking Helmet', category: 'hairstyle', rarity: 'common' },
       emblem: { id: '3', name: 'Novice Emblem', category: 'emblem', rarity: 'common' },
     };
     render(<AvatarSprite {...defaultProps} equippedItems={equippedItems} />);
 
-    const bootsLayer = screen.getByTestId('equipment-layer-boots');
-    const armorLayer = screen.getByTestId('equipment-layer-armor');
+    const auraLayer = screen.getByTestId('equipment-layer-aura');
+    const hairstyleLayer = screen.getByTestId('equipment-layer-hairstyle');
     const emblemLayer = screen.getByTestId('equipment-layer-emblem');
 
-    expect(bootsLayer.style.zIndex).toBe('2');
-    expect(armorLayer.style.zIndex).toBe('3');
+    expect(auraLayer.style.zIndex).toBe('0');
+    expect(hairstyleLayer.style.zIndex).toBe('5');
     expect(emblemLayer.style.zIndex).toBe('7');
   });
 
   it('hides broken equipment images on error', () => {
     const equippedItems = {
-      boots: { id: '1', name: 'Missing Boots', category: 'boots', rarity: 'common' },
+      aura: { id: '1', name: 'Missing Aura', category: 'aura', rarity: 'common' },
     };
     render(<AvatarSprite {...defaultProps} equippedItems={equippedItems} />);
-    const bootsLayer = screen.getByTestId('equipment-layer-boots');
-    fireEvent.error(bootsLayer);
-    expect(bootsLayer.style.display).toBe('none');
+    const auraLayer = screen.getByTestId('equipment-layer-aura');
+    fireEvent.error(auraLayer);
+    expect(auraLayer.style.display).toBe('none');
+  });
+
+  it('renders pet outside sprite container', () => {
+    const equippedItems = {
+      pet: { id: '1', name: 'Tabby Cat', category: 'pet', rarity: 'common' },
+    };
+    render(<AvatarSprite {...defaultProps} equippedItems={equippedItems} />);
+    const petImg = screen.getByTestId('equipment-pet');
+    expect(petImg).toBeInTheDocument();
+    expect(petImg.getAttribute('src')).toContain('pet/tabby-cat.png');
+  });
+
+  it('renders equipped pedestal sprite instead of CSS pedestal', () => {
+    const equippedItems = {
+      pedestal: { id: '1', name: 'Crystal Pedestal', category: 'pedestal', rarity: 'uncommon' },
+    };
+    render(<AvatarSprite {...defaultProps} equippedItems={equippedItems} />);
+    const pedestalImg = screen.getByTestId('equipment-pedestal');
+    expect(pedestalImg).toBeInTheDocument();
+    expect(pedestalImg.getAttribute('src')).toContain('pedestal/crystal-pedestal.png');
+    // CSS pedestal should not render
+    expect(screen.queryByTestId('pedestal')).not.toBeInTheDocument();
+  });
+
+  it('renders CSS pedestal when no pedestal item equipped', () => {
+    render(<AvatarSprite {...defaultProps} />);
+    expect(screen.getByTestId('pedestal')).toBeInTheDocument();
+    expect(screen.queryByTestId('equipment-pedestal')).not.toBeInTheDocument();
   });
 
   it('renders color palette overlay when provided', () => {
@@ -134,14 +162,14 @@ describe('AvatarSprite', () => {
 
 describe('getEquipmentAssetPath', () => {
   it('generates correct path for equipment items', () => {
-    expect(getEquipmentAssetPath('armor', 'Iron Chainmail')).toBe(
-      '/assets/cedric/equipment/armor/iron-chainmail.png'
+    expect(getEquipmentAssetPath('pet', 'Tabby Cat')).toBe(
+      '/assets/cedric/equipment/pet/tabby-cat.png'
     );
   });
 
   it('handles special characters in item names', () => {
-    expect(getEquipmentAssetPath('cape', "Phoenix's Cloak")).toBe(
-      '/assets/cedric/equipment/cape/phoenix-s-cloak.png'
+    expect(getEquipmentAssetPath('aura', "Phoenix's Flame")).toBe(
+      '/assets/cedric/equipment/aura/phoenix-s-flame.png'
     );
   });
 });

@@ -64,7 +64,7 @@ export const WALKTHROUGH_MESSAGES = {
     } as MessageVariant,
     // Step 5: Don Your Gear - Equip first item
     {
-      medieval: 'Switch to your Treasure Chest and equip those boots. You will see the change on me right away!',
+      medieval: 'Switch to your Treasure Chest and equip that aura. You will see the change on me right away!',
       modern: 'Go to your inventory tab and equip an item. You\'ll see the changes on the avatar immediately!',
     } as MessageVariant,
     // Step 6: Return to the Quest Board - Closing

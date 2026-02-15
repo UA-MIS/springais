@@ -70,12 +70,11 @@ describe('CharacterSheet (Story 7.3)', () => {
       animationState: 'idle',
     };
     mockEquippedItems = {
-      armor: { id: 'a1', name: 'Iron Chainmail', category: 'armor', rarity: 'common' },
-      cape: { id: 'c1', name: 'Silver Cloak', category: 'cape', rarity: 'rare' },
-      boots: null,
+      pet: { id: 'p1', name: 'Tabby Cat', category: 'pet', rarity: 'common' },
+      aura: { id: 'a1', name: 'Fire Aura', category: 'aura', rarity: 'common' },
+      pedestal: null,
       banner: null,
       hairstyle: null,
-      jewelry: null,
       emblem: null,
       color_palette: null,
     };
@@ -122,25 +121,25 @@ describe('CharacterSheet (Story 7.3)', () => {
     expect(screen.getByTestId('character-sheet-xp-bar')).toBeTruthy();
   });
 
-  it('displays 2x4 equipment grid with 8 slots', () => {
+  it('displays equipment grid with 7 slots', () => {
     renderCharacterSheet();
     const grid = screen.getByTestId('character-sheet-equipment-grid');
-    expect(grid.children.length).toBe(8);
+    expect(grid.children.length).toBe(7);
   });
 
   it('shows equipped item name in correct slot', () => {
     renderCharacterSheet();
-    const armorSlot = screen.getByTestId('equipment-slot-armor');
-    expect(armorSlot.textContent).toContain('Iron Chainmail');
+    const petSlot = screen.getByTestId('equipment-slot-pet');
+    expect(petSlot.textContent).toContain('Tabby Cat');
 
-    const capeSlot = screen.getByTestId('equipment-slot-cape');
-    expect(capeSlot.textContent).toContain('Silver Cloak');
+    const auraSlot = screen.getByTestId('equipment-slot-aura');
+    expect(auraSlot.textContent).toContain('Fire Aura');
   });
 
   it('shows "Empty" for unequipped slots', () => {
     renderCharacterSheet();
-    const bootsSlot = screen.getByTestId('equipment-slot-boots');
-    expect(bootsSlot.textContent).toContain('Empty');
+    const pedestalSlot = screen.getByTestId('equipment-slot-pedestal');
+    expect(pedestalSlot.textContent).toContain('Empty');
 
     const bannerSlot = screen.getByTestId('equipment-slot-banner');
     expect(bannerSlot.textContent).toContain('Empty');

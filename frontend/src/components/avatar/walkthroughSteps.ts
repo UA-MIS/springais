@@ -101,7 +101,7 @@ export const WALKTHROUGH_STEPS: Step[] = [
   {
     target: '[data-tour="inventory-tab"]',
     content:
-      'Switch to your Treasure Chest and equip those boots. You will see the change on me right away!',
+      'Switch to your Treasure Chest and equip that aura. You will see the change on me right away!',
     placement: 'bottom',
     disableBeacon: true,
     data: {

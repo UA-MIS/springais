@@ -67,7 +67,7 @@ class CosmeticCatalog(Base):
         Index("idx_cosmetic_catalog_rarity", "rarity"),
         Index("idx_cosmetic_catalog_active", "is_active"),
         CheckConstraint(
-            "category IN ('armor', 'cape', 'jewelry', 'boots', 'hairstyle', "
+            "category IN ('pet', 'pedestal', 'aura', 'hairstyle', "
             "'color_palette', 'banner', 'emblem')",
             name="ck_cosmetic_category_valid",
         ),
@@ -155,7 +155,7 @@ class UserEquippedItem(Base):
         Index("uq_user_equipped_slot", "user_id", "slot", unique=True),
         Index("idx_user_equipped_user_id", "user_id"),
         CheckConstraint(
-            "slot IN ('armor', 'cape', 'jewelry', 'boots', 'hairstyle', "
+            "slot IN ('pet', 'pedestal', 'aura', 'hairstyle', "
             "'color_palette', 'banner', 'emblem')",
             name="ck_equipped_slot_valid",
         ),
