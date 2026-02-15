@@ -76,9 +76,8 @@ export default function AvatarCompanion() {
     }
   }, [cursorTrackingEnabled]);
 
-  // Determine if avatar should be visible at all
-  // Hidden for non-adventure, non-new users
-  if (!adventureState.enabled && !state.isNewUser) {
+  // Cedric only appears in adventure mode
+  if (!adventureState.enabled) {
     return null;
   }
 

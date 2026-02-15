@@ -4,15 +4,16 @@
 import { useState } from 'react';
 import { SKILL_CATEGORIES } from '../../mocks/mockSkills';
 
-export default function SkillExtractionPreview({ 
-  extractedSkills, 
-  onConfirm, 
-  onCancel 
+export default function SkillExtractionPreview({
+  extractedSkills,
+  onConfirm,
+  onCancel
 }) {
   const [selectedSkills, setSelectedSkills] = useState(
     extractedSkills.map(skill => ({ ...skill, selected: true }))
   );
   const [editingSkill, setEditingSkill] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const toggleSkill = (index) => {
     const updated = [...selectedSkills];
@@ -26,7 +27,7 @@ export default function SkillExtractionPreview({
     setSelectedSkills(updated);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const skillsToAdd = selectedSkills
       .filter(skill => skill.selected)
       .map(skill => ({
@@ -40,8 +41,14 @@ export default function SkillExtractionPreview({
           unit: 'skill',
         },
       }));
-    
-    onConfirm?.(skillsToAdd);
+
+    setIsProcessing(true);
+    try {
+      await onConfirm?.(skillsToAdd);
+    } catch (err) {
+      console.error('Failed to process skills:', err);
+      setIsProcessing(false);
+    }
   };
 
   const selectedCount = selectedSkills.filter(s => s.selected).length;
@@ -49,9 +56,9 @@ export default function SkillExtractionPreview({
   return (
     <div 
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={(e) => e.target === e.currentTarget && onCancel()}
+      onClick={(e) => e.target === e.currentTarget && !isProcessing && onCancel()}
     >
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn">
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-ey-gray-light">
           <div>
@@ -151,6 +158,19 @@ export default function SkillExtractionPreview({
           </div>
         </div>
 
+        {/* Processing overlay */}
+        {isProcessing && (
+          <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-10 rounded-2xl">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-ey-yellow mb-4" />
+            <p className="text-lg font-semibold text-ey-confident-black">
+              Processing your skills...
+            </p>
+            <p className="text-sm text-ey-gray mt-1">
+              Generating personalized learning modules
+            </p>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-ey-gray-light bg-ey-off-white">
           <p className="text-sm text-ey-gray">
@@ -159,16 +179,17 @@ export default function SkillExtractionPreview({
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="px-6 py-2 text-sm font-medium text-ey-gray border border-ey-gray-light rounded-lg hover:bg-white transition-colors"
+              disabled={isProcessing}
+              className="px-6 py-2 text-sm font-medium text-ey-gray border border-ey-gray-light rounded-lg hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
-              disabled={selectedCount === 0}
+              disabled={selectedCount === 0 || isProcessing}
               className="px-6 py-2 text-sm font-semibold bg-ey-yellow text-ey-confident-black rounded-lg hover:bg-ey-yellow-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Selected Skills ({selectedCount})
+              {isProcessing ? 'Processing...' : `Add Selected Skills (${selectedCount})`}
             </button>
           </div>
         </div>
