@@ -16,8 +16,13 @@ export default function HomeRedirect() {
     );
   }
 
+  // Not logged in: send to login
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   // Redirect based on account type
-  if (user?.account_type === 'hiring_manager') {
+  if (user.account_type === 'hiring_manager') {
     return <Navigate to="/hm/my-jobs" replace />;
   }
 

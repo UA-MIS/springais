@@ -7,8 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  // TEMP: bypass auth redirects to allow navigation without login
-  const BYPASS_AUTH_FOR_TESTING = true;
+  const BYPASS_AUTH_FOR_TESTING = false;
   const { token, loading } = useAuth();
 
   if (BYPASS_AUTH_FOR_TESTING) {
