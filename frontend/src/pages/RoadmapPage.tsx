@@ -705,6 +705,14 @@ export default function RoadmapPage() {
                 )}
               </button>
 
+              {isGenerating && (
+                <div className="p-3 rounded-lg text-center" style={{ backgroundColor: (isDark || isGame) ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)', border: `1px solid ${colors.border}` }}>
+                  <p className="text-sm" style={{ color: colors.textSecondary }}>
+                    Feel free to navigate away -- your roadmap will continue generating in the background and will appear in your roadmaps list when ready.
+                  </p>
+                </div>
+              )}
+
               {error && (
                 <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(220, 38, 38, 0.1)', border: '1px solid rgba(220, 38, 38, 0.3)', color: '#dc2626' }}>
                   {error}
@@ -718,7 +726,7 @@ export default function RoadmapPage() {
                 errorMessage={error}
                 onRetry={handleGenerate}
               >
-                <div className="p-4 rounded-lg text-center" style={{ backgroundColor: isDark ? 'rgba(255, 230, 0, 0.1)' : 'rgba(255, 230, 0, 0.15)', color: colors.textSecondary }}>
+                <div className="p-4 rounded-lg text-center" style={{ backgroundColor: (isDark || isGame) ? 'rgba(255, 230, 0, 0.1)' : 'rgba(255, 230, 0, 0.15)', color: colors.textSecondary }}>
                   <p className="text-sm">This uses GPT-5.2 with reasoning capabilities and may take 1-2 minutes.</p>
                   <p className="text-sm mt-2">We're creating a comprehensive, personalized plan just for you.</p>
                 </div>
