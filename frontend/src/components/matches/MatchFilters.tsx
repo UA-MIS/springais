@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { MOCK_FILTER_OPTIONS } from '../../services/mockMatchData';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Match } from '../../services/mockMatchData';
 
 export interface FilterState {
   departments: string[];
@@ -24,9 +24,18 @@ interface MatchFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
   isDark: boolean;
   colors: ThemeColors;
+  matches?: Match[];
 }
 
-export default function MatchFilters({ filters, onFiltersChange, isDark, colors }: MatchFiltersProps) {
+export default function MatchFilters({ filters, onFiltersChange, isDark, colors, matches = [] }: MatchFiltersProps) {
+  // Derive filter options from actual match data
+  const filterOptions = useMemo(() => {
+    const departments = [...new Set(matches.map(m => m.department).filter(Boolean))].sort();
+    const locations = [...new Set(matches.map(m => m.location).filter(Boolean))].sort();
+    const experienceLevels = [...new Set(matches.map(m => m.experience_required).filter(Boolean))].sort();
+    return { departments, locations, experienceLevels };
+  }, [matches]);
+
   const [isDepartmentOpen, setIsDepartmentOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isExperienceOpen, setIsExperienceOpen] = useState(false);
@@ -157,7 +166,7 @@ export default function MatchFilters({ filters, onFiltersChange, isDark, colors 
                   border: `1px solid ${colors.border}`,
                 }}
               >
-                {MOCK_FILTER_OPTIONS.departments.map((dept) => (
+                {filterOptions.departments.map((dept) => (
                   <label
                     key={dept}
                     className="flex items-center px-4 py-2 cursor-pointer transition-colors"
@@ -210,7 +219,7 @@ export default function MatchFilters({ filters, onFiltersChange, isDark, colors 
                   border: `1px solid ${colors.border}`,
                 }}
               >
-                {MOCK_FILTER_OPTIONS.locations.map((location) => (
+                {filterOptions.locations.map((location) => (
                   <label
                     key={location}
                     className="flex items-center px-4 py-2 cursor-pointer transition-colors"
@@ -263,7 +272,7 @@ export default function MatchFilters({ filters, onFiltersChange, isDark, colors 
                   border: `1px solid ${colors.border}`,
                 }}
               >
-                {MOCK_FILTER_OPTIONS.experience_levels.map((level) => (
+                {filterOptions.experienceLevels.map((level) => (
                   <label
                     key={level}
                     className="flex items-center px-4 py-2 cursor-pointer transition-colors"

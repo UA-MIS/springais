@@ -112,14 +112,10 @@ export default function MatchResultsPage() {
         return false;
       }
 
-      // Filter by experience level (simple check - could be enhanced)
+      // Filter by experience level
       if (filters.experience_levels.length > 0) {
         const matchExperience = match.experience_required || '';
-        const hasMatchingExperience = filters.experience_levels.some(level => {
-          return matchExperience.includes(level.split('-')[0]) ||
-                 matchExperience.includes(level.split('+')[0]);
-        });
-        if (!hasMatchingExperience) {
+        if (!filters.experience_levels.includes(matchExperience)) {
           return false;
         }
       }
@@ -280,7 +276,7 @@ export default function MatchResultsPage() {
 
       {/* Filters and Sort */}
       <div className="mb-6">
-        <MatchFilters filters={filters} onFiltersChange={handleFiltersChange} isDark={isDark} colors={colors} />
+        <MatchFilters filters={filters} onFiltersChange={handleFiltersChange} isDark={isDark} colors={colors} matches={matches} />
         <div className="mt-4">
           <MatchSortDropdown sortBy={sortBy} onSortChange={setSortBy} isDark={isDark} colors={colors} />
         </div>

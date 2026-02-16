@@ -76,8 +76,8 @@ export default function AvatarCompanion() {
     }
   }, [cursorTrackingEnabled]);
 
-  // Cedric only appears in adventure mode
-  if (!adventureState.enabled) {
+  // Cedric only appears in adventure mode (or for new users during onboarding intro)
+  if (!adventureState.enabled && !state.isNewUser) {
     return null;
   }
 
