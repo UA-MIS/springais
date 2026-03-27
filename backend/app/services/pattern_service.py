@@ -834,6 +834,8 @@ class SuccessPatternService:
             ]
             
         except Exception:
+            # Roll back the failed transaction so subsequent queries work
+            self.db.rollback()
             # Fall back to mock on any DB error
             employees = MOCK_EMPLOYEES_FOR_PATTERNS
             if service_line:
