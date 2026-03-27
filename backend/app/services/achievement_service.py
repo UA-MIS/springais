@@ -77,6 +77,9 @@ class AchievementService:
             .order_by(AchievementCatalog.sort_order)
             .all()
         )
+        # Expunge from session so cached objects survive across requests
+        for item in catalog:
+            db.expunge(item)
         self._catalog_cache = catalog
         return catalog
 
