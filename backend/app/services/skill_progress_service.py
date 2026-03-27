@@ -7,6 +7,7 @@ from sqlalchemy import func
 
 from app.models.skill_progress import UserSkill, SkillModule, UserModuleProgress
 from app.models.user_profile import UserProfile
+from app.models.match import Match
 from app.utils.skill_categorizer import categorize_skill
 
 logger = logging.getLogger(__name__)
@@ -114,19 +115,69 @@ class SkillProgressService:
 
         current_skills = set(s.lower() for s in (user.skills or []))
         skill_lower = skill_name.lower()
+        skills_changed = False
 
         if proficiency >= PROFICIENCY_MATCH_THRESHOLD:
             # Add to skills list if not present
             if skill_lower not in current_skills:
                 user.skills = (user.skills or []) + [skill_name]
                 self.db.add(user)
+                skills_changed = True
                 logger.info(f"Added {skill_name} to user profile skills (proficiency {proficiency})")
         else:
             # Remove from skills list if present (user's proficiency dropped)
             if skill_lower in current_skills:
                 user.skills = [s for s in user.skills if s.lower() != skill_lower]
                 self.db.add(user)
+                skills_changed = True
                 logger.info(f"Removed {skill_name} from user profile skills (proficiency {proficiency})")
+
+        if skills_changed:
+            self._refresh_saved_matches(user_id, user)
+
+    def _refresh_saved_matches(self, user_id: UUID, user: UserProfile) -> None:
+        """Re-score all saved matches when the user's matchable skills change."""
+        from app.services.matching_service import MatchingService, MatchMode
+
+        saved_matches = (
+            self.db.query(Match)
+            .filter(Match.user_id == user_id)
+            .all()
+        )
+        if not saved_matches:
+            return
+
+        try:
+            service = MatchingService(db=self.db, user_profile=user)
+            service._preload_all_embeddings()
+            employee = service._get_employee_profile(1)  # ID unused when user_profile is set
+            if not employee:
+                return
+
+            for match in saved_matches:
+                job = service._get_job_by_id(str(match.job_posting_id))
+                if not job:
+                    continue
+
+                mode = MatchMode(match.match_mode)
+                scoped_service = MatchingService(
+                    db=self.db, user_profile=user, mode=mode,
+                )
+                scoped_service._embedding_cache = service._embedding_cache
+                candidate = scoped_service._score_candidate(employee, job)
+
+                match.skill_match_score = round(candidate.skill_score, 4)
+                match.experience_score = round(candidate.experience_score, 4)
+                match.growth_potential_score = round(candidate.role_fit_score, 4)
+                match.overall_score = round(candidate.overall_score, 4)
+                if candidate.gap_analysis:
+                    match.matched_skills = candidate.gap_analysis.overlapping_skills
+                    match.skill_gaps = candidate.gap_analysis.missing_skills
+                    match.transferable_skills = candidate.gap_analysis.transferable_skills
+
+            logger.info(f"Refreshed {len(saved_matches)} saved matches for user {user_id}")
+        except Exception as e:
+            logger.warning(f"Failed to refresh saved matches: {e}")
 
     # ============================================
     # Skill Groupings Methods
