@@ -148,8 +148,8 @@
             <div class="eyebrow">Problem Understanding</div>
             <h1 class="slide-title">Internal talent is invisible &mdash; and it's costing companies millions</h1>
           </div>
-          <div class="slide-body">
-            <div class="two-col two-col--left-wide">
+          <div class="slide-body slide-body--stacked" style="gap:1.25rem;">
+            <div class="two-col two-col--left-wide" style="flex:1;">
               <div class="chip-card chip-card--yellow">
                 <ul>
                   <li class="fragment fade-up"><strong>39%</strong> of roles filled internally.</li>
@@ -161,8 +161,22 @@
                 <img src="assets/img/mascot-dwarf-lantern.png" alt="Pixel-art gnome holding a lantern, its beam revealing one spotlit worker among a row of silhouettes &mdash; the visibility gap.">
               </div>
             </div>
+            <div class="stat-strip" aria-label="Cost of internal-talent invisibility">
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">39%</div>
+                <div class="stat-tile__label">Roles filled internally</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">60%</div>
+                <div class="stat-tile__label">Say AI makes bias worse</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">33%</div>
+                <div class="stat-tile__label">Companies with mobility programs</div>
+              </div>
+            </div>
           </div>
-          <div class="stage" data-anchor="bottom-left" data-size="md" data-pose="thinking" data-pedestal="3">
+          <div class="stage" data-anchor="top-right" data-size="sm" data-pose="thinking" data-pedestal="3" style="top:1rem; right:3rem;">
             <img class="stage__sprite" src="assets/cedric/sprites/thinking.png" alt="Cedric considers the visibility gap.">
             <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-3.png" alt="" aria-hidden="true">
           </div>
@@ -177,7 +191,7 @@
             <div class="eyebrow">Our Solution</div>
             <h1 class="slide-title">SkillBridge makes internal talent visible and paths actionable</h1>
           </div>
-          <div class="slide-body" style="align-items:center;">
+          <div class="slide-body slide-body--stacked" style="gap:1.75rem; justify-content:center;">
             <div class="chevron-row" style="margin-top:0;">
               <div class="chevron-card fragment fade-up">
                 <h4>Input</h4>
@@ -202,8 +216,26 @@
                 </ul>
               </div>
             </div>
+            <div class="stat-strip" aria-label="SkillBridge solution at a glance">
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">30&ndash;60</div>
+                <div class="stat-tile__label">Skills extracted per resume</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">1,536</div>
+                <div class="stat-tile__label">Vector dims (PCA-compressed)</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">&lt;1s</div>
+                <div class="stat-tile__label">Match response time</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">400+</div>
+                <div class="stat-tile__label">EY roles indexed</div>
+              </div>
+            </div>
           </div>
-          <div class="stage" data-anchor="bottom-center" data-size="md" data-pose="tracingLines" data-pedestal="5">
+          <div class="stage" data-anchor="top-right" data-size="sm" data-pose="tracingLines" data-pedestal="5" style="top:1rem; right:3rem;">
             <img class="stage__sprite" src="assets/cedric/sprites/tracingLines.png" alt="Cedric traces the pipeline.">
             <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-5.png" alt="" aria-hidden="true">
           </div>
@@ -218,7 +250,7 @@
             <div class="eyebrow">Impact and Delivery</div>
             <h1 class="slide-title">What SkillBridge delivers for you</h1>
           </div>
-          <div class="slide-body slide-body--stacked">
+          <div class="slide-body slide-body--stacked" style="gap:1.5rem; justify-content:center;">
             <div class="chevron-label fragment fade-up">
               <div class="chevron-label__chip">
                 <svg class="heraldic-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -245,8 +277,26 @@
                 <li>Integrate internal data and systems.</li>
               </ul>
             </div>
+            <div class="stat-strip" aria-label="Quantified impact">
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">50&ndash;75%</div>
+                <div class="stat-tile__label">Cheaper than external hires</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">2&times;</div>
+                <div class="stat-tile__label">Faster time to productivity</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">53%</div>
+                <div class="stat-tile__label">Longer tenure, internal hires</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">94%</div>
+                <div class="stat-tile__label">Stay when invested in</div>
+              </div>
+            </div>
           </div>
-          <div class="stage" data-anchor="bottom-right" data-size="lg" data-pose="holdTrophy" data-pedestal="7">
+          <div class="stage" data-anchor="top-right" data-size="sm" data-pose="holdTrophy" data-pedestal="7" style="top:1rem; right:3rem;">
             <img class="stage__sprite" src="assets/cedric/sprites/holdTrophy.png" alt="Cedric lifts the trophy of impact.">
             <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-7.png" alt="" aria-hidden="true">
           </div>
@@ -506,14 +556,32 @@
               <h1 class="hero-wordmark shimmer-title" style="font-size:3.5rem;">Demo</h1>
               <p class="hero-subtitle" style="margin:0.4rem 0 0;">Built by humans. Accelerated by AI.</p>
             </div>
-            <div class="slide-body">
+            <div class="slide-body slide-body--stacked" style="gap:1.5rem;">
               <div class="slide-body--row" style="display:flex; gap:1rem; width:100%; align-items:stretch;">
                 <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>BMAD Swarm</h3><p>AI agents + human devs at every phase.</p></div>
                 <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>Models &amp; APIs</h3><p>GPT-5.2. Embeddings. O*NET. EY scraper.</p></div>
                 <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>Tech Stack</h3><p>Python, TS, FastAPI, React, Postgres+pgvector.</p></div>
               </div>
+              <div class="stat-strip" aria-label="How SkillBridge was built">
+                <div class="stat-tile fragment fade-up">
+                  <div class="stat-tile__value">4</div>
+                  <div class="stat-tile__label">Human developers</div>
+                </div>
+                <div class="stat-tile fragment fade-up">
+                  <div class="stat-tile__value">11+</div>
+                  <div class="stat-tile__label">AI agents in the swarm</div>
+                </div>
+                <div class="stat-tile fragment fade-up">
+                  <div class="stat-tile__value">100%</div>
+                  <div class="stat-tile__label">Human-decided architecture</div>
+                </div>
+                <div class="stat-tile fragment fade-up">
+                  <div class="stat-tile__value">5</div>
+                  <div class="stat-tile__label">Phase BMAD lifecycle</div>
+                </div>
+              </div>
             </div>
-            <div class="stage" data-anchor="bottom-center" data-size="md" data-pose="spinNewItem" data-pedestal="7">
+            <div class="stage" data-anchor="top-right" data-size="sm" data-pose="spinNewItem" data-pedestal="7" style="top:1rem; right:3rem;">
               <img class="stage__sprite" src="assets/cedric/sprites/spinNewItem.png" alt="Cedric reveals the product." loading="eager">
               <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-7.png" alt="" aria-hidden="true">
             </div>
@@ -585,7 +653,7 @@
             <div class="eyebrow">AI Differentiators</div>
             <h1 class="slide-title">SkillBridge is different because of how we use AI</h1>
           </div>
-          <div class="slide-body">
+          <div class="slide-body slide-body--stacked" style="gap:1.5rem;">
             <div class="grid-2x2">
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
                 <button type="button" class="expand-trigger" data-expand-trigger="dlg-behavioral" aria-label="Expand Behavioral Success Modeling">+</button>
@@ -608,8 +676,26 @@
                 <p>3 promotions ahead. Auto-detect &lt;50% &ldquo;walls&rdquo;.</p>
               </div>
             </div>
+            <div class="stat-strip" aria-label="AI differentiators at a glance">
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">6</div>
+                <div class="stat-tile__label">Performance categories modeled</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">0</div>
+                <div class="stat-tile__label">Hallucinated skills (dual-LLM)</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">3</div>
+                <div class="stat-tile__label">Promotions ahead forecast</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">100%</div>
+                <div class="stat-tile__label">Matches with reason codes</div>
+              </div>
+            </div>
           </div>
-          <div class="stage" data-anchor="bottom-center" data-size="md" data-pose="spinNewItem" data-pedestal="5">
+          <div class="stage" data-anchor="top-right" data-size="sm" data-pose="spinNewItem" data-pedestal="5" style="top:1rem; right:3rem;">
             <img class="stage__sprite" src="assets/cedric/sprites/spinNewItem.png" alt="Cedric shows off the four pillars.">
             <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-5.png" alt="" aria-hidden="true">
           </div>
@@ -645,7 +731,7 @@
             <div class="eyebrow">Implementation and Fit</div>
             <h1 class="slide-title">Implementation and Fit in Enterprises</h1>
           </div>
-          <div class="slide-body slide-body--stacked">
+          <div class="slide-body slide-body--stacked" style="gap:1.25rem;">
             <div class="chevron-label fragment fade-up">
               <div class="chevron-label__chip">
                 <svg class="heraldic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -675,8 +761,26 @@
               </div>
               <div class="chevron-label__body">No PII in matching. Managers see counts + score ranges, not identities.</div>
             </div>
+            <div class="stat-strip" aria-label="Enterprise readiness">
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">100K+</div>
+                <div class="stat-tile__label">Employees per tenant</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">&lt;1s</div>
+                <div class="stat-tile__label">Match response time</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">0</div>
+                <div class="stat-tile__label">PII exposed to managers</div>
+              </div>
+              <div class="stat-tile fragment fade-up">
+                <div class="stat-tile__value">EU AI Act</div>
+                <div class="stat-tile__label">Governance-ready by design</div>
+              </div>
+            </div>
           </div>
-          <div class="stage" data-anchor="bottom-right" data-size="md" data-pose="holdTrophy" data-pedestal="9">
+          <div class="stage" data-anchor="top-right" data-size="sm" data-pose="holdTrophy" data-pedestal="9" style="top:1rem; right:3rem;">
             <img class="stage__sprite" src="assets/cedric/sprites/holdTrophy.png" alt="Cedric raises the enterprise banner.">
             <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-9.png" alt="" aria-hidden="true">
           </div>
@@ -692,7 +796,7 @@
               <div class="eyebrow">Vision of the Future &middot; Why This Wins</div>
               <h1 class="slide-title slide-title--small">We built a strong foundation &mdash; these are three directions the market is telling us to go.</h1>
             </div>
-            <div class="slide-body slide-body--stacked">
+            <div class="slide-body slide-body--stacked" style="gap:1.25rem;">
               <div class="chip-card chip-card--compact fragment fade-up" style="border-left:4px solid var(--bronze);">
                 <h3>Modular Deployment</h3>
                 <p>Independent modules. Fits HRIS / ATS / LMS.</p>
@@ -705,8 +809,26 @@
                 <h3>Human-Centered Governance</h3>
                 <p>Bias review + audit trails. EU AI Act ready.</p>
               </div>
+              <div class="stat-strip" aria-label="Why these directions win">
+                <div class="stat-tile fragment fade-up">
+                  <div class="stat-tile__value">$7.8B</div>
+                  <div class="stat-tile__label">Credential market by 2035</div>
+                </div>
+                <div class="stat-tile fragment fade-up">
+                  <div class="stat-tile__value">71%</div>
+                  <div class="stat-tile__label">Fortune 1000 with fragmented HR</div>
+                </div>
+                <div class="stat-tile fragment fade-up">
+                  <div class="stat-tile__value">80%</div>
+                  <div class="stat-tile__label">Composable-arch advantage (Gartner)</div>
+                </div>
+                <div class="stat-tile fragment fade-up">
+                  <div class="stat-tile__value">Aug 2026</div>
+                  <div class="stat-tile__label">EU AI Act enforcement</div>
+                </div>
+              </div>
             </div>
-            <div class="stage" data-anchor="inline-right" data-size="lg" data-pose="lookingFar" data-pedestal="9" style="top:55%;">
+            <div class="stage" data-anchor="top-right" data-size="sm" data-pose="lookingFar" data-pedestal="9" style="top:1rem; right:3rem;">
               <img class="stage__sprite" src="assets/cedric/sprites/lookingFar.png" alt="Cedric looks to the horizon.">
               <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-9.png" alt="" aria-hidden="true">
             </div>

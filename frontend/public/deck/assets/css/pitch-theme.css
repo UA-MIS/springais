@@ -129,6 +129,29 @@ body {
   transition: background-color 200ms ease, color 200ms ease;
 }
 
+/* reveal.js adds .reveal-viewport to <body> at init, and vendor/reveal-white.css
+   declares `.reveal-viewport { background: #fff; }`. Class selector beats the
+   html/body element rule above, so every theme rendered on a white page and
+   medieval/dark text became unreadable. Re-assert theme bg at matching
+   specificity and restore the gradient the reveal shorthand wipes. */
+body.reveal-viewport {
+  background: var(--page-bg);
+  background-image: var(--page-bg-gradient);
+  color: var(--text-primary);
+}
+
+/* Map reveal.js's own CSS vars to our theme tokens so reveal internals
+   (headings, links, selection) follow the active theme. */
+.theme-medieval,
+.theme-dark,
+.theme-light {
+  --r-background-color: var(--page-bg);
+  --r-main-color: var(--text-primary);
+  --r-heading-color: var(--text-primary);
+  --r-link-color: var(--accent);
+  --r-link-color-hover: var(--accent);
+}
+
 /* The <main id="main-deck"> landmark wraps .reveal for a11y (skip-link target).
    Reveal.js sizes .reveal off its parent's height (via its own
    html.reveal-full-page + body.reveal-viewport rules set to height:100%).
@@ -155,6 +178,11 @@ body {
   padding: 0 !important;
   line-height: 1.45;
   font-weight: 400;
+  /* reveal is configured center:false width:1600 height:900; without this,
+     sections collapse to content height, slide-shell's height:100% resolves
+     to that short size, .slide-body's flex:1 has no room to grow, divider
+     bands top-align, and Cedric's bottom-* anchors land mid-viewport. */
+  height: 100%;
 }
 
 .reveal h1,
@@ -445,7 +473,7 @@ body {
   min-height: 0;
 }
 
-.slide-body--stacked { flex-direction: column; }
+.slide-body--stacked { flex-direction: column; justify-content: center; }
 .slide-body--row { flex-direction: row; }
 
 .two-col {
@@ -1418,3 +1446,55 @@ dialog.expand-dialog .close-btn {
 
 .closing-numeral-row ul { padding-left: 1.1em; margin: 0.3em 0 0; }
 .closing-numeral-row li { font-size: 0.85rem; margin: 0.15em 0; }
+
+/* ==========================================================================
+   22. Stat strip — KPI tiles to fill the bottom of sparse slides
+   ========================================================================== */
+
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.stat-tile {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.35rem;
+  min-height: 120px;
+}
+
+.stat-tile__value {
+  font-family: var(--heading-font);
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  text-shadow: var(--heading-shadow);
+  line-height: 1;
+}
+
+.stat-tile__label {
+  font-family: var(--body-font);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  max-width: 22ch;
+}
+
+.theme-medieval .stat-tile {
+  box-shadow: inset 0 0 0 1px rgba(139, 90, 43, 0.3),
+              0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.theme-light .stat-tile__value,
+.theme-dark .stat-tile__value { text-shadow: none; }

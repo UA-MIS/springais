@@ -152,6 +152,16 @@ export default function LoginPage() {
                     View the SkillBridge pitch deck →
                   </a>
                 </div>
+                <div className="text-sm text-white/45">
+                  <a
+                    href="/demo-assets/sample-resume.docx"
+                    download
+                    className="hover:text-white/70 transition-colors"
+                    aria-label="Download a sample resume to use for the demo upload"
+                  >
+                    Download sample resume for demo ↓
+                  </a>
+                </div>
               </div>
             </form>
           </div>
