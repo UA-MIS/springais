@@ -1,0 +1,9 @@
+reveal.js 4.6.1 (vendored 2026-04-16)
+Source: https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/
+Files:
+  reveal.js   - UMD runtime (dist/reveal.js)
+  reveal.css  - core stylesheet (dist/reveal.css)
+  reveal-white.css - base theme "white" (dist/theme/white.css)
+
+License: MIT (see reveal.js source header).
+Upgrade: replace the three files above and update this file.
