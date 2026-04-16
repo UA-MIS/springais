@@ -177,4 +177,23 @@ test.describe('Pitch deck', () => {
     await page.reload();
     await expect(page.locator('body')).toHaveClass(/theme-light/);
   });
+
+  test('deck load produces zero 4xx/5xx responses', async ({ page }) => {
+    const failed: string[] = [];
+    page.on('response', (resp) => {
+      if (resp.status() >= 400) failed.push(resp.status() + ' ' + resp.url());
+    });
+    await gotoDeck(page);
+    // Walk the main track to flush loading="lazy" sprites.
+    const total = await page.locator('.reveal .slides > section').count();
+    for (let h = 0; h < total; h++) {
+      await page.evaluate((idx) => {
+        const w = window as unknown as { Reveal: { slide: (h: number, v?: number) => void } };
+        w.Reveal.slide(idx, 0);
+      }, h);
+      await page.waitForTimeout(60);
+    }
+    await page.waitForTimeout(400);
+    expect(failed, `Unexpected failed responses:\n${failed.join('\n')}`).toEqual([]);
+  });
 });
