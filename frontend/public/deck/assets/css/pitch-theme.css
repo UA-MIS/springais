@@ -12,7 +12,11 @@
 .theme-medieval {
   color-scheme: dark;
   --page-bg: #1a1510;
-  --page-bg-gradient: radial-gradient(ellipse at 50% 20%, #2a2016 0%, #1a1510 55%, #0f0b07 100%);
+  /* Verbatim: themeColors.game.overlayGradient from ThemeContext.tsx */
+  --page-bg-gradient:
+    radial-gradient(ellipse at 20% 30%, rgba(139, 90, 43, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(64, 156, 155, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 20%, #2a2016 0%, #1a1510 55%, #0f0b07 100%);
   --card-bg: rgba(60, 50, 40, 0.85);
   --card-bg-solid: #2a241b;
   --card-border: rgba(139, 90, 43, 0.55);
@@ -937,37 +941,31 @@ body {
    14. Twinkling stars (background)
    ========================================================================== */
 
+/* Twinkle field: verbatim from frontend/src/components/layout/MainLayout.tsx
+   5 radial-gradient "stars" tiled on a 200x200 grid. */
 .twinkle-field {
   position: fixed;
   inset: 0;
   pointer-events: none;
   overflow: hidden;
   z-index: 0;
-}
-
-.twinkle-field span {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
-  opacity: 0.4;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255, 230, 150, 0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 60%, rgba(255, 230, 150, 0.15) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 10%, rgba(255, 230, 150, 0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 40%, rgba(255, 230, 150, 0.1) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 80%, rgba(255, 230, 150, 0.15) 0%, transparent 100%);
+  background-size: 200px 200px;
   animation: twinkle 8s ease-in-out infinite alternate;
 }
 
-.twinkle-field span:nth-child(1) { top: 15%; left: 8%; animation-delay: 0s; }
-.twinkle-field span:nth-child(2) { top: 32%; left: 88%; animation-delay: 2.5s; }
-.twinkle-field span:nth-child(3) { top: 62%; left: 12%; animation-delay: 4s; }
-.twinkle-field span:nth-child(4) { top: 78%; left: 78%; animation-delay: 1s; }
-.twinkle-field span:nth-child(5) { top: 45%; left: 50%; animation-delay: 6s; }
-.twinkle-field span:nth-child(6) { top: 22%; left: 40%; animation-delay: 3s; }
-.twinkle-field span:nth-child(7) { top: 85%; left: 33%; animation-delay: 5s; }
-.twinkle-field span:nth-child(8) { top: 12%; left: 68%; animation-delay: 7s; }
+/* Kept for backward compat -- individual spans are no longer required
+   but the HTML still emits them; hide any that slip through. */
+.twinkle-field span { display: none; }
 
 @keyframes twinkle {
-  from { opacity: 0.2; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1.3); }
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 .theme-dark .twinkle-field,
