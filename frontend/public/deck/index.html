@@ -74,11 +74,17 @@
       </button>
     </div>
 
-    <div class="nav-hint" role="status">Use &larr; / &rarr; to navigate &nbsp;&middot;&nbsp; &darr; to explore depth &nbsp;&middot;&nbsp; 1 / 2 / 3 to change theme</div>
+    <div class="nav-hint" role="status">&larr; / &rarr; navigate main &nbsp;&middot;&nbsp; &darr; deep-dive (Q&amp;A only) &nbsp;&middot;&nbsp; 1 / 2 / 3 theme &nbsp;&middot;&nbsp; s speaker view &nbsp;&middot;&nbsp; ? help</div>
 
-    <div class="slide-counter" aria-hidden="true">1 / 17</div>
-    <!-- counter is live-updated by pitch-controls.js on slidechanged -->
+    <!-- Slide counter + presenter elapsed-time clock; both live-updated by pitch-controls.js -->
+    <div class="slide-counter" aria-hidden="true">
+      <span class="slide-counter__index">1 / 17</span>
+      <span class="slide-counter__sep">&middot;</span>
+      <span class="slide-counter__clock" data-pace-target="300">0:00</span>
+    </div>
 
+    <!-- Pacing tick at 5min / 33% of the 15min total budget -->
+    <div class="pacing-tick" aria-hidden="true" title="5-min pacing target"></div>
 
     <div class="mobile-notice" role="status">Best viewed on desktop (&ge; 1024px wide)</div>
   </nav>
@@ -144,9 +150,9 @@
             <div class="two-col two-col--left-wide">
               <div class="chip-card chip-card--yellow">
                 <ul>
-                  <li class="fragment fade-up">Only <strong>39%</strong> of roles are filled internally; employees want growth.</li>
-                  <li class="fragment fade-up">Managers can't see internal skills; employees get vague career advice.</li>
-                  <li class="fragment fade-up">Companies default to external hiring &mdash; more bias, missed internal talent.</li>
+                  <li class="fragment fade-up"><strong>39%</strong> of roles filled internally.</li>
+                  <li class="fragment fade-up">Managers can't see internal skills.</li>
+                  <li class="fragment fade-up">External hiring = bias + missed talent.</li>
                 </ul>
               </div>
               <div class="hero-frame">
@@ -174,23 +180,23 @@
               <div class="chevron-card fragment fade-up">
                 <h4>Input</h4>
                 <ul>
-                  <li>Resume text scrubbed before parsing</li>
-                  <li>Scraped 400+ EY job postings</li>
+                  <li>PII-scrubbed resumes</li>
+                  <li>400+ EY job postings</li>
                 </ul>
               </div>
               <div class="chevron-card fragment fade-up">
                 <h4>Process</h4>
                 <ul>
-                  <li>Skills and roles embeddings</li>
-                  <li>Gap analysis: direct, transferable, missing</li>
+                  <li>Skill + role embeddings</li>
+                  <li>Direct / transferable / missing</li>
                 </ul>
               </div>
               <div class="chevron-card fragment fade-up">
                 <h4>Output</h4>
                 <ul>
-                  <li>Ranked matches with transparent scores</li>
+                  <li>Ranked matches with scores</li>
                   <li>&ldquo;Why this role?&rdquo; explanations</li>
-                  <li>GPT-generated multi-phase roadmaps</li>
+                  <li>Multi-phase roadmaps</li>
                 </ul>
               </div>
             </div>
@@ -220,8 +226,8 @@
                 Business Value
               </div>
               <ul class="chevron-label__body">
-                <li>Decreases internal hiring cost &mdash; roughly <strong>50&ndash;75%</strong> less than external.</li>
-                <li>Saves manager time, retains more team members.</li>
+                <li><strong>50&ndash;75%</strong> cheaper than external hiring.</li>
+                <li>Saves manager time. Retains more talent.</li>
               </ul>
             </div>
             <div class="chevron-label fragment fade-up">
@@ -233,7 +239,7 @@
                 Next Steps
               </div>
               <ul class="chevron-label__body">
-                <li>Pilot across service lines to validate match quality.</li>
+                <li>Pilot across service lines.</li>
                 <li>Integrate internal data and systems.</li>
               </ul>
             </div>
@@ -279,19 +285,19 @@
             <div class="slide-body slide-body--stacked" style="gap:0.5rem;">
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
                 <h3>AI Trust</h3>
-                <p>Only <strong>27%</strong> of workers fully trust employers to use AI responsibly. <strong>60%</strong> believe AI is making bias worse.</p>
+                <p><strong>27%</strong> trust employer AI. <strong>60%</strong> say bias is worse.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
                 <h3>External Default</h3>
-                <p>Only <strong>39%</strong> of roles filled internally &mdash; yet internal hires deliver <strong>53%</strong> longer tenure, reach productivity <strong>2&times;</strong> faster, cost <strong>60%</strong> less.</p>
+                <p>Internal hires: <strong>53%</strong> longer tenure, <strong>2&times;</strong> productivity, <strong>60%</strong> cheaper.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
                 <h3>Clear Path</h3>
-                <p><strong>94%</strong> would stay longer if their employer invested in career development. Only <strong>33%</strong> offer formal mobility programs.</p>
+                <p><strong>94%</strong> stay if invested in. Only <strong>33%</strong> offer mobility programs.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
                 <h3>Implication</h3>
-                <p><em>The problem isn't matching; it's mobility.</em> Enterprises need systems that employees trust, that surface internal opportunities they can't see, and that show them how to get there.</p>
+                <p><em>It's not matching &mdash; it's mobility.</em></p>
               </div>
             </div>
             <div class="stage" data-anchor="inline-right" data-size="md" data-pose="confused" data-pedestal="5" style="top:60%;">
@@ -368,21 +374,21 @@
                 <div class="slide-body--stacked" style="display:flex; flex-direction:column; gap:0.85rem;">
                   <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
                     <h3>Vector Explainability</h3>
-                    <p>30&ndash;60 skills extracted per resume, PII stripped, every match carries a GPT-generated &ldquo;why&rdquo;.</p>
+                    <p>30&ndash;60 skills per resume. Every match carries a &ldquo;why&rdquo;.</p>
                   </div>
                   <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
                     <h3>Hiring Manager Portal</h3>
-                    <p>Anonymized, skill-first candidate profiles. Aggregate skill distributions per role. Tokenized until mutual opt-in.</p>
+                    <p>Anonymized profiles. Aggregate gaps. Tokenized opt-in.</p>
                   </div>
                   <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
-                    <h3>Career Roadmaps &amp; Skills Portfolio</h3>
-                    <p>Phased plans with milestones, 4-tier learning modules, Success Patterns from similar role transitions.</p>
+                    <h3>Career Roadmaps</h3>
+                    <p>Phased plans. 4-tier skills portfolio. Success Patterns.</p>
                   </div>
                 </div>
                 <div class="slide-body--stacked" style="display:flex; flex-direction:column; gap:0.7rem;">
-                  <div class="chip-card chip-card--compact"><h3>Credibility</h3><p>Audit trails, bias monitoring, compliance-ready reporting.</p></div>
-                  <div class="chip-card chip-card--compact"><h3>Mobility</h3><p>Explainability + roadmaps + HM view close the loop.</p></div>
-                  <div class="chip-card chip-card--compact"><h3>Discoverability</h3><p>Inferred skills &amp; aggregate matching reveal talent no one knew existed.</p></div>
+                  <div class="chip-card chip-card--compact"><h3>Credibility</h3><p>Audit trails. Bias monitoring.</p></div>
+                  <div class="chip-card chip-card--compact"><h3>Mobility</h3><p>Explainability + roadmaps close the loop.</p></div>
+                  <div class="chip-card chip-card--compact"><h3>Discoverability</h3><p>Reveals talent no one knew existed.</p></div>
                 </div>
               </div>
             </div>
@@ -465,25 +471,22 @@
                 <div class="chip-card fragment fade-up">
                   <h3>Hiring Manager</h3>
                   <ul>
-                    <li>Needs a clear, data-driven view of internal talent without bias or inflated expectations.</li>
-                    <li>Typically reviews applications blind to internal interest or alignment.</li>
-                    <li>Receives an unbiased view of anonymous interested applicants with role-fit scores.</li>
+                    <li>Needs unbiased view of internal talent.</li>
+                    <li>Sees anonymous applicants with fit scores.</li>
                   </ul>
                 </div>
                 <div class="chip-card fragment fade-up">
                   <h3>Current Employee</h3>
                   <ul>
-                    <li>Wants a clear path to internal promotion or career advancement.</li>
-                    <li>Used to vague promotion criteria and generic suggestions.</li>
-                    <li>Receives a personalized pathway to roles they want, with concrete timelines.</li>
+                    <li>Wants a clear promotion path.</li>
+                    <li>Gets a personalized pathway with timelines.</li>
                   </ul>
                 </div>
                 <div class="chip-card fragment fade-up">
                   <h3>Intern / Entry Level</h3>
                   <ul>
-                    <li>Wants to understand possible paths and build relevant skills early.</li>
-                    <li>Feels uncertain about alignment and how to stand out.</li>
-                    <li>Receives a realistic pathway broken into manageable steps with transparent explanation.</li>
+                    <li>Wants to know possible paths early.</li>
+                    <li>Gets manageable steps with transparent logic.</li>
                   </ul>
                 </div>
               </div>
@@ -503,9 +506,9 @@
             </div>
             <div class="slide-body">
               <div class="slide-body--row" style="display:flex; gap:1rem; width:100%; align-items:stretch;">
-                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>BMAD Swarm</h3><p>AI-orchestrated dev methodology pairing specialized AI agents with human devs.</p></div>
-                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>Models &amp; APIs</h3><p>GPT-5.2, embeddings, O*NET taxonomy, EY careers scraper.</p></div>
-                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>Tech Stack</h3><p>Python, TypeScript, FastAPI, React 18, Postgres + pgvector, Redis.</p></div>
+                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>BMAD Swarm</h3><p>AI agents + human devs at every phase.</p></div>
+                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>Models &amp; APIs</h3><p>GPT-5.2. Embeddings. O*NET. EY scraper.</p></div>
+                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>Tech Stack</h3><p>Python, TS, FastAPI, React, Postgres+pgvector.</p></div>
               </div>
             </div>
             <div class="stage" data-anchor="bottom-center" data-size="md" data-pose="spinNewItem" data-pedestal="7">
@@ -585,22 +588,22 @@
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
                 <button type="button" class="expand-trigger" data-expand-trigger="dlg-behavioral" aria-label="Expand Behavioral Success Modeling">+</button>
                 <h3>Behavioral Success Modeling</h3>
-                <p>Six categories of performance data drive real benchmarks per level. Recommendations are grounded in what actually led to advancement &mdash; not just skill overlap.</p>
+                <p>6 categories of real performance drive level benchmarks.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
                 <button type="button" class="expand-trigger" data-expand-trigger="dlg-semantic" aria-label="Expand Semantic Search and Dimensionality">+</button>
-                <h3>Semantic Search &amp; Dimensionality</h3>
-                <p>PCA compresses 3,072-dim vectors to 1,536 for fast pgvector queries. Every match gets a precise cosine score and a specific reason code &mdash; not a black-box percentage.</p>
+                <h3>Semantic Search</h3>
+                <p>PCA 3072 &rarr; 1536 dims. Precise score. Reason code.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
                 <button type="button" class="expand-trigger" data-expand-trigger="dlg-dual" aria-label="Expand Dual LLM Validation">+</button>
                 <h3>Dual LLM Validation</h3>
-                <p>Every extracted skill passes through two independent models: one extracts with a supporting quote, the second independently validates the skill-quote pair. No hallucinated skills get in.</p>
+                <p>Two models check each other. No hallucinated skills.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
                 <button type="button" class="expand-trigger" data-expand-trigger="dlg-trajectory" aria-label="Expand Multi-Step Trajectory Analysis">+</button>
-                <h3>Multi-Step Trajectory Analysis</h3>
-                <p>The roadmap engine computes paths up to three promotions forward, auto-detecting &ldquo;walls&rdquo; where match strength falls below 50%. Full visibility into long-term trade-offs.</p>
+                <h3>Trajectory Analysis</h3>
+                <p>3 promotions ahead. Auto-detect &lt;50% &ldquo;walls&rdquo;.</p>
               </div>
             </div>
           </div>
@@ -649,7 +652,7 @@
                 </svg>
                 Built to Scale
               </div>
-              <div class="chevron-label__body">Sub-second skill matching across large employee bases via vector search. Two-tier caching and batch processing enable enterprise performance for global firms with hundreds of thousands of employees.</div>
+              <div class="chevron-label__body">Sub-second matching. Two-tier cache + batch. Scales to 100K+ employees.</div>
             </div>
             <div class="chevron-label fragment fade-up">
               <div class="chevron-label__chip">
@@ -658,7 +661,7 @@
                 </svg>
                 Seamless Integration
               </div>
-              <div class="chevron-label__body">Operates as a secure AI layer over structured skill and role data. Maps skills to open roles with vector similarity and generates personalized upskilling paths based on gaps.</div>
+              <div class="chevron-label__body">Secure AI layer over your skill + role data. Generates personalized upskilling paths.</div>
             </div>
             <div class="chevron-label fragment fade-up">
               <div class="chevron-label__chip">
@@ -668,7 +671,7 @@
                 </svg>
                 Secure &amp; Compliant by Design
               </div>
-              <div class="chevron-label__body">The AI doesn't analyze PII &mdash; only skill inputs from resume upload. Hiring managers see interested-user counts and alignment-score ranges, never applicant specifics.</div>
+              <div class="chevron-label__body">No PII in matching. Managers see counts + score ranges, not identities.</div>
             </div>
           </div>
           <div class="stage" data-anchor="bottom-right" data-size="md" data-pose="holdTrophy" data-pedestal="9">
@@ -689,16 +692,16 @@
             </div>
             <div class="slide-body slide-body--stacked">
               <div class="chip-card chip-card--compact fragment fade-up" style="border-left:4px solid var(--bronze);">
-                <h3>Modular Enterprise Deployment</h3>
-                <p>Matching, extraction, roadmaps, success patterns &mdash; each independent. Selective adoption fits existing HRIS / ATS / LMS stacks.</p>
+                <h3>Modular Deployment</h3>
+                <p>Independent modules. Fits HRIS / ATS / LMS.</p>
               </div>
               <div class="chip-card chip-card--compact fragment fade-up" style="border-left:4px solid var(--forest);">
                 <h3>Portfolio Integration</h3>
-                <p>Direct integration with enterprise credential platforms. Verified badges feed back into matching automatically.</p>
+                <p>Verified credentials feed the match algorithm.</p>
               </div>
               <div class="chip-card chip-card--compact fragment fade-up" style="border-left:4px solid var(--deep-blue);">
                 <h3>Human-Centered Governance</h3>
-                <p>Retrospective bias review, audit trails, EU AI Act-ready. Humans make final decisions; AI shows its work.</p>
+                <p>Bias review + audit trails. EU AI Act ready.</p>
               </div>
             </div>
             <div class="stage" data-anchor="inline-right" data-size="lg" data-pose="lookingFar" data-pedestal="9" style="top:55%;">
@@ -762,28 +765,28 @@
           <div class="slide-body slide-body--stacked">
             <div class="slide-body--row" style="display:flex; gap:0.75rem; margin-bottom:1rem;">
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;">
-                <h3>Engagement &amp; Return</h3>
-                <p class="chip-tagline">Engagement drops when users can't see progress.</p>
-                <p class="chip-stat"><strong>40&ndash;65%</strong> higher engagement and up to <strong>50%</strong> higher completion with progress bars, streaks, achievements.</p>
+                <h3>Engagement</h3>
+                <p class="chip-tagline">Progress must be visible.</p>
+                <p class="chip-stat"><strong>40&ndash;65%</strong> higher engagement, <strong>50%</strong> more completion.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;">
                 <h3>Habit Formation</h3>
-                <p class="chip-tagline">Habits are built through small wins.</p>
-                <p class="chip-stat">Engagement up <strong>100&ndash;150%</strong>. Daily missions and streaks are the most effective drivers of return visits.</p>
+                <p class="chip-tagline">Small wins build habits.</p>
+                <p class="chip-stat"><strong>100&ndash;150%</strong> lift. Daily streaks drive return visits.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;">
                 <h3>Learning Retention</h3>
-                <p class="chip-tagline">People learn faster when learning feels rewarding.</p>
-                <p class="chip-stat"><strong>30&ndash;70%</strong> higher knowledge retention; skill acquisition accelerated up to <strong>36%</strong>.</p>
+                <p class="chip-tagline">Learning feels rewarding.</p>
+                <p class="chip-stat"><strong>30&ndash;70%</strong> retention. <strong>36%</strong> faster skill acquisition.</p>
               </div>
               <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;">
-                <h3>Retention &amp; Value</h3>
-                <p class="chip-tagline">When users feel progress, they stay.</p>
-                <p class="chip-stat"><strong>34&ndash;50%</strong> lower turnover and significantly higher long-term participation.</p>
+                <h3>Retention</h3>
+                <p class="chip-tagline">Progress keeps users.</p>
+                <p class="chip-stat"><strong>34&ndash;50%</strong> lower turnover.</p>
               </div>
             </div>
             <div class="chip-card chip-card--yellow fragment fade-up" style="width:100%;">
-              <p><strong>Conclusion:</strong> Gamification isn't points or badges &mdash; it's making growth tangible. By turning learning and development into a visible, motivating journey, it keeps users engaged, returning, and invested in their own progress.</p>
+              <p><strong>Gamification isn't points or badges.</strong> It's making growth tangible &mdash; a visible, motivating journey.</p>
             </div>
           </div>
           <div class="stage" data-anchor="bottom-right" data-size="lg" data-pose="celebrateLevelUp" data-pedestal="9">
@@ -818,23 +821,15 @@
               <div class="slide-body--stacked" style="display:flex; flex-direction:column; gap:0.85rem;">
                 <div class="closing-numeral-row fragment fade-up">
                   <div class="numeral-seal">1</div>
-                  <div class="closing-body"><strong>The problem was never talent &mdash; it was visibility and trust.</strong><p>Organizations default to external hiring because they can't see their own people clearly. Employees leave because they can't see a future clearly.</p></div>
+                  <div class="closing-body"><strong>The problem was never talent &mdash; it was visibility.</strong></div>
                 </div>
                 <div class="closing-numeral-row fragment fade-up">
                   <div class="numeral-seal">2</div>
-                  <div class="closing-body"><strong>SkillBridge changes that.</strong>
-                    <ul>
-                      <li>Replace black-box AI with auditable, explainable decision intelligence.</li>
-                      <li>Turn hidden internal talent into actionable opportunity.</li>
-                      <li>Convert vague aspirations into concrete, phased roadmaps.</li>
-                      <li>Build governance and bias monitoring in before regulation forces it.</li>
-                      <li>Use gamification as a mechanism for sustained growth behavior.</li>
-                    </ul>
-                  </div>
+                  <div class="closing-body"><strong>SkillBridge changes that.</strong><p>Explainable AI. Actionable mobility. Built-in governance.</p></div>
                 </div>
                 <div class="closing-numeral-row fragment fade-up">
                   <div class="numeral-seal">3</div>
-                  <div class="closing-body"><strong>This is not just a matching engine.</strong><p>It is a mobility infrastructure layer for skills-based enterprises. When employees can see a path, they stay. When managers can see talent, they promote. When AI can be trusted, organizations scale.</p></div>
+                  <div class="closing-body"><strong>Not a matching engine &mdash; a mobility infrastructure layer.</strong></div>
                 </div>
               </div>
             </div>

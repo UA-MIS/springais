@@ -108,12 +108,39 @@
   }
 
   function updateSlideCounter() {
-    var counter = document.querySelector('.slide-counter');
-    if (!counter || !window.Reveal) return;
+    var counterIndex = document.querySelector('.slide-counter__index');
+    if (!counterIndex || !window.Reveal) return;
     var idx = window.Reveal.getIndices();
     var horizontalSlides = document.querySelectorAll('.reveal .slides > section');
     var total = horizontalSlides.length;
-    counter.textContent = (idx.h + 1) + ' / ' + total;
+    counterIndex.textContent = (idx.h + 1) + ' / ' + total;
+  }
+
+  /* Presenter elapsed-time clock.
+     Starts running when the presenter leaves slide 0 (hero) for the first time.
+     Amber at pace-target - 60s, red past the pace-target (default 5 min). */
+  var presenterStart = null;
+  var clockInterval = null;
+
+  function ensureClockRunning() {
+    if (presenterStart != null) return;
+    presenterStart = Date.now();
+    clockInterval = setInterval(updateClock, 1000);
+    updateClock();
+  }
+
+  function updateClock() {
+    var clock = document.querySelector('.slide-counter__clock');
+    if (!clock) return;
+    if (presenterStart == null) { clock.textContent = '0:00'; return; }
+    var elapsed = Math.floor((Date.now() - presenterStart) / 1000);
+    var mins = Math.floor(elapsed / 60);
+    var secs = elapsed % 60;
+    clock.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    var target = parseInt(clock.getAttribute('data-pace-target') || '300', 10);
+    clock.classList.remove('clock--warn', 'clock--over');
+    if (elapsed > target) clock.classList.add('clock--over');
+    else if (elapsed > target - 60) clock.classList.add('clock--warn');
   }
 
   function bindSlideCounter() {
@@ -128,7 +155,9 @@
       dimTimer = setTimeout(function () { counter.classList.add('dim'); }, 3000);
     }
     markActive();
-    window.Reveal.on('slidechanged', function () {
+    window.Reveal.on('slidechanged', function (event) {
+      // Start the clock the first time the presenter leaves the hero slide.
+      if (event && event.indexh > 0) ensureClockRunning();
       updateSlideCounter();
       updateAnnouncer();
       markActive();
