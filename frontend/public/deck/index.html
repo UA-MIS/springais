@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SkillBridge -- Pitch Deck</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="SkillBridge -- AI-driven career mobility for skills-based organizations. A self-serve pitch deck.">
+
+  <script>
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('springais-pitch-theme'); } catch (e) {}
+      var valid = saved === 'light' || saved === 'dark' || saved === 'medieval';
+      var theme = valid ? saved : 'medieval';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.addEventListener('DOMContentLoaded', function () {
+        document.body.classList.add('theme-' + theme);
+      });
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap">
+
+  <link rel="stylesheet" href="vendor/reveal.css">
+  <link rel="stylesheet" href="vendor/reveal-white.css" id="reveal-base-theme">
+  <link rel="stylesheet" href="assets/css/pitch-theme.css">
+</head>
+<body>
+
+  <a class="skip-link" href="#main-deck">Skip to content</a>
+  <div class="slide-announcer sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="twinkle-field" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
+
+  <nav class="deck-chrome" role="navigation" aria-label="Presentation controls">
+    <a class="back-to-login" href="/" data-exit-deck aria-label="Back to login">&larr; Back to login</a>
+
+    <div class="theme-switcher" role="group" aria-label="Choose theme">
+      <button type="button" data-theme-btn="light" aria-label="Light theme" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+      </button>
+      <button type="button" data-theme-btn="dark" aria-label="Dark theme" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <button type="button" data-theme-btn="medieval" aria-label="Medieval theme" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 21h18M5 21V10l3 2V7l4 2V5l4 4v3l3-2v11"/>
+          <path d="M9 21v-4h2v4M13 21v-4h2v4"/>
+          <path d="M12 3v2"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="nav-hint" role="status">Use &larr; / &rarr; to navigate &nbsp;&middot;&nbsp; &darr; to explore depth &nbsp;&middot;&nbsp; 1 / 2 / 3 to change theme</div>
+
+    <div class="slide-counter" aria-hidden="true">1 / 17</div>
+    <!-- counter is live-updated by pitch-controls.js on slidechanged -->
+
+
+    <div class="mobile-notice" role="status">Best viewed on desktop (&ge; 1024px wide)</div>
+  </nav>
+
+  <main id="main-deck">
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- =============== SLIDE 0 :: hero =============== -->
+      <section id="hero" data-transition="fade">
+        <div class="slide-shell slide-shell--centered">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+          <div class="logo-mark" style="margin-bottom:1.25rem;">
+            <img src="assets/img/skillbridge-logo.png" alt="SkillBridge logo">
+          </div>
+          <h1 class="hero-wordmark shimmer-title">SkillBridge</h1>
+          <p class="hero-subtitle">A pitch for AI-driven career mobility.</p>
+
+          <button type="button" class="hero-enter-btn" data-hero-enter>Begin the Journey &rarr;</button>
+
+          <div class="stage" data-anchor="center-below" data-size="xl" data-pose="waveHello" data-pedestal="9" style="margin-top:2rem; position:static; transform:none;">
+            <img class="stage__sprite" src="assets/cedric/sprites/waveHello.png" alt="Cedric the Herald greets you at the gates." loading="eager">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-9.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 1 :: title =============== -->
+      <section id="title">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">DevDivas Presents</div>
+            <h1 class="slide-title shimmer-title">AI-Driven Career Mobility for Skills-Based Organizations</h1>
+          </div>
+          <div class="slide-body slide-body--row" style="align-items:center; gap:3rem;">
+            <div style="flex:1;">
+              <div class="team-grid" aria-label="Team DevDivas">
+                <span class="fragment fade-up" data-fragment-index="0">Anna Miller</span>
+                <span class="fragment fade-up" data-fragment-index="1">Caroline Randall</span>
+                <span class="fragment fade-up" data-fragment-index="2">Clayton Smith</span>
+                <span class="fragment fade-up" data-fragment-index="3">Sydney March</span>
+              </div>
+            </div>
+            <div class="stage" data-anchor="inline-right" data-size="lg" data-pose="pointing" data-pedestal="7" style="position:relative; top:auto; right:auto; transform:none;">
+              <img class="stage__sprite" src="assets/cedric/sprites/pointing.png" alt="Cedric pointing to the SkillBridge mission." loading="eager">
+              <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-7.png" alt="" aria-hidden="true">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 2 :: problem =============== -->
+      <section id="problem">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">Problem Understanding</div>
+            <h1 class="slide-title">Internal talent is invisible &mdash; and it's costing companies millions</h1>
+          </div>
+          <div class="slide-body">
+            <div class="two-col two-col--left-wide">
+              <div class="chip-card chip-card--yellow">
+                <ul>
+                  <li class="fragment fade-up">Only <strong>39%</strong> of roles are filled internally; employees want growth.</li>
+                  <li class="fragment fade-up">Managers can't see internal skills; employees get vague career advice.</li>
+                  <li class="fragment fade-up">Companies default to external hiring &mdash; more bias, missed internal talent.</li>
+                </ul>
+              </div>
+              <div class="hero-frame">
+                <img src="assets/img/mascot-dwarf-lantern.png" alt="Pixel-art gnome holding a lantern, its beam revealing one spotlit worker among a row of silhouettes &mdash; the visibility gap.">
+              </div>
+            </div>
+          </div>
+          <div class="stage" data-anchor="bottom-left" data-size="md" data-pose="thinking" data-pedestal="3">
+            <img class="stage__sprite" src="assets/cedric/sprites/thinking.png" alt="Cedric considers the visibility gap.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-3.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 3 :: solution =============== -->
+      <section id="solution">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">Our Solution</div>
+            <h1 class="slide-title">SkillBridge makes internal talent visible and paths actionable</h1>
+          </div>
+          <div class="slide-body" style="align-items:center;">
+            <div class="chevron-row" style="margin-top:0;">
+              <div class="chevron-card fragment fade-up">
+                <h4>Input</h4>
+                <ul>
+                  <li>Resume text scrubbed before parsing</li>
+                  <li>Scraped 400+ EY job postings</li>
+                </ul>
+              </div>
+              <div class="chevron-card fragment fade-up">
+                <h4>Process</h4>
+                <ul>
+                  <li>Skills and roles embeddings</li>
+                  <li>Gap analysis: direct, transferable, missing</li>
+                </ul>
+              </div>
+              <div class="chevron-card fragment fade-up">
+                <h4>Output</h4>
+                <ul>
+                  <li>Ranked matches with transparent scores</li>
+                  <li>&ldquo;Why this role?&rdquo; explanations</li>
+                  <li>GPT-generated multi-phase roadmaps</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="stage" data-anchor="bottom-center" data-size="md" data-pose="tracingLines" data-pedestal="5">
+            <img class="stage__sprite" src="assets/cedric/sprites/tracingLines.png" alt="Cedric traces the pipeline.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-5.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 4 :: impact =============== -->
+      <section id="impact">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">Impact and Delivery</div>
+            <h1 class="slide-title">What SkillBridge delivers for you</h1>
+          </div>
+          <div class="slide-body slide-body--stacked">
+            <div class="chevron-label fragment fade-up">
+              <div class="chevron-label__chip">
+                <svg class="heraldic-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path d="M6 8 L9 14 L15 14 L10 18 L12 24 L6 20 L0 24 L2 18 L-3 14 L3 14 Z" transform="translate(6,0) scale(0.7)"/>
+                  <path d="M18 16 Q22 12 26 16 Q30 20 26 24 Q22 28 18 24" fill="currentColor" opacity="0.85"/>
+                </svg>
+                Business Value
+              </div>
+              <ul class="chevron-label__body">
+                <li>Decreases internal hiring cost &mdash; roughly <strong>50&ndash;75%</strong> less than external.</li>
+                <li>Saves manager time, retains more team members.</li>
+              </ul>
+            </div>
+            <div class="chevron-label fragment fade-up">
+              <div class="chevron-label__chip">
+                <svg class="heraldic-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <circle cx="14" cy="6" r="3"/>
+                  <path d="M10 30 L14 18 L18 30 M8 18 L14 14 L20 18 L24 12 M24 12 L26 10 M24 12 L24 16"/>
+                </svg>
+                Next Steps
+              </div>
+              <ul class="chevron-label__body">
+                <li>Pilot across service lines to validate match quality.</li>
+                <li>Integrate internal data and systems.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="stage" data-anchor="bottom-right" data-size="lg" data-pose="holdTrophy" data-pedestal="7">
+            <img class="stage__sprite" src="assets/cedric/sprites/holdTrophy.png" alt="Cedric lifts the trophy of impact.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-7.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 5 :: cta divider =============== -->
+      <section id="cta" data-transition="zoom">
+        <div class="divider-slide">
+          <div class="divider-band">
+            <h1>myskillbridge.me</h1>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 6 :: appendix divider =============== -->
+      <section id="appendix">
+        <div class="divider-slide">
+          <div class="divider-band">
+            <h1>Appendix</h1>
+          </div>
+          <div class="stage" data-anchor="bottom-right" data-size="sm" data-pose="lookingFar" data-pedestal="3">
+            <img class="stage__sprite" src="assets/cedric/sprites/lookingFar.png" alt="Cedric peers into the deeper chambers.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-3.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 7 :: problem-depth + verticals =============== -->
+      <section id="problem-depth">
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band">
+              <div class="eyebrow">Problem Understanding</div>
+              <h1 class="slide-title slide-title--small">When employees can't see a future and managers can't see their own talent, both default to the most expensive option: the exit.</h1>
+            </div>
+            <div class="slide-body slide-body--stacked" style="gap:0.5rem;">
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
+                <h3>AI Trust</h3>
+                <p>Only <strong>27%</strong> of workers fully trust employers to use AI responsibly. <strong>60%</strong> believe AI is making bias worse.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
+                <h3>External Default</h3>
+                <p>Only <strong>39%</strong> of roles filled internally &mdash; yet internal hires deliver <strong>53%</strong> longer tenure, reach productivity <strong>2&times;</strong> faster, cost <strong>60%</strong> less.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
+                <h3>Clear Path</h3>
+                <p><strong>94%</strong> would stay longer if their employer invested in career development. Only <strong>33%</strong> offer formal mobility programs.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
+                <h3>Implication</h3>
+                <p><em>The problem isn't matching; it's mobility.</em> Enterprises need systems that employees trust, that surface internal opportunities they can't see, and that show them how to get there.</p>
+              </div>
+            </div>
+            <div class="stage" data-anchor="inline-right" data-size="md" data-pose="confused" data-pedestal="5" style="top:60%;">
+              <img class="stage__sprite" src="assets/cedric/sprites/confused.png" alt="Cedric shakes his head at the data.">
+              <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-5.png" alt="" aria-hidden="true">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">7.a</div><h2 class="slide-title slide-title--small">AI Trust</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:40em;">
+              <p>Only <strong>27%</strong> of workers fully trust employers to use AI responsibly. <strong>60%</strong> believe AI is making bias worse, not better.</p>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="reading">
+              <img class="stage__sprite" src="assets/cedric/sprites/reading.png" alt="Cedric reads the survey." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">7.b</div><h2 class="slide-title slide-title--small">External Default</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:40em;">
+              <p>Only <strong>39%</strong> of roles are filled internally, yet internal hires deliver <strong>53%</strong> longer tenure, reach productivity <strong>2&times;</strong> faster, and cost <strong>60%</strong> less than external hires.</p>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="lookingFar">
+              <img class="stage__sprite" src="assets/cedric/sprites/lookingFar.png" alt="Cedric looks out at the cliff of lost talent." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">7.c</div><h2 class="slide-title slide-title--small">Clear Path</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:40em;">
+              <p><strong>94%</strong> would stay longer if their employer invested in career development. Only <strong>33%</strong> of companies offer formal internal mobility programs.</p>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="waveHello">
+              <img class="stage__sprite" src="assets/cedric/sprites/waveHello.png" alt="Cedric welcomes employees onto the path." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">7.d</div><h2 class="slide-title slide-title--small">Implication</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:42em;">
+              <p><em>The problem isn't matching; it's mobility.</em> Enterprises need systems that employees trust, that surface internal opportunities they can't see, and that show them how to get there &mdash; not just that they could.</p>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="pointing">
+              <img class="stage__sprite" src="assets/cedric/sprites/pointing.png" alt="Cedric points to the implication." loading="lazy">
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- =============== SLIDE 8 :: solution-depth + verticals =============== -->
+      <section id="solution-depth">
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band">
+              <div class="eyebrow">Proposed Solution</div>
+              <h1 class="slide-title">Explainable, bias-aware AI for internal mobility</h1>
+            </div>
+            <div class="slide-body">
+              <div class="two-col">
+                <div class="slide-body--stacked" style="display:flex; flex-direction:column; gap:0.85rem;">
+                  <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
+                    <h3>Vector Explainability</h3>
+                    <p>30&ndash;60 skills extracted per resume, PII stripped, every match carries a GPT-generated &ldquo;why&rdquo;.</p>
+                  </div>
+                  <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
+                    <h3>Hiring Manager Portal</h3>
+                    <p>Anonymized, skill-first candidate profiles. Aggregate skill distributions per role. Tokenized until mutual opt-in.</p>
+                  </div>
+                  <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up">
+                    <h3>Career Roadmaps &amp; Skills Portfolio</h3>
+                    <p>Phased plans with milestones, 4-tier learning modules, Success Patterns from similar role transitions.</p>
+                  </div>
+                </div>
+                <div class="slide-body--stacked" style="display:flex; flex-direction:column; gap:0.7rem;">
+                  <div class="chip-card chip-card--compact"><h3>Credibility</h3><p>Audit trails, bias monitoring, compliance-ready reporting.</p></div>
+                  <div class="chip-card chip-card--compact"><h3>Mobility</h3><p>Explainability + roadmaps + HM view close the loop.</p></div>
+                  <div class="chip-card chip-card--compact"><h3>Discoverability</h3><p>Inferred skills &amp; aggregate matching reveal talent no one knew existed.</p></div>
+                </div>
+              </div>
+            </div>
+            <div class="stage" data-anchor="bottom-right" data-size="md" data-pose="excited" data-pedestal="5">
+              <img class="stage__sprite" src="assets/cedric/sprites/excited.png" alt="Cedric reveals the solution.">
+              <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-5.png" alt="" aria-hidden="true">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">8.a</div><h2 class="slide-title slide-title--small">Vector Explainability</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:48em;">
+              <p>SkillBridge vectorizes skills beyond keyword matching, understanding that &ldquo;vendor management&rdquo; and &ldquo;stakeholder coordination&rdquo; are related capabilities. AI extraction pulls 30&ndash;60 skills per resume, including inferred skills from context. PII is stripped before matching. Every result includes a GPT-generated explanation of what aligned, what's missing, and how to close the gap.</p>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="reading">
+              <img class="stage__sprite" src="assets/cedric/sprites/reading.png" alt="Cedric inspects the skill extractions." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">8.b</div><h2 class="slide-title slide-title--small">Hiring Manager Portal</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:48em;">
+              <p>Hiring managers see anonymized, skill-first candidate profiles with match scores and gap analysis before any conversation. Aggregate skill distributions surface common gaps across candidates, so managers enter interviews with realistic expectations. Tokenized identities protect privacy until mutual opt-in.</p>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="lookAround">
+              <img class="stage__sprite" src="assets/cedric/sprites/lookAround.png" alt="Cedric surveys candidates." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">8.c</div><h2 class="slide-title slide-title--small">Career Roadmaps &amp; Skills Portfolio</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:48em;">
+              <p>AI-generated roadmaps break transitions into phased plans with milestones, timelines, and prerequisites. The Skills Portfolio organizes capabilities into four-tier learning modules (Fundamentals through Mastery). Success Patterns show how employees in similar roles have transitioned, including common skills and average timelines.</p>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="tracingLines">
+              <img class="stage__sprite" src="assets/cedric/sprites/tracingLines.png" alt="Cedric draws the roadmap." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">8.d</div><h2 class="slide-title slide-title--small">Credibility &middot; Mobility &middot; Discoverability</h2></div>
+            <div class="slide-body slide-body--stacked">
+              <div class="chip-card"><h3>Credibility</h3><p>Every match decision is logged with full audit trails. Bias monitoring across all recommendations. Compliance-ready reporting for governance teams to verify fairness metrics and pull decision records.</p></div>
+              <div class="chip-card"><h3>Mobility</h3><p>Explainability gives employees confidence to apply by showing exactly where they stand. Roadmaps reduce fear of transitions by mapping the path forward. Hiring Manager View closes the loop by ensuring internal talent gets seen.</p></div>
+              <div class="chip-card"><h3>Discoverability</h3><p>Inferred skills reveal capabilities employees didn't know they had. Aggregate matching reveals internal talent managers didn't know existed. Success Patterns reveal viable career paths between roles no one thought to connect.</p></div>
+            </div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="holdTrophy">
+              <img class="stage__sprite" src="assets/cedric/sprites/holdTrophy.png" alt="Cedric defends the three principles." loading="lazy">
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- =============== SLIDE 9 :: personas =============== -->
+      <section id="personas">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">User Personas</div>
+            <h1 class="slide-title">Who we are building for</h1>
+          </div>
+          <div class="slide-body">
+            <div class="two-col two-col--right-wide">
+              <div style="display:flex; align-items:center; justify-content:center;">
+                <img class="persona-silhouette" src="assets/img/persona-head-profile.png" alt="Stylized human head silhouette in profile, divided into three mental layers, one small icon badge per persona.">
+              </div>
+              <div class="slide-body--stacked" style="display:flex; flex-direction:column; gap:0.8rem;">
+                <div class="chip-card fragment fade-up">
+                  <h3>Hiring Manager</h3>
+                  <ul>
+                    <li>Needs a clear, data-driven view of internal talent without bias or inflated expectations.</li>
+                    <li>Typically reviews applications blind to internal interest or alignment.</li>
+                    <li>Receives an unbiased view of anonymous interested applicants with role-fit scores.</li>
+                  </ul>
+                </div>
+                <div class="chip-card fragment fade-up">
+                  <h3>Current Employee</h3>
+                  <ul>
+                    <li>Wants a clear path to internal promotion or career advancement.</li>
+                    <li>Used to vague promotion criteria and generic suggestions.</li>
+                    <li>Receives a personalized pathway to roles they want, with concrete timelines.</li>
+                  </ul>
+                </div>
+                <div class="chip-card fragment fade-up">
+                  <h3>Intern / Entry Level</h3>
+                  <ul>
+                    <li>Wants to understand possible paths and build relevant skills early.</li>
+                    <li>Feels uncertain about alignment and how to stand out.</li>
+                    <li>Receives a realistic pathway broken into manageable steps with transparent explanation.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 10 :: demo + verticals =============== -->
+      <section id="demo">
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band" style="text-align:center;">
+              <h1 class="hero-wordmark shimmer-title" style="font-size:3.5rem;">Demo</h1>
+              <p class="hero-subtitle" style="margin:0.4rem 0 0;">Built by humans. Accelerated by AI.</p>
+            </div>
+            <div class="slide-body">
+              <div class="slide-body--row" style="display:flex; gap:1rem; width:100%; align-items:stretch;">
+                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>BMAD Swarm</h3><p>AI-orchestrated dev methodology pairing specialized AI agents with human devs.</p></div>
+                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>Models &amp; APIs</h3><p>GPT-5.2, embeddings, O*NET taxonomy, EY careers scraper.</p></div>
+                <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;"><h3>Tech Stack</h3><p>Python, TypeScript, FastAPI, React 18, Postgres + pgvector, Redis.</p></div>
+              </div>
+            </div>
+            <div class="stage" data-anchor="bottom-center" data-size="md" data-pose="spinNewItem" data-pedestal="7">
+              <img class="stage__sprite" src="assets/cedric/sprites/spinNewItem.png" alt="Cedric reveals the product." loading="eager">
+              <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-7.png" alt="" aria-hidden="true">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">10.a</div><h2 class="slide-title slide-title--small">How we built it &mdash; BMAD Swarm</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:46em;">
+              <ul>
+                <li>Developed using BMAD Swarm, an AI-orchestrated methodology that pairs specialized AI agents with human developers at every phase.</li>
+                <li>Humans drove every decision &mdash; architecture, product requirements &mdash; while AI agents accelerated implementation under structured human oversight.</li>
+                <li>BMAD gave us the framework to move at the speed of AI without sacrificing the discipline of traditional software development.</li>
+              </ul>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="md" data-pose="excited">
+              <img class="stage__sprite" src="assets/cedric/sprites/excited.png" alt="Cedric excited about the method." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">10.b</div><h2 class="slide-title slide-title--small">Models &amp; APIs</h2></div>
+            <div class="slide-body"><div class="chip-card" style="max-width:48em;">
+              <ul>
+                <li><strong>gpt-5.2 with reasoning</strong> &mdash; deep candidate-job fit analysis, personalized roadmap generation.</li>
+                <li><strong>gpt-5.2-chat-latest</strong> &mdash; skill extraction, dual LLM validation, job skill extraction, learning content, skill grouping.</li>
+                <li><strong>gpt-5-nano</strong> &mdash; skill recommendations.</li>
+                <li><strong>text-embedding-3-large</strong> &mdash; vector embeddings for semantic matching (PCA: 3,072 &rarr; 1,536 dims).</li>
+                <li><strong>O*NET API</strong> &mdash; national skills taxonomy (900+ occupations).</li>
+                <li><strong>EY careers scraper</strong> &mdash; job data ingestion.</li>
+              </ul>
+            </div></div>
+            <div class="stage" data-anchor="inline-right" data-size="md" data-pose="thinking">
+              <img class="stage__sprite" src="assets/cedric/sprites/thinking.png" alt="Cedric studies the model lineup." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">10.c</div><h2 class="slide-title slide-title--small">Tech Stack</h2></div>
+            <div class="slide-body" style="align-items:center; justify-content:center;">
+              <div class="pyramid" aria-label="Tech stack pyramid from foundation to apex">
+                <div class="pyramid__band fragment fade-up"><strong>Infrastructure &amp; DevOps</strong>Docker &middot; Uvicorn &middot; pytest &middot; ESLint &middot; pypdf &middot; python-docx &middot; Pydantic</div>
+                <div class="pyramid__band fragment fade-up"><strong>Libraries &amp; Tools</strong>TanStack Query &middot; React Router &middot; Framer Motion &middot; OpenAI &middot; LangChain &middot; React Flow &middot; Recharts &middot; dnd-kit &middot; Axios &middot; BeautifulSoup4 &middot; scikit-learn &middot; PyJWT &middot; bcrypt</div>
+                <div class="pyramid__band fragment fade-up"><strong>Data Layer</strong>PostgreSQL 16 + pgvector &middot; Redis 7 &middot; SQLAlchemy 2.0 &middot; Alembic</div>
+                <div class="pyramid__band fragment fade-up"><strong>Frameworks</strong>FastAPI &middot; React 18 &middot; Vite 5 &middot; TailwindCSS 4</div>
+                <div class="pyramid__band fragment fade-up"><strong>Languages</strong>Python 3.11 &middot; TypeScript &middot; SQL</div>
+              </div>
+            </div>
+            <div class="stage" data-anchor="bottom-left" data-size="md" data-pose="pointing">
+              <img class="stage__sprite" src="assets/cedric/sprites/pointing.png" alt="Cedric points up the pyramid." loading="lazy">
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- =============== SLIDE 11 :: differentiators =============== -->
+      <section id="differentiators">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">AI Differentiators</div>
+            <h1 class="slide-title">SkillBridge is different because of how we use AI</h1>
+          </div>
+          <div class="slide-body">
+            <div class="grid-2x2">
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
+                <button type="button" class="expand-trigger" data-expand-trigger="dlg-behavioral" aria-label="Expand Behavioral Success Modeling">+</button>
+                <h3>Behavioral Success Modeling</h3>
+                <p>Six categories of performance data drive real benchmarks per level. Recommendations are grounded in what actually led to advancement &mdash; not just skill overlap.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
+                <button type="button" class="expand-trigger" data-expand-trigger="dlg-semantic" aria-label="Expand Semantic Search and Dimensionality">+</button>
+                <h3>Semantic Search &amp; Dimensionality</h3>
+                <p>PCA compresses 3,072-dim vectors to 1,536 for fast pgvector queries. Every match gets a precise cosine score and a specific reason code &mdash; not a black-box percentage.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
+                <button type="button" class="expand-trigger" data-expand-trigger="dlg-dual" aria-label="Expand Dual LLM Validation">+</button>
+                <h3>Dual LLM Validation</h3>
+                <p>Every extracted skill passes through two independent models: one extracts with a supporting quote, the second independently validates the skill-quote pair. No hallucinated skills get in.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="position:relative;">
+                <button type="button" class="expand-trigger" data-expand-trigger="dlg-trajectory" aria-label="Expand Multi-Step Trajectory Analysis">+</button>
+                <h3>Multi-Step Trajectory Analysis</h3>
+                <p>The roadmap engine computes paths up to three promotions forward, auto-detecting &ldquo;walls&rdquo; where match strength falls below 50%. Full visibility into long-term trade-offs.</p>
+              </div>
+            </div>
+          </div>
+          <div class="stage" data-anchor="bottom-center" data-size="md" data-pose="spinNewItem" data-pedestal="5">
+            <img class="stage__sprite" src="assets/cedric/sprites/spinNewItem.png" alt="Cedric shows off the four pillars.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-5.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+
+        <dialog id="dlg-behavioral" class="expand-dialog">
+          <button type="button" class="close-btn" aria-label="Close">&times;</button>
+          <h3>Behavioral Success Modeling</h3>
+          <p>The system analyzes six categories of real performance data to determine what actually drives promotions: financial performance, compliance track record, work quality, professional development activity, people leadership, and NLP-analyzed themes from peer feedback. From this, it builds concrete benchmarks per level. For example, employees who reached Manager typically had 87% utilization and mentored at least 2 people. Recommendations are grounded in patterns that actually led to advancement, not just skill overlap.</p>
+        </dialog>
+        <dialog id="dlg-semantic" class="expand-dialog">
+          <button type="button" class="close-btn" aria-label="Close">&times;</button>
+          <h3>Semantic Search &amp; Dimensionality</h3>
+          <p>PCA compresses those 3,072-dimensional vectors down to 1,536 dimensions for efficient storage and querying in pgvector without losing meaningful signal. The system measures the distance between skill vectors using cosine similarity, giving every match a precise score and a specific reason code rather than a black-box percentage.</p>
+        </dialog>
+        <dialog id="dlg-dual" class="expand-dialog">
+          <button type="button" class="close-btn" aria-label="Close">&times;</button>
+          <h3>Dual LLM Validation</h3>
+          <p>Every skill on a user's profile passes through two independent AI models: the first reads the resume and extracts skills, but is required to attach the exact sentence that supports each claim. The second model independently reviews each skill-and-quote pair and rejects anything the quote doesn't actually prove. Two models checking each other means no hallucinated or unsupported skills make it into the system.</p>
+        </dialog>
+        <dialog id="dlg-trajectory" class="expand-dialog">
+          <button type="button" class="close-btn" aria-label="Close">&times;</button>
+          <h3>Multi-Step Trajectory Analysis</h3>
+          <p>The roadmap engine computes career paths up to three promotions forward, with automatic detection of &ldquo;walls&rdquo; where match strength drops below 50%. Users see side-by-side path comparisons showing where each option leads and where it dead-ends. One path might show a strong fit all the way to Partner, while another offers easy entry but stalls two levels up. The goal is full visibility into long-term trade-offs before committing to a move.</p>
+        </dialog>
+      </section>
+
+      <!-- =============== SLIDE 12 :: enterprise =============== -->
+      <section id="enterprise">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">Implementation and Fit</div>
+            <h1 class="slide-title">Built for the enterprise</h1>
+          </div>
+          <div class="slide-body slide-body--stacked">
+            <div class="chevron-label fragment fade-up">
+              <div class="chevron-label__chip">
+                <svg class="heraldic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M12 7v10M7 12h10M9 9l-2-2M15 9l2-2M9 15l-2 2M15 15l2 2"/>
+                </svg>
+                Built to Scale
+              </div>
+              <div class="chevron-label__body">Sub-second skill matching across large employee bases via vector search. Two-tier caching and batch processing enable enterprise performance for global firms with hundreds of thousands of employees.</div>
+            </div>
+            <div class="chevron-label fragment fade-up">
+              <div class="chevron-label__chip">
+                <svg class="heraldic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <path d="M4 10a8 8 0 0 1 14-5M20 14a8 8 0 0 1-14 5M18 5v5h-5M6 19v-5h5"/>
+                </svg>
+                Seamless Integration
+              </div>
+              <div class="chevron-label__body">Operates as a secure AI layer over structured skill and role data. Maps skills to open roles with vector similarity and generates personalized upskilling paths based on gaps.</div>
+            </div>
+            <div class="chevron-label fragment fade-up">
+              <div class="chevron-label__chip">
+                <svg class="heraldic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                  <rect x="4" y="10" width="16" height="10" rx="2"/>
+                  <path d="M8 10V7a4 4 0 1 1 8 0v3"/>
+                </svg>
+                Secure &amp; Compliant by Design
+              </div>
+              <div class="chevron-label__body">The AI doesn't analyze PII &mdash; only skill inputs from resume upload. Hiring managers see interested-user counts and alignment-score ranges, never applicant specifics.</div>
+            </div>
+          </div>
+          <div class="stage" data-anchor="bottom-right" data-size="md" data-pose="holdTrophy" data-pedestal="9">
+            <img class="stage__sprite" src="assets/cedric/sprites/holdTrophy.png" alt="Cedric raises the enterprise banner.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-9.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 13 :: vision + verticals =============== -->
+      <section id="vision">
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band">
+              <div class="eyebrow">Vision of the Future &middot; Why This Wins</div>
+              <h1 class="slide-title slide-title--small">We built a strong foundation &mdash; these are three directions the market is telling us to go.</h1>
+            </div>
+            <div class="slide-body slide-body--stacked">
+              <div class="chip-card chip-card--compact fragment fade-up" style="border-left:4px solid var(--bronze);">
+                <h3>Modular Enterprise Deployment</h3>
+                <p>Matching, extraction, roadmaps, success patterns &mdash; each independent. Selective adoption fits existing HRIS / ATS / LMS stacks.</p>
+              </div>
+              <div class="chip-card chip-card--compact fragment fade-up" style="border-left:4px solid var(--forest);">
+                <h3>Portfolio Integration</h3>
+                <p>Direct integration with enterprise credential platforms. Verified badges feed back into matching automatically.</p>
+              </div>
+              <div class="chip-card chip-card--compact fragment fade-up" style="border-left:4px solid var(--deep-blue);">
+                <h3>Human-Centered Governance</h3>
+                <p>Retrospective bias review, audit trails, EU AI Act-ready. Humans make final decisions; AI shows its work.</p>
+              </div>
+            </div>
+            <div class="stage" data-anchor="inline-right" data-size="lg" data-pose="lookingFar" data-pedestal="9" style="top:55%;">
+              <img class="stage__sprite" src="assets/cedric/sprites/lookingFar.png" alt="Cedric looks to the horizon.">
+              <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-9.png" alt="" aria-hidden="true">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">13.a</div><h2 class="slide-title slide-title--small">Modular Enterprise Deployment</h2></div>
+            <div class="slide-body slide-body--stacked">
+              <div class="chip-card"><h3>Vision</h3><p>The platform is already built as independent feature modules: matching, skill extraction, roadmaps, and success patterns, each operating as its own service. Architecture is designed for selective deployment &mdash; organizations adopt only the modules their talent strategy requires. Pre-built integration points connect to existing HRIS, ATS, and LMS systems without replacing the tools teams already use.</p></div>
+              <div class="chip-card chip-card--yellow"><h3>Why this wins</h3><p>Gartner predicts organizations adopting composable architectures will outpace competitors by 80% in new-feature implementation by 2026. SkillBridge has already built this way for EY; the same design makes it deployable elsewhere. Ease of integration is now the #1 decision factor for new HR-tech investments, overtaking price and features (Sapient Insights, 1,900 U.S. enterprises).</p></div>
+            </div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="spinNewItem">
+              <img class="stage__sprite" src="assets/cedric/sprites/spinNewItem.png" alt="Cedric presents the modular platform." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">13.b</div><h2 class="slide-title slide-title--small">Portfolio Integration</h2></div>
+            <div class="slide-body slide-body--stacked">
+              <div class="chip-card"><h3>Vision</h3><p>We already extract and categorize certifications from resumes alongside technical, soft, and domain skills. Next: direct integration with enterprise credential platforms (Credly, internal LMS) so verified badges feed the matching algorithm automatically. Recommended skills become trackable credentials, closing the loop between &ldquo;what should I learn&rdquo; and &ldquo;proof that I did&rdquo;.</p></div>
+              <div class="chip-card chip-card--yellow"><h3>Why this wins</h3><p>The digital-credential market is projected to grow from $2.1B to $7.8B by 2035, and 71% of Fortune 1000 companies run 15+ HR apps with fragmented credential data. Gartner's 2025 Hype Cycle lists AI-enabled skills management as high-benefit. Verified credentials in our matching algorithm moves us from inference to proof.</p></div>
+            </div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="catchCoin">
+              <img class="stage__sprite" src="assets/cedric/sprites/catchCoin.png" alt="Cedric catches a verified credential." loading="lazy">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="slide-shell">
+            <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="header-band"><div class="eyebrow">13.c</div><h2 class="slide-title slide-title--small">Human-Centered Governance</h2></div>
+            <div class="slide-body slide-body--stacked">
+              <div class="chip-card"><h3>Vision</h3><p>After a role is filled, hiring managers can retrospectively review audit trails for each candidate to identify bias patterns. The AI warns when recommendations skew for demographics &mdash; released only upon candidate permission. Every recommendation traces back to specific sources; the AI formats reasoning, the human gets the final decision.</p></div>
+              <div class="chip-card chip-card--yellow"><h3>Why this wins</h3><p>The EU AI Act (Aug 2026) classifies AI hiring as high-risk and mandates audit logs for algorithmic decisions. NYC Local Law 144 already requires annual bias audits of automated hiring tools, with NJ / PA / CA advancing similar laws. The governance layer we're building anticipates the regulatory wave.</p></div>
+            </div>
+            <div class="stage" data-anchor="inline-right" data-size="sm" data-pose="holdTrophy">
+              <img class="stage__sprite" src="assets/cedric/sprites/holdTrophy.png" alt="Cedric defends governance." loading="lazy">
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- =============== SLIDE 14 :: gamification =============== -->
+      <section id="gamification">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">Gamification Rationale</div>
+            <h1 class="slide-title slide-title--small">Progress, not content, is what keeps people coming back</h1>
+          </div>
+          <div class="slide-body slide-body--stacked">
+            <div class="slide-body--row" style="display:flex; gap:0.75rem; margin-bottom:1rem;">
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;">
+                <h3>Engagement &amp; Return</h3>
+                <p class="chip-tagline">Engagement drops when users can't see progress.</p>
+                <p class="chip-stat"><strong>40&ndash;65%</strong> higher engagement and up to <strong>50%</strong> higher completion with progress bars, streaks, achievements.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;">
+                <h3>Habit Formation</h3>
+                <p class="chip-tagline">Habits are built through small wins.</p>
+                <p class="chip-stat">Engagement up <strong>100&ndash;150%</strong>. Daily missions and streaks are the most effective drivers of return visits.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;">
+                <h3>Learning Retention</h3>
+                <p class="chip-tagline">People learn faster when learning feels rewarding.</p>
+                <p class="chip-stat"><strong>30&ndash;70%</strong> higher knowledge retention; skill acquisition accelerated up to <strong>36%</strong>.</p>
+              </div>
+              <div class="chip-card chip-card--yellow chip-card--compact fragment fade-up" style="flex:1;">
+                <h3>Retention &amp; Value</h3>
+                <p class="chip-tagline">When users feel progress, they stay.</p>
+                <p class="chip-stat"><strong>34&ndash;50%</strong> lower turnover and significantly higher long-term participation.</p>
+              </div>
+            </div>
+            <div class="chip-card chip-card--yellow fragment fade-up" style="width:100%;">
+              <p><strong>Conclusion:</strong> Gamification isn't points or badges &mdash; it's making growth tangible. By turning learning and development into a visible, motivating journey, it keeps users engaged, returning, and invested in their own progress.</p>
+            </div>
+          </div>
+          <div class="stage" data-anchor="bottom-right" data-size="lg" data-pose="celebrateLevelUp" data-pedestal="9">
+            <img class="stage__sprite" src="assets/cedric/sprites/celebrateLevelUp.png" alt="Cedric celebrates a level-up.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-9.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 15 :: closing =============== -->
+      <section id="closing">
+        <div class="slide-shell">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="header-band">
+            <div class="eyebrow">Closing Manifesto</div>
+            <h1 class="slide-title slide-title--small">SkillBridge activates internal talent, operationalizes fairness, and makes career growth measurable, visible, continuous.</h1>
+          </div>
+          <div class="slide-body">
+            <div class="two-col">
+              <div style="display:flex; align-items:center; justify-content:center;">
+                <div class="lantern" aria-hidden="true">
+                  <div class="lantern__handle"></div>
+                  <div class="lantern__top"></div>
+                  <div class="lantern__rays"></div>
+                  <div class="lantern__cage">
+                    <div class="lantern__flame"></div>
+                  </div>
+                  <div class="lantern__base"></div>
+                </div>
+                <img class="lightbulb-hero" src="assets/img/icon-lightbulb.png" alt="A bright idea &mdash; stylized lightbulb with sun-rays.">
+              </div>
+              <div class="slide-body--stacked" style="display:flex; flex-direction:column; gap:0.85rem;">
+                <div class="closing-numeral-row fragment fade-up">
+                  <div class="numeral-seal">1</div>
+                  <div class="closing-body"><strong>The problem was never talent &mdash; it was visibility and trust.</strong><p>Organizations default to external hiring because they can't see their own people clearly. Employees leave because they can't see a future clearly.</p></div>
+                </div>
+                <div class="closing-numeral-row fragment fade-up">
+                  <div class="numeral-seal">2</div>
+                  <div class="closing-body"><strong>SkillBridge changes that.</strong>
+                    <ul>
+                      <li>Replace black-box AI with auditable, explainable decision intelligence.</li>
+                      <li>Turn hidden internal talent into actionable opportunity.</li>
+                      <li>Convert vague aspirations into concrete, phased roadmaps.</li>
+                      <li>Build governance and bias monitoring in before regulation forces it.</li>
+                      <li>Use gamification as a mechanism for sustained growth behavior.</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="closing-numeral-row fragment fade-up">
+                  <div class="numeral-seal">3</div>
+                  <div class="closing-body"><strong>This is not just a matching engine.</strong><p>It is a mobility infrastructure layer for skills-based enterprises. When employees can see a path, they stay. When managers can see talent, they promote. When AI can be trusted, organizations scale.</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="stage" data-anchor="bottom-center" data-size="xl" data-pose="victoryPose" data-pedestal="9" style="bottom:-1rem;">
+            <img class="stage__sprite" src="assets/cedric/sprites/victoryPose.png" alt="Cedric in triumphant pose: SkillBridge activates internal talent.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-9.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+      <!-- =============== SLIDE 16 :: credits =============== -->
+      <section id="credits" data-transition="fade">
+        <div class="slide-shell slide-shell--centered">
+          <div class="filigree-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <h1 class="hero-wordmark shimmer-title" style="font-size:2.8rem;">Built by DevDivas</h1>
+          <div class="team-grid" style="margin:1.5rem auto; font-size:1.2rem; justify-content:center; text-align:center;">
+            <span>Anna Miller</span>
+            <span>Caroline Randall</span>
+            <span>Clayton Smith</span>
+            <span>Sydney March</span>
+          </div>
+          <p class="hero-subtitle"><em>Powered by SpringAis. Narrated by Cedric.</em></p>
+          <a class="hero-enter-btn" href="/" data-exit-deck>&larr; Return to login</a>
+          <div class="stage" data-anchor="center-below" data-size="xl" data-pose="waveHello" data-pedestal="9" style="position:static; transform:none; margin-top:2rem;">
+            <img class="stage__sprite" src="assets/cedric/sprites/waveHello.png" alt="Cedric waves goodbye.">
+            <img class="stage__pedestal" src="assets/cedric/pedestals/pedestal-level-9.png" alt="" aria-hidden="true">
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+  </main>
+
+  <script src="vendor/reveal.js"></script>
+  <script src="assets/js/pitch-theme-switcher.js"></script>
+  <script src="assets/js/pitch-controls.js"></script>
+</body>
+</html>

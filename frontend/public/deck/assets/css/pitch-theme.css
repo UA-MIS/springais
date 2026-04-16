@@ -1,0 +1,1376 @@
+/*
+ * SkillBridge Pitch Deck -- theme stylesheet
+ * Three-way themed deck: light / dark / medieval (default).
+ * Tokens mirror frontend/src/context/ThemeContext.tsx verbatim.
+ * No Tailwind dependency. CSS custom properties scoped by body class.
+ */
+
+/* ==========================================================================
+   1. Theme tokens
+   ========================================================================== */
+
+.theme-medieval {
+  color-scheme: dark;
+  --page-bg: #1a1510;
+  --page-bg-gradient: radial-gradient(ellipse at 50% 20%, #2a2016 0%, #1a1510 55%, #0f0b07 100%);
+  --card-bg: rgba(60, 50, 40, 0.85);
+  --card-bg-solid: #2a241b;
+  --card-border: rgba(139, 90, 43, 0.55);
+  --card-border-strong: rgba(139, 90, 43, 0.9);
+  --text-primary: #e8dcc4;
+  --text-secondary: #c4b998;
+  --text-muted: #8e8368;
+  --text-inverse: #1a1510;
+  --accent: #FFE600;
+  --accent-rgb: 255, 230, 0;
+  --accent-glow: 0 0 20px rgba(255, 230, 0, 0.35);
+  --accent-soft: rgba(255, 230, 0, 0.12);
+  --bronze: #8B5A2B;
+  --bronze-soft: rgba(139, 90, 43, 0.35);
+  --forest: #2d4a3e;
+  --deep-blue: #1a2a4a;
+  --seal-red: #6b2e1a;
+  --seal-red-highlight: #8a3e26;
+  --band-bg: #1a2a4a;
+  --band-text: #FFE600;
+  --hero-frame: 3px solid rgba(255, 230, 0, 0.35);
+  --hero-frame-radius: 8px;
+  --focus-ring: 0 0 0 2px #FFE600;
+  --heading-font: 'Cinzel', 'Playfair Display', serif;
+  --body-font: 'Spectral', 'Georgia', serif;
+  --numeral-font: 'Cinzel', serif;
+  --heading-transform: none;
+  --heading-letter-spacing: 0.06em;
+  --heading-shadow: 0 0 20px rgba(255, 230, 0, 0.3);
+  --hairline: linear-gradient(90deg, transparent, #FFE600 18%, #FFE600 82%, transparent);
+}
+
+.theme-dark {
+  color-scheme: dark;
+  --page-bg: #0a0a0f;
+  --page-bg-gradient: radial-gradient(ellipse at 50% 0%, #15151e 0%, #0a0a0f 60%, #050508 100%);
+  --card-bg: rgba(255, 255, 255, 0.07);
+  --card-bg-solid: #17171f;
+  --card-bg-yellow: #FFE34A;
+  --card-border: rgba(255, 255, 255, 0.15);
+  --card-border-strong: rgba(255, 255, 255, 0.3);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.82);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-on-yellow: #1a1a24;
+  --text-inverse: #1a1a24;
+  --accent: #FFE600;
+  --accent-rgb: 255, 230, 0;
+  --accent-glow: 0 0 12px rgba(255, 230, 0, 0.25);
+  --accent-soft: rgba(255, 230, 0, 0.18);
+  --band-bg: #BFE0F5;
+  --band-text: #1A1A24;
+  --hero-frame: 1px solid rgba(255, 255, 255, 0.12);
+  --hero-frame-radius: 14px;
+  --focus-ring: 0 0 0 3px rgba(255, 230, 0, 0.7);
+  --heading-font: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --body-font: 'Inter', system-ui, sans-serif;
+  --numeral-font: 'Space Grotesk', sans-serif;
+  --heading-transform: uppercase;
+  --heading-letter-spacing: 0.01em;
+  --heading-shadow: none;
+  --hairline: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3) 20%, rgba(255, 255, 255, 0.3) 80%, transparent);
+}
+
+.theme-light {
+  color-scheme: light;
+  --page-bg: #ffffff;
+  --page-bg-gradient: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  --card-bg: #ffffff;
+  --card-bg-solid: #ffffff;
+  --card-bg-yellow: #FFE34A;
+  --card-border: #e2e8f0;
+  --card-border-strong: #1A1A1A;
+  --text-primary: #3A3F45;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-on-yellow: #1a1a24;
+  --text-inverse: #ffffff;
+  --accent: #FFE600;
+  --accent-rgb: 255, 230, 0;
+  --accent-glow: none;
+  --accent-soft: rgba(255, 230, 0, 0.14);
+  --band-bg: #BFE0F5;
+  --band-text: #1A1A24;
+  --hero-frame: 1px solid #e2e8f0;
+  --hero-frame-radius: 12px;
+  --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  --heading-font: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --body-font: 'Inter', system-ui, sans-serif;
+  --numeral-font: 'Space Grotesk', sans-serif;
+  --heading-transform: uppercase;
+  --heading-letter-spacing: 0.01em;
+  --heading-shadow: none;
+  --hairline: linear-gradient(90deg, transparent, rgba(58, 63, 69, 0.35) 20%, rgba(58, 63, 69, 0.35) 80%, transparent);
+}
+
+/* ==========================================================================
+   2. Base + reveal.js overrides
+   ========================================================================== */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--page-bg);
+  background-image: var(--page-bg-gradient);
+  color: var(--text-primary);
+  font-family: var(--body-font);
+  min-height: 100vh;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+.reveal {
+  font-family: var(--body-font);
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slides > section,
+.reveal .slides > section > section {
+  padding: 0 !important;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4 {
+  font-family: var(--heading-font);
+  color: var(--text-primary);
+  text-transform: var(--heading-transform);
+  letter-spacing: var(--heading-letter-spacing);
+  text-shadow: var(--heading-shadow);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.reveal h1 { font-size: 2.6rem; font-weight: 700; }
+.reveal h2 { font-size: 1.9rem; font-weight: 600; }
+.reveal h3 { font-size: 1.3rem; font-weight: 600; }
+
+.reveal p { margin: 0; color: var(--text-primary); }
+.reveal ul, .reveal ol { margin: 0; padding-left: 1.25em; }
+.reveal li { margin: 0.35em 0; }
+.reveal em { color: var(--text-secondary); }
+.reveal strong { color: var(--text-primary); }
+.reveal a { color: var(--accent); }
+
+/* Progress bar */
+.reveal .progress { color: var(--accent); height: 3px; }
+.reveal .progress span { background: var(--accent); }
+
+/* ==========================================================================
+   3. Persistent chrome (theme switcher, back link, counter, announcer)
+   ========================================================================== */
+
+.deck-chrome {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.deck-chrome > * { pointer-events: auto; }
+
+.back-to-login {
+  position: fixed;
+  top: 1rem;
+  left: 1.25rem;
+  font-family: var(--body-font);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  transition: color 150ms ease, background 150ms ease;
+  z-index: 41;
+}
+
+.back-to-login:hover,
+.back-to-login:focus-visible {
+  color: var(--accent);
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.back-to-login:focus-visible { box-shadow: var(--focus-ring); }
+
+.theme-switcher {
+  position: fixed;
+  top: 1rem;
+  right: 1.25rem;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(10px);
+  z-index: 41;
+}
+
+.theme-switcher button {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.theme-switcher button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.theme-switcher button[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.theme-switcher button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.theme-switcher svg { width: 18px; height: 18px; }
+
+.slide-counter {
+  position: fixed;
+  bottom: 1rem;
+  right: 1.25rem;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--card-bg);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  z-index: 41;
+  opacity: 1;
+  transition: opacity 800ms ease;
+}
+
+.slide-counter.dim { opacity: 0.3; }
+
+.nav-hint {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 41;
+  transition: opacity 500ms ease;
+}
+
+.nav-hint.show { opacity: 1; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -999px;
+  left: 1rem;
+  background: var(--accent);
+  color: var(--text-inverse);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  z-index: 100;
+  font-weight: 600;
+}
+
+.skip-link:focus { top: 1rem; }
+
+.mobile-notice {
+  position: fixed;
+  bottom: 4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: none;
+  z-index: 42;
+}
+
+@media (max-width: 1023px) {
+  .mobile-notice { display: block; }
+}
+
+/* ==========================================================================
+   4. Layout primitives
+   ========================================================================== */
+
+.slide-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 3rem 1.5rem;
+  box-sizing: border-box;
+  color: var(--text-primary);
+}
+
+.slide-shell--centered { justify-content: center; align-items: center; text-align: center; }
+
+.header-band {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid transparent;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.header-band::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.eyebrow {
+  display: inline-block;
+  font-family: var(--heading-font);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.slide-title {
+  font-size: 1.7rem;
+  line-height: 1.15;
+  max-width: 60ch;
+}
+
+.slide-title--small { font-size: 1.3rem; }
+.slide-title--large { font-size: 2.5rem; }
+
+.slide-body {
+  flex: 1;
+  display: flex;
+  gap: 2rem;
+  min-height: 0;
+}
+
+.slide-body--stacked { flex-direction: column; }
+.slide-body--row { flex-direction: row; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  width: 100%;
+  flex: 1;
+  align-items: center;
+}
+
+.two-col--left-wide { grid-template-columns: 1.2fr 1fr; }
+.two-col--right-wide { grid-template-columns: 1fr 1.4fr; }
+
+.grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1rem;
+  flex: 1;
+  width: 100%;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 2.5rem;
+  margin-top: 1.5rem;
+  font-family: var(--heading-font);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  font-size: 0.95rem;
+}
+
+.team-grid span { padding: 0.25rem 0; }
+
+/* ==========================================================================
+   5. Chip cards
+   ========================================================================== */
+
+.chip-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.theme-light .chip-card {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.theme-dark .chip-card {
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+.chip-card h3 {
+  font-family: var(--heading-font);
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chip-card p,
+.chip-card li { font-size: 0.85rem; color: var(--text-primary); }
+
+.chip-card ul { padding-left: 1.1em; }
+.chip-card li { margin: 0.2em 0; }
+
+/* Yellow chip -- brand color in light/dark, parchment in medieval */
+.chip-card--yellow {
+  background: var(--card-bg-yellow, var(--card-bg));
+  color: var(--text-on-yellow, var(--text-primary));
+  border-color: transparent;
+}
+
+.theme-light .chip-card--yellow,
+.theme-dark .chip-card--yellow {
+  color: var(--text-on-yellow);
+}
+
+.theme-light .chip-card--yellow h3,
+.theme-dark .chip-card--yellow h3,
+.theme-light .chip-card--yellow li,
+.theme-dark .chip-card--yellow li,
+.theme-light .chip-card--yellow p,
+.theme-dark .chip-card--yellow p { color: var(--text-on-yellow); }
+
+.theme-medieval .chip-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: inset 0 0 0 1px rgba(139, 90, 43, 0.3),
+              0 4px 16px rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+
+.theme-medieval .chip-card::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(255, 230, 0, 0.15);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.theme-medieval .chip-card--yellow {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border-strong);
+}
+
+.theme-medieval .chip-card--yellow h3 { color: var(--accent); text-shadow: var(--accent-glow); }
+.theme-medieval .chip-card--yellow li,
+.theme-medieval .chip-card--yellow p { color: var(--text-primary); }
+
+/* Condensed for the 4-card gamification row */
+.chip-card--compact { padding: 0.85rem 1rem; }
+.chip-card--compact h3 { font-size: 0.95rem; }
+.chip-card--compact .chip-tagline {
+  font-style: italic;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin: 0.35rem 0 0.5rem;
+}
+.chip-card--compact .chip-stat { font-size: 0.75rem; color: var(--text-secondary); }
+
+/* ==========================================================================
+   6. Chevron cards
+   ========================================================================== */
+
+.chevron-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex: 1;
+  margin-top: 1rem;
+}
+
+.chevron-card {
+  flex: 1;
+  padding: 1rem 2.5rem 1rem 1.25rem;
+  margin-right: -22px;
+  background: var(--card-bg-yellow, var(--accent-soft));
+  color: var(--text-on-yellow, var(--text-primary));
+  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 50%, calc(100% - 24px) 100%, 0 100%);
+  font-size: 0.85rem;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.chevron-card:last-child { margin-right: 0; }
+
+.chevron-card h4 {
+  font-family: var(--heading-font);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+
+.chevron-card ul { padding-left: 1rem; margin: 0; }
+.chevron-card li { font-size: 0.78rem; margin: 0.15rem 0; }
+
+.theme-medieval .chevron-card {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--accent);
+  box-shadow: inset 0 0 12px rgba(255, 230, 0, 0.08);
+  position: relative;
+}
+
+.theme-medieval .chevron-card h4 {
+  color: var(--accent);
+  text-shadow: var(--accent-glow);
+}
+
+.theme-medieval .chevron-card::first-letter {
+  font-size: 1.8rem;
+  color: var(--accent);
+  font-family: var(--heading-font);
+  font-weight: 700;
+}
+
+/* Label-style chevron used on slides 4 + 12 */
+.chevron-label {
+  display: flex;
+  align-items: stretch;
+  background: transparent;
+  padding: 0.75rem 0;
+  gap: 1rem;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.chevron-label:last-child { border-bottom: none; }
+
+.chevron-label__chip {
+  background: var(--card-bg-yellow, var(--accent-soft));
+  color: var(--text-on-yellow, var(--text-primary));
+  padding: 0.6rem 2rem 0.6rem 1rem;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%);
+  min-width: 220px;
+  font-family: var(--heading-font);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.theme-medieval .chevron-label__chip {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.chevron-label__icon { width: 22px; height: 22px; flex-shrink: 0; }
+
+.chevron-label__body {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  align-self: center;
+}
+
+.chevron-label__body li { margin: 0.15rem 0; }
+
+/* ==========================================================================
+   7. Cedric stage
+   ========================================================================== */
+
+.stage {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.stage[data-anchor='bottom-right'] { bottom: 1rem; right: 1.5rem; }
+.stage[data-anchor='bottom-left'] { bottom: 1rem; left: 2rem; }
+.stage[data-anchor='bottom-center'] { bottom: 1rem; left: 50%; transform: translateX(-50%); }
+.stage[data-anchor='top-right'] { top: 1rem; right: 1.5rem; }
+.stage[data-anchor='inline-right'] { right: 2rem; top: 50%; transform: translateY(-50%); }
+.stage[data-anchor='center-below'] { bottom: 2rem; left: 50%; transform: translateX(-50%); }
+
+.stage__sprite {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  display: block;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+}
+
+.stage[data-size='sm'] .stage__sprite { height: 96px; width: auto; }
+.stage[data-size='md'] .stage__sprite { height: 160px; width: auto; }
+.stage[data-size='lg'] .stage__sprite { height: 240px; width: auto; }
+.stage[data-size='xl'] .stage__sprite { height: 320px; width: auto; }
+
+.stage__pedestal {
+  image-rendering: pixelated;
+  display: block;
+  margin-top: -18px;
+  z-index: -1;
+}
+
+.stage[data-size='sm'] .stage__pedestal { height: 36px; }
+.stage[data-size='md'] .stage__pedestal { height: 56px; }
+.stage[data-size='lg'] .stage__pedestal { height: 72px; }
+.stage[data-size='xl'] .stage__pedestal { height: 88px; }
+
+/* Medieval: gold halo behind Cedric */
+.theme-medieval .stage__sprite {
+  filter: drop-shadow(0 0 18px rgba(255, 230, 0, 0.45)) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+/* Dark/Light: pedestal hidden per UX spec §3.2/§3.3 */
+.theme-dark .stage__pedestal,
+.theme-light .stage__pedestal { display: none; }
+
+.theme-dark .stage::before {
+  content: '';
+  position: absolute;
+  inset: -10% -15% -5% -15%;
+  background: radial-gradient(circle, rgba(255, 230, 0, 0.22), transparent 65%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.theme-light .stage::before {
+  content: '';
+  position: absolute;
+  inset: -10% -15% -5% -15%;
+  background: radial-gradient(circle, rgba(255, 230, 0, 0.12), transparent 65%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   8. Divider bands (slides 5, 6)
+   ========================================================================== */
+
+.divider-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.divider-band {
+  width: 100%;
+  min-height: 35%;
+  padding: 4rem 2rem;
+  background: var(--band-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.divider-band h1 {
+  font-family: var(--heading-font);
+  font-size: 4.5rem;
+  color: var(--band-text);
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: none;
+}
+
+.theme-medieval .divider-band {
+  background: var(--deep-blue);
+  border-top: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+}
+
+.theme-medieval .divider-band h1 {
+  color: var(--accent);
+  text-shadow: 0 0 24px rgba(255, 230, 0, 0.4);
+}
+
+/* ==========================================================================
+   9. Numeral seal (slide 15)
+   ========================================================================== */
+
+.numeral-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #1A1A1A;
+  color: #ffffff;
+  font-family: var(--numeral-font);
+  font-size: 1.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.theme-medieval .numeral-seal {
+  background: radial-gradient(circle at 35% 30%, var(--seal-red-highlight), var(--seal-red));
+  color: var(--accent);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 230, 0, 0.4),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.35),
+    0 4px 14px rgba(0, 0, 0, 0.5);
+  font-family: var(--heading-font);
+  text-shadow: 0 0 6px rgba(255, 230, 0, 0.6);
+}
+
+/* ==========================================================================
+   10. Pyramid (slide 10.c)
+   ========================================================================== */
+
+.pyramid {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.pyramid__band {
+  background: var(--card-bg-yellow, var(--accent-soft));
+  color: var(--text-on-yellow, var(--text-primary));
+  padding: 0.55rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.pyramid__band:first-child { border-top: none; border-radius: 0 0 6px 6px; }
+.pyramid__band:last-child { border-radius: 6px 6px 0 0; }
+
+.pyramid__band strong {
+  display: block;
+  font-family: var(--heading-font);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.15rem;
+  color: var(--text-on-yellow, var(--text-primary));
+}
+
+.pyramid__band:nth-child(1) { width: 100%; }      /* bottom = infra */
+.pyramid__band:nth-child(2) { width: 88%; }
+.pyramid__band:nth-child(3) { width: 70%; }
+.pyramid__band:nth-child(4) { width: 52%; }
+.pyramid__band:nth-child(5) { width: 34%; }        /* apex */
+
+.theme-medieval .pyramid__band {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border-top: 1px solid var(--accent);
+  box-shadow: inset 0 0 8px rgba(255, 230, 0, 0.06);
+}
+
+.theme-medieval .pyramid__band strong {
+  color: var(--accent);
+  text-shadow: var(--accent-glow);
+}
+
+.theme-medieval .pyramid::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  margin: -12px auto 4px;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
+/* ==========================================================================
+   11. Persona silhouette (slide 9)
+   ========================================================================== */
+
+.persona-silhouette {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.theme-medieval .persona-silhouette {
+  filter: drop-shadow(0 0 14px rgba(255, 230, 0, 0.35));
+}
+
+/* ==========================================================================
+   12. Hero illustration frame
+   ========================================================================== */
+
+.hero-frame {
+  position: relative;
+  border: var(--hero-frame);
+  border-radius: var(--hero-frame-radius);
+  padding: 0.5rem;
+  background: var(--card-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.hero-frame img {
+  max-width: 100%;
+  max-height: 380px;
+  display: block;
+  border-radius: calc(var(--hero-frame-radius) - 2px);
+}
+
+.theme-medieval .hero-frame {
+  border: 3px solid var(--accent);
+  background: var(--card-bg);
+  box-shadow:
+    inset 0 0 0 2px var(--bronze),
+    inset 0 0 0 5px var(--accent),
+    0 0 32px rgba(255, 230, 0, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.5);
+  padding: 0.8rem;
+}
+
+.theme-medieval .hero-frame::before,
+.theme-medieval .hero-frame::after {
+  content: '';
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='%23FFE600'><path d='M2 2h12v3H5v9H2z M30 2H18v3h9v9h3z M2 30h12v-3H5v-9H2z M30 30H18v-3h9v-9h3z'/></svg>");
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.theme-medieval .hero-frame::before { top: -4px; left: -4px; }
+.theme-medieval .hero-frame::after { bottom: -4px; right: -4px; transform: rotate(180deg); }
+
+/* ==========================================================================
+   13. Filigree corners (medieval only)
+   ========================================================================== */
+
+.filigree-corners {
+  position: absolute;
+  inset: 0.75rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.filigree-corners span {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72' fill='none' stroke='%238B5A2B' stroke-width='1.3'><path d='M2 2 L2 32 M2 2 L32 2 M2 12 Q12 12 12 22 Q12 12 22 12 M2 22 Q22 22 22 2 M10 2 Q10 10 18 10 Q26 10 26 18 Q26 26 18 26'/><circle cx='12' cy='12' r='2' fill='%23FFE600'/><circle cx='22' cy='22' r='1.5' fill='%238B5A2B'/></svg>");
+  background-repeat: no-repeat;
+  opacity: 0.55;
+}
+
+.filigree-corners span:nth-child(1) { top: 0; left: 0; }
+.filigree-corners span:nth-child(2) { top: 0; right: 0; transform: scaleX(-1); }
+.filigree-corners span:nth-child(3) { bottom: 0; left: 0; transform: scaleY(-1); }
+.filigree-corners span:nth-child(4) { bottom: 0; right: 0; transform: scale(-1,-1); }
+
+.theme-dark .filigree-corners,
+.theme-light .filigree-corners { display: none; }
+
+/* ==========================================================================
+   14. Twinkling stars (background)
+   ========================================================================== */
+
+.twinkle-field {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.twinkle-field span {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  opacity: 0.4;
+  animation: twinkle 8s ease-in-out infinite alternate;
+}
+
+.twinkle-field span:nth-child(1) { top: 15%; left: 8%; animation-delay: 0s; }
+.twinkle-field span:nth-child(2) { top: 32%; left: 88%; animation-delay: 2.5s; }
+.twinkle-field span:nth-child(3) { top: 62%; left: 12%; animation-delay: 4s; }
+.twinkle-field span:nth-child(4) { top: 78%; left: 78%; animation-delay: 1s; }
+.twinkle-field span:nth-child(5) { top: 45%; left: 50%; animation-delay: 6s; }
+.twinkle-field span:nth-child(6) { top: 22%; left: 40%; animation-delay: 3s; }
+.twinkle-field span:nth-child(7) { top: 85%; left: 33%; animation-delay: 5s; }
+.twinkle-field span:nth-child(8) { top: 12%; left: 68%; animation-delay: 7s; }
+
+@keyframes twinkle {
+  from { opacity: 0.2; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.3); }
+}
+
+.theme-dark .twinkle-field,
+.theme-light .twinkle-field { display: none; }
+
+/* ==========================================================================
+   15. Motifs: shimmer, wax seal, lantern flame
+   ========================================================================== */
+
+.shimmer-title {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(
+    100deg,
+    var(--text-primary) 0%,
+    var(--text-primary) 40%,
+    var(--accent) 50%,
+    var(--text-primary) 60%,
+    var(--text-primary) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 12s linear infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.theme-dark .shimmer-title,
+.theme-light .shimmer-title {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text-primary);
+  animation: none;
+}
+
+.wax-seal {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--seal-red-highlight, #8a3e26), var(--seal-red, #6b2e1a));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 -6px 12px rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.wax-seal svg { width: 48px; height: 48px; color: var(--accent); }
+
+.theme-dark .wax-seal,
+.theme-light .wax-seal {
+  background: var(--card-bg-yellow, var(--accent));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.theme-dark .wax-seal svg,
+.theme-light .wax-seal svg { color: var(--text-on-yellow, var(--text-primary)); }
+
+/* Medieval lantern (slide 15 replacement for lightbulb) */
+.lantern {
+  position: relative;
+  width: 220px;
+  height: 280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lantern__cage {
+  position: absolute;
+  inset: 20px 30px 40px 30px;
+  border: 3px solid var(--bronze);
+  border-radius: 40% 40% 12% 12% / 50% 50% 10% 10%;
+  background:
+    radial-gradient(ellipse at 50% 60%, rgba(255, 230, 0, 0.4), rgba(255, 230, 0, 0.05) 60%, transparent 80%);
+  box-shadow:
+    inset 0 0 30px rgba(255, 230, 0, 0.5),
+    0 0 40px rgba(255, 230, 0, 0.35);
+}
+
+.lantern__cage::before,
+.lantern__cage::after {
+  content: '';
+  position: absolute;
+  background: var(--bronze);
+}
+
+.lantern__cage::before {
+  top: 10%;
+  bottom: 10%;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+}
+
+.lantern__cage::after {
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 2px;
+}
+
+.lantern__flame {
+  width: 36px;
+  height: 46px;
+  background: radial-gradient(ellipse at 50% 70%, var(--accent) 10%, #ffb84a 60%, transparent 90%);
+  border-radius: 50% 50% 30% 30% / 80% 80% 30% 30%;
+  filter: blur(0.5px);
+  animation: flame-flicker 2.5s ease-in-out infinite;
+  z-index: 2;
+  position: relative;
+}
+
+.lantern__top {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 18px;
+  background: var(--bronze);
+  border-radius: 40% 40% 0 0 / 100% 100% 0 0;
+}
+
+.lantern__handle {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 24px;
+  border: 2px solid var(--bronze);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+}
+
+.lantern__base {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 96px;
+  height: 18px;
+  background: var(--bronze);
+  border-radius: 6px;
+}
+
+.lantern__rays {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 230, 0, 0.18), transparent 55%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes flame-flicker {
+  0%, 100% { transform: scale(1, 1); opacity: 1; }
+  25% { transform: scale(1.05, 0.95); opacity: 0.88; }
+  50% { transform: scale(0.95, 1.1); opacity: 1; }
+  75% { transform: scale(1.02, 0.97); opacity: 0.92; }
+}
+
+.theme-dark .lantern,
+.theme-light .lantern { display: none; }
+
+.lightbulb-hero {
+  width: 240px;
+  max-width: 100%;
+  image-rendering: auto;
+}
+
+.theme-medieval .lightbulb-hero { display: none; }
+
+/* ==========================================================================
+   16. Expand dialog (slide 11)
+   ========================================================================== */
+
+dialog.expand-dialog {
+  background: var(--card-bg-solid, var(--card-bg));
+  color: var(--text-primary);
+  border: 1px solid var(--card-border-strong);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: min(680px, 92vw);
+  max-height: 80vh;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  overflow-y: auto;
+}
+
+dialog.expand-dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
+
+dialog.expand-dialog h3 {
+  font-family: var(--heading-font);
+  font-size: 1.2rem;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+dialog.expand-dialog p { color: var(--text-primary); font-size: 0.95rem; line-height: 1.6; }
+
+dialog.expand-dialog .close-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.expand-trigger {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expand-trigger:hover,
+.expand-trigger:focus-visible {
+  background: var(--accent);
+  color: var(--text-inverse);
+  outline: none;
+}
+
+/* ==========================================================================
+   17. Hero / Credits slide specifics
+   ========================================================================== */
+
+.hero-wordmark {
+  font-family: var(--heading-font);
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0;
+  text-align: center;
+}
+
+.theme-medieval .hero-wordmark {
+  background: linear-gradient(180deg, #fff2a0, #FFE600 55%, #c9a400);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.hero-subtitle {
+  font-family: var(--body-font);
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin: 0.75rem 0 2rem;
+  text-align: center;
+}
+
+.hero-enter-btn {
+  all: unset;
+  display: inline-block;
+  font-family: var(--heading-font);
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 0.8rem 2.2rem;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, box-shadow 200ms ease;
+  font-weight: 600;
+}
+
+.hero-enter-btn:hover,
+.hero-enter-btn:focus-visible {
+  background: var(--accent);
+  color: var(--text-inverse);
+  box-shadow: 0 0 20px rgba(255, 230, 0, 0.45);
+}
+
+.theme-dark .hero-enter-btn,
+.theme-light .hero-enter-btn {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.theme-dark .hero-enter-btn:hover,
+.theme-light .hero-enter-btn:hover {
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-color: var(--accent);
+}
+
+/* ==========================================================================
+   18. Logo mark (slide 1 + hero)
+   ========================================================================== */
+
+.logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-mark img {
+  height: 64px;
+  width: auto;
+}
+
+.logo-mark__wordmark {
+  font-family: var(--heading-font);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   19. Fragments + transitions
+   ========================================================================== */
+
+.reveal .fragment.fade-up {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+
+.reveal .fragment.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   20. Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .twinkle-field span,
+  .shimmer-title,
+  .lantern__flame,
+  .reveal .progress span { animation: none !important; }
+
+  .reveal .fragment { transition: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}
+
+/* ==========================================================================
+   21. Heraldic icon defaults (inline SVGs inherit currentColor)
+   ========================================================================== */
+
+.heraldic-icon { width: 28px; height: 28px; color: var(--accent); }
+.theme-light .heraldic-icon,
+.theme-dark .heraldic-icon { color: var(--text-on-yellow); }
+
+/* Slide-specific: closing-slide numerical row */
+.closing-numeral-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.closing-numeral-row .closing-body { flex: 1; }
+.closing-numeral-row .closing-body strong {
+  display: block;
+  font-family: var(--heading-font);
+  font-size: 1rem;
+  color: var(--accent);
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.theme-light .closing-numeral-row .closing-body strong,
+.theme-dark .closing-numeral-row .closing-body strong {
+  color: var(--text-primary);
+  text-shadow: none;
+}
+
+.closing-numeral-row ul { padding-left: 1.1em; margin: 0.3em 0 0; }
+.closing-numeral-row li { font-size: 0.85rem; margin: 0.15em 0; }
