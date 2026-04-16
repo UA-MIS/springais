@@ -129,6 +129,17 @@ body {
   transition: background-color 200ms ease, color 200ms ease;
 }
 
+/* The <main id="main-deck"> landmark wraps .reveal for a11y (skip-link target).
+   Reveal.js sizes .reveal off its parent's height (via its own
+   html.reveal-full-page + body.reveal-viewport rules set to height:100%).
+   Without this 100% pass-through, .reveal collapses, reveal.js measures it
+   as roughly 640x360, and auto-scales every slide to 0.4 -- the "blank slide"
+   bug. Must be 100% of the viewport height for slides to fill the screen. */
+#main-deck {
+  height: 100%;
+  width: 100%;
+}
+
 .reveal {
   font-family: var(--body-font);
   color: var(--text-primary);

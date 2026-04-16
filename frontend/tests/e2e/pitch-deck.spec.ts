@@ -196,4 +196,47 @@ test.describe('Pitch deck', () => {
     await page.waitForTimeout(400);
     expect(failed, `Unexpected failed responses:\n${failed.join('\n')}`).toEqual([]);
   });
+
+  /**
+   * Regression: the present slide must actually fill the viewport, not get
+   * scaled to 0.4 because the <main> wrapper collapsed .reveal's height.
+   * Asserts on:
+   *   - #main-deck and .reveal are as tall as the viewport (height parity)
+   *   - the slides container's transform scale is >= 0.9 (reveal.js would
+   *     scale down only if the logical 1600x900 deck exceeds the viewport)
+   *   - the present slide's rendered bounding-box height is >= 400px
+   */
+  test('slides fill the viewport (not scaled down to 0.4)', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/deck/#/title');
+    await page.waitForFunction(() => {
+      const w = window as unknown as { Reveal?: { isReady?: () => boolean } };
+      return typeof w.Reveal !== 'undefined' && w.Reveal.isReady?.() === true;
+    });
+    await page.waitForTimeout(300);
+
+    const metrics = await page.evaluate(() => {
+      const main = document.getElementById('main-deck');
+      const reveal = document.querySelector('.reveal') as HTMLElement | null;
+      const slides = document.querySelector('.reveal .slides') as HTMLElement | null;
+      const present = document.querySelector('.reveal .slides > section.present') as HTMLElement | null;
+      const transform = slides ? getComputedStyle(slides).transform : 'none';
+      // Parse the 2D matrix scale factor (first entry).
+      let scale = 1;
+      const m = transform.match(/matrix\(([-\d.]+)/);
+      if (m) scale = parseFloat(m[1]);
+      return {
+        vh: window.innerHeight,
+        mainH: main?.getBoundingClientRect().height ?? 0,
+        revealH: reveal?.getBoundingClientRect().height ?? 0,
+        presentH: present?.getBoundingClientRect().height ?? 0,
+        scale,
+      };
+    });
+
+    expect(metrics.mainH).toBeGreaterThanOrEqual(metrics.vh - 1);
+    expect(metrics.revealH).toBeGreaterThanOrEqual(metrics.vh - 1);
+    expect(metrics.scale).toBeGreaterThanOrEqual(0.9);
+    expect(metrics.presentH).toBeGreaterThanOrEqual(400);
+  });
 });

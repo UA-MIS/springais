@@ -1,0 +1,8 @@
+{
+  "twinkleState": {
+    "exists": true,
+    "animationName": "twinkle",
+    "display": "block"
+  },
+  "honors": false
+}
