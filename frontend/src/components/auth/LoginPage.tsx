@@ -141,6 +141,17 @@ export default function LoginPage() {
                     Create an account
                   </Link>
                 </div>
+                <div className="text-sm text-white/45">
+                  <a
+                    href="/deck/"
+                    target="_blank"
+                    rel="noopener"
+                    className="hover:text-white/70 transition-colors"
+                    aria-label="View the SkillBridge pitch deck (opens in new tab)"
+                  >
+                    View the SkillBridge pitch deck →
+                  </a>
+                </div>
               </div>
             </form>
           </div>
