@@ -49,3 +49,10 @@ Thumbs.db
 backup_extract/
 springais_backup*
 local_backup*
+# bmad-swarm (generated files)
+.claude/
+artifacts/
+swarm.yaml
+project.yaml
+CLAUDE.md
+overrides/
