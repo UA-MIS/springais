@@ -147,7 +147,10 @@ async def get_employee_matches(
                 cached=True,
             )
     except Exception as e:
-        logger.debug(f"Cache read failed: {e}")
+        # A cache read failure is survivable (we recompute) but it is not
+        # normal, and at debug level a permanently broken cache is
+        # indistinguishable from a cold one.
+        logger.warning("Match cache read failed; recomputing: %s", e, exc_info=True)
 
     try:
         # Request more matches to support pagination
@@ -212,7 +215,10 @@ async def get_employee_matches(
             )
             logger.debug(f"Cached matches for user {current_user.id}")
         except Exception as e:
-            logger.debug(f"Cache write failed: {e}")
+            logger.warning(
+                "Match cache write failed; every subsequent request will "
+                "recompute from scratch: %s", e, exc_info=True,
+            )
 
         return response
 

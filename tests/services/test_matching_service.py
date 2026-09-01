@@ -20,7 +20,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from backend.app.config.matching_config import (
+from app.config.matching_config import (
     MatchMode,
     MatchingConfig,
     get_matching_config,
@@ -28,12 +28,12 @@ from backend.app.config.matching_config import (
     MODE_WEIGHTS,
     SKILL_MATCH_THRESHOLDS,
 )
-from backend.app.services.matching_service import (
+from app.services.matching_service import (
     MatchingService,
     match_by_skills,
     get_match_detail,
 )
-from backend.app.schemas.match_result import (
+from app.schemas.match_result import (
     SkillGapAnalysis,
     MatchScores,
     MatchResult,
