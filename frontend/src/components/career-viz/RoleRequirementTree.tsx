@@ -144,7 +144,7 @@ function radialLayout(
 
     // Arrange skills into expanding rows: row k has (k + 2) nodes capacity
     const rows: string[][] = []
-    let remaining = [...skills]
+    const remaining = [...skills]
     let rowIndex = 0
     while (remaining.length > 0) {
       const rowCapacity = rowIndex + 2

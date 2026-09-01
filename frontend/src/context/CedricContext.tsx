@@ -706,7 +706,7 @@ export function CedricProvider({ children }: { children: ReactNode }) {
       }
       window.removeEventListener('cedric-walkthrough-action', handleAction);
     };
-  }, [state.walkthroughActive, state.walkthroughStep, location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.walkthroughActive, state.walkthroughStep, location.pathname]);
 
   // ── Story 2.7: Walkthrough Completion Celebration ───────────────
   const completionTriggeredRef = useRef(false);

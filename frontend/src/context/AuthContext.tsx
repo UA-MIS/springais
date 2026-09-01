@@ -37,28 +37,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // The `try { ... } catch (error) { throw error; }` wrappers that used to be here were
+  // removed (eslint no-useless-catch). Rethrowing an error unchanged is exactly what an
+  // absent catch does, so behaviour is identical -- and the wrapper was actively worse
+  // than nothing: it looked like error handling at a glance while adding none, and it
+  // truncated nothing but invited someone to "improve" it into a swallow later. Callers
+  // (LoginPage / RegisterPage) still receive the same rejected promise.
   const login = async (email: string, password: string) => {
-    try {
-      const response = await authService.login(email, password);
-      setToken(response.token);
-      setUser(response.user);
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-    } catch (error: any) {
-      throw error;
-    }
+    const response = await authService.login(email, password);
+    setToken(response.token);
+    setUser(response.user);
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('user', JSON.stringify(response.user));
   };
 
   const register = async (email: string, password: string, name: string) => {
-    try {
-      const response = await authService.register(email, password, name);
-      setToken(response.token);
-      setUser(response.user);
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-    } catch (error: any) {
-      throw error;
-    }
+    const response = await authService.register(email, password, name);
+    setToken(response.token);
+    setUser(response.user);
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('user', JSON.stringify(response.user));
   };
 
   const logout = () => {

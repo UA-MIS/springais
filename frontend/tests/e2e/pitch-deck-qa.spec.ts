@@ -21,7 +21,14 @@ function writeJson(name: string, data: unknown) {
 
 async function primeTheme(page: Page, theme: 'light' | 'dark' | 'medieval') {
   await page.addInitScript((t) => {
-    try { window.localStorage.setItem('springais-pitch-theme', t); } catch {}
+    try {
+      window.localStorage.setItem('springais-pitch-theme', t);
+    } catch {
+      // Intentionally ignored: localStorage throws in a browser context with site data
+      // blocked, and priming the theme is a best-effort convenience for the test, not a
+      // precondition for it. An empty block was flagged by eslint no-empty; the fix is to
+      // say WHY it is empty, not to remove the guard.
+    }
   }, theme);
 }
 

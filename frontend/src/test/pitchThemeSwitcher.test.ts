@@ -22,7 +22,6 @@ function loadSwitcher(): ThemeSwitcher {
   const source = readFileSync(scriptPath, 'utf8');
   const win = window as unknown as { PitchThemeSwitcher?: ThemeSwitcher };
   delete win.PitchThemeSwitcher;
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
   new Function(source).call(window);
   if (!win.PitchThemeSwitcher) {
     throw new Error('PitchThemeSwitcher failed to attach to window');
