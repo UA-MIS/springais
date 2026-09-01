@@ -289,7 +289,7 @@ function applyFilters(base: SuccessPatternsData, filters: FilterOptions): Succes
   const role = roleLevelKey(filters.roleLevel);
 
   // start with base
-  let next: SuccessPatternsData = {
+  const next: SuccessPatternsData = {
     ...base,
     metrics: { ...base.metrics },
     successRateByTransition: [...base.successRateByTransition],

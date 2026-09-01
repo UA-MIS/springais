@@ -1,0 +1,60 @@
+# Ingress for a MULTI-COMPONENT app: ONE host, N paths — one path per component,
+# routing each component's `path` to its own Service.
+#
+# HOST: <app>.${PLATFORM_DOMAIN}. The base carries the real PLATFORM_DOMAIN and is the
+# canonical/PROD host; each non-prod overlay patches /spec/rules/0/host with its env
+# prefix. TLS is served at the Cloudflare edge (paid Advanced cert for
+# *.capstone.uamishub.com); the tunnel publishes to in-cluster Traefik.
+#
+# ⚠ springais.capstone.uamishub.com — THE PROD HOST — IS THE DEMO URL. The tenant claim
+# sets publicDevIngress:false, so the platform's env ApplicationSet templatePatch adds a
+# forwardAuth middleware to the dev AND staging Ingresses. That gate 302s to Dex BEFORE
+# Traefik routes to a backend, so a signed-out visitor never reaches the app on those
+# hosts. prod is public unconditionally.
+#
+# PATH ROUTING: frontend "/" + backend "/api". Matching is LONGEST-PREFIX
+# (pathType: Prefix), so "/api/auth/login" goes to the backend and everything else to
+# the frontend regardless of the order the paths are listed — Traefik prioritises longer
+# prefixes. This mirrors the app's own routing: every FastAPI router in
+# backend/app/main.py is mounted with prefix="/api", and the frontend is built with
+# VITE_API_URL=/ so both of its axios clients resolve to the SAME origin-relative /api.
+#
+# REQUEST BODY SIZE: nothing is set here on purpose. The upload endpoints accept
+# resumes up to ~10MB, and this platform's Traefik has NO buffering /
+# maxRequestBodyBytes middleware (stated and verified in
+# platform-infra/platform-services/coredns-custom/coredns-custom.yaml), so Traefik
+# streams the body with no cap — unlike nginx-ingress, which would 413 at its 1MB
+# default. The outer bound is the Cloudflare tunnel's 100MB. A Traefik Middleware could
+# not be added here anyway: `traefik.containo.us/Middleware` is NOT in the tenant
+# AppProject's namespaceResourceWhitelist, so ArgoCD would refuse it at sync.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: springais
+  labels:
+    app.kubernetes.io/name: springais
+spec:
+  rules:
+    # Base = canonical/PROD host. Non-prod overlays patch in their env prefix.
+    - host: springais.capstone.uamishub.com
+      http:
+        paths:
+          # frontend component -> / (SPA catch-all; MUST stay last-resort by prefix length)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: springais-frontend
+                port:
+                  name: http
+          # backend component -> /api (longer prefix, so it wins for /api/*)
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: springais-backend
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - springais.capstone.uamishub.com

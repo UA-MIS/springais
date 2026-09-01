@@ -1,0 +1,27 @@
+# Environment-agnostic base for a MULTI-COMPONENT app: two build components
+# (frontend + backend) plus one non-build workload (redis), and ONE path-routing
+# Ingress. Overlays patch the per-component image tags, the ingress host, and the
+# mandatory platform.capstone/* labels per env, and each adds its own per-namespace
+# ESO SecretStore + ExternalSecrets.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# App-level common labels carried by every object. The platform.capstone/* selector
+# labels (env/semester) are set by overlays. includeSelectors:false so these decorative
+# labels do NOT leak into pod selectors — each workload's own
+# app.kubernetes.io/component selector keeps Services bound to their OWN pods.
+labels:
+  - pairs:
+      app.kubernetes.io/name: springais
+      app.kubernetes.io/managed-by: argocd
+      platform.capstone/team: springais
+    includeSelectors: false
+
+resources:
+  - serviceaccount.yaml
+  - deployments.yaml
+  - services.yaml
+  # redis carries its own Deployment AND Service together, because it is a workload
+  # but not a build component — keeping the pair in one file makes that obvious.
+  - redis.yaml
+  - ingress.yaml

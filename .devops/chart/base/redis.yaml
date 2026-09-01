@@ -1,0 +1,136 @@
+# Redis — the backend's embedding/response cache.
+#
+# WHY IT IS HERE AND NOT IN components.yaml: it is a WORKLOAD but not a BUILD. It runs
+# an upstream image unmodified, so it has no build context and must never enter the CI
+# build matrix (.devops/ci/resolve-components.sh reads components.yaml). The overlays'
+# kustomize `images:` entries are name-matched to springais-frontend / springais-backend,
+# so they do not rewrite this image either — the tag below is the one that deploys.
+#
+# IMAGE: the platform's Harbor pull-through cache, NOT docker.io. Same ref shape ida-llm
+# uses in its own tenant namespace (`harbor.capstone.uamishub.com/dockerhub-proxy/library/
+# redis:7.4-alpine`, verified Running in ida-llm-prod), which proves a tenant's
+# project-scoped harbor-pull robot can pull it. Going direct to Docker Hub would also put
+# the deploy behind Docker Hub's anonymous rate limit for no benefit.
+#
+# NO PersistentVolumeClaim, DELIBERATELY. Everything this cache holds is TTL'd and
+# reconstructible — a cold cache costs latency on the first query and nothing else. So
+# there is no restore path to get wrong, no RWO rebinding race on reschedule, and no
+# claim against the tenant's storage quota. Persistence is therefore turned OFF at the
+# server (`--save ""` disables RDB snapshots, `--appendonly no` disables the AOF) rather
+# than merely left unmounted: with a read-only root filesystem, a redis that still
+# BELIEVED it should snapshot would fail the write and log errors forever while appearing
+# healthy.
+#
+# The emptyDir at /data is belt-and-braces: with both persistence modes off redis writes
+# nothing, but its WORKDIR is /data and an emptyDir removes the entire class of
+# "read-only file system" failure for free. Verified locally with the exact same shape
+# (`--read-only --user 999:999 --tmpfs /data`, `--save "" --appendonly no`): server
+# reaches "Ready to accept connections tcp" and `redis-cli ping` returns PONG.
+#
+# uid/gid 999 is the `redis` user baked into the image (matching ida-llm's StatefulSet),
+# not the 65532 the app containers use — the image's own files are owned by 999.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springais-redis
+  labels:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  # A cache with no persistence must not have two live copies serving different data
+  # during a rollout, and there is nothing to drain — replace, don't overlap.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: springais
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: springais
+        app.kubernetes.io/component: redis
+    spec:
+      serviceAccountName: springais
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: redis
+          image: harbor.capstone.uamishub.com/dockerhub-proxy/library/redis:7.4-alpine
+          imagePullPolicy: IfNotPresent
+          args:
+            - redis-server
+            - --save
+            - ""
+            - --appendonly
+            - "no"
+            # Bound the cache so it can never be the thing that OOMKills the pod or eats
+            # the namespace memory quota. 192Mi of data under a 256Mi container limit
+            # leaves room for redis's own overhead; allkeys-lru means a full cache evicts
+            # rather than starts refusing writes (this data is all reconstructible, so
+            # eviction is strictly better than an error).
+            - --maxmemory
+            - 192mb
+            - --maxmemory-policy
+            - allkeys-lru
+          ports:
+            - name: redis
+              containerPort: 6379
+          # A real liveness signal: redis-cli ping goes through the actual command path,
+          # so a wedged server fails it. Not an HTTP probe against something that cannot
+          # fail.
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springais-redis
+  labels:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+      protocol: TCP

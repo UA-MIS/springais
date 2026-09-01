@@ -44,5 +44,19 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Vitest's default `include` is `**/*.{test,spec}.?(c|m)[jt]s?(x)`, which sweeps up
+    // tests/e2e/*.spec.ts -- those are PLAYWRIGHT specs, owned by playwright.config.ts
+    // (`testDir: './tests/e2e'`). Run under vitest they fail at collection with
+    //   "Playwright Test did not expect test.describe() to be called here"
+    // which is not a product failure at all, but it does make `npm test` exit non-zero
+    // and therefore blocks the platform CI's image build.
+    //
+    // Excluding the directory here gives each runner exactly the files it owns. The e2e
+    // specs are NOT deleted and NOT disabled -- run them with `npx playwright test`.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'tests/e2e/**',
+    ],
   },
 })

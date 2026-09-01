@@ -19,7 +19,7 @@ client = TestClient(app)
 def _register_user(email: str) -> tuple[str, str]:
     """Register a user and return (token, user_id)."""
     resp = client.post(
-        "/auth/register",
+        "/api/auth/register",
         json={
             "email": email,
             "password": "SecurePass123",

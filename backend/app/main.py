@@ -4,7 +4,10 @@ from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 import logging
 
-from app.database import engine, Base
+# NOTE: `engine` and `Base` are deliberately NOT imported here any more. They were used
+# only by the create_all() call removed from the lifespan hook below — see the long
+# comment there. app.database is still imported (by app.init_db and by every route's
+# get_db dependency), so the engine is still constructed exactly once at import time.
 from app.routes import achievements_router, auth_router, badges_router, hiring_manager_router, matches_router, progression_router, quests_router, skills_router, store_router, patterns_router, roadmap_router
 from app.init_db import init_database_extensions
 
@@ -21,8 +24,29 @@ async def lifespan(app: FastAPI):
     init_database_extensions()
     logger.info("✓ Database initialized with required extensions")
     
-    # Create tables (will be populated by migrations later)
-    Base.metadata.create_all(bind=engine)
+    # ------------------------------------------------------------------
+    # NO Base.metadata.create_all() HERE. THIS IS DELIBERATE — DO NOT RESTORE IT.
+    # ------------------------------------------------------------------
+    # It used to read:
+    #     Base.metadata.create_all(bind=engine)
+    # and on an EMPTY database it did real damage, in a way that only showed up in a
+    # fresh environment (i.e. never in the developer's already-migrated local one):
+    #
+    #   1. It builds the tables from the SQLAlchemy models and never stamps
+    #      `alembic_version`. Alembic then believes the database is at revision NONE.
+    #   2. It CANNOT create three of the four HNSW vector indexes. Those are raw
+    #      `op.execute("CREATE INDEX ... USING hnsw (...)")` statements in migration
+    #      016_add_llm_skill_columns.py — DDL that exists only in the migration, not in
+    #      any model definition. So the schema came out silently missing its ANN indexes,
+    #      and similarity search degraded to a sequential scan.
+    #   3. On the next start `alembic upgrade head` replayed from 001 against tables that
+    #      already existed and died on "relation already exists" — which the old image
+    #      CMD then swallowed with `|| echo 'Migration skipped'`.
+    #
+    # Alembic owns this schema, exclusively. It runs once per deploy in the chart's
+    # migration initContainer (.devops/chart/base/deployments.yaml) with a bare
+    # `alembic upgrade head`, and the app container does not start unless it exited 0.
+    # By the time this lifespan hook runs, the schema is already at head.
 
     # Seed badge catalog if empty
     from app.database import SessionLocal

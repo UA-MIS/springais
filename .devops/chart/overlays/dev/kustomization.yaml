@@ -1,0 +1,55 @@
+# dev overlay — tracks main, auto-synced by the env ApplicationSet.
+# Behind the platform SSO gate (publicDevIngress:false on the tenant claim), so a
+# signed-out visitor gets a 302 to Dex and never reaches the app. Do NOT use this
+# host to demo; use prod.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: springais-dev
+resources:
+  - ../../base
+  # Per-tenant ESO store + SA (vault-tenant / eso-tenant), scoped to this team's Vault
+  # subtree only. The platform's onboarding creates the matching Vault role.
+  - secretstore.yaml
+  # springais-secret: JWT_SECRET_KEY + OPENAI_API_KEY, from tenants/springais/dev/app.
+  - app-secret.externalsecret.yaml
+  # springais-db: DATABASE_URL, assembled from the four Crossplane-provisioned parts at
+  # tenants/springais/dev/database.
+  - database.externalsecret.yaml
+# The harbor-pull image-pull cred is NOT shipped here. It is owned solely by the
+# platform side; a second owner of the same Secret triggers ArgoCD's
+# SharedResourceWarning and blocks sync. The base ServiceAccount still references it.
+
+# env-specific selector labels.
+labels:
+  - pairs:
+      platform.capstone/env: dev
+      platform.capstone/semester: 2026-fall
+    includeSelectors: false
+
+# Image-tag SEAM: ONE images[] entry PER BUILD COMPONENT. Both components share the one
+# tag (one repo, one git event); .devops/ci/bump-image.sh rewrites every entry.
+# redis is deliberately absent — it is not a build component, so its image ref in
+# base/redis.yaml is the one that deploys.
+images:
+  - name: springais-frontend
+    newName: harbor.capstone.uamishub.com/springais/springais-frontend
+    newTag: "v0.0.0"
+  - name: springais-backend
+    newName: harbor.capstone.uamishub.com/springais/springais-backend
+    newTag: "v0.0.0"
+
+# Replica counts are NOT patched per env — the base pins 1 and every environment keeps 1.
+# See the connection-pool note at the top of base/deployments.yaml: pool_size 20 +
+# max_overflow 30 means 50 connections per backend replica against a SHARED 100-connection
+# tier. This is the one overlay knob that must not be turned up casually.
+patches:
+  - target:
+      kind: Ingress
+      name: springais
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: springais.dev.capstone.uamishub.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: springais.dev.capstone.uamishub.com

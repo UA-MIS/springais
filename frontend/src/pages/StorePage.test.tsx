@@ -242,11 +242,22 @@ describe('StorePage (Story 6.5)', () => {
     });
 
     it('displays rarity label on each item', async () => {
+      // getByText -> getAllByText. The mock catalog grew to contain more than one item
+      // per rarity, and getByText THROWS on multiple matches ("Found multiple elements
+      // with the text: common") -- Testing Library's own error message names getAllByText
+      // as the fix. The test's intent was always "a rarity label is rendered", which
+      // multiple matches satisfy.
+      //
+      // Each assertion keeps an explicit lower bound rather than a bare getAllByText:
+      // `getAllByText` alone throws only when there are ZERO matches, and asserting
+      // nothing about the result would leave a test that passes on almost anything. The
+      // name of this test is "on EACH item", so assert at least one label per rarity and
+      // that the total count matches the number of catalog items rendered.
       renderStorePage();
       await waitFor(() => {
-        expect(screen.getByText('common')).toBeDefined();
-        expect(screen.getByText('rare')).toBeDefined();
-        expect(screen.getByText('epic')).toBeDefined();
+        expect(screen.getAllByText('common').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('rare').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText('epic').length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -267,9 +278,23 @@ describe('StorePage (Story 6.5)', () => {
     });
 
     it('shows level-locked indicator on level-locked items', async () => {
+      // /Level 10/ -> /Level 8/. This is a DIFFERENT failure from the rarity test above,
+      // and it is worth being precise about: that one threw on MULTIPLE matches, this one
+      // threw on ZERO ("Unable to find an element with the text: /Level 10/").
+      //
+      // The component is fine -- StorePage.tsx:237 renders `Level {item.level_required}`.
+      // The drift is inside this very file: the only fixture entry with
+      // `is_level_locked: true` declares `level_required: 8`, while the assertion still
+      // looked for 10. Fixture and assertion disagree; the fixture is the thing the
+      // component actually renders from, so the assertion is what was stale.
+      //
+      // Deliberately still getByText (singular) and still an exact number: exactly one
+      // fixture item is level-locked, so a singular query is the stronger assertion --
+      // it fails both if the indicator disappears AND if a second one appears
+      // unexpectedly.
       renderStorePage();
       await waitFor(() => {
-        expect(screen.getByText(/Level 10/)).toBeDefined();
+        expect(screen.getByText(/Level 8/)).toBeDefined();
       });
     });
   });

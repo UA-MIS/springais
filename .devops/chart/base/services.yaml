@@ -1,0 +1,43 @@
+# ClusterIP Services — ONE per component. Traefik routes Ingress traffic to these;
+# each Service selects ONLY its own component's pods via app.kubernetes.io/component.
+# Every Service exposes port 80 -> the component's container `http` port, so the
+# Ingress backend wiring is uniform.
+#
+# The redis Service is NOT here — it lives in redis.yaml next to its Deployment,
+# because redis is a workload but not a build component (see components.yaml).
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springais-frontend
+  labels:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springais-backend
+  labels:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
