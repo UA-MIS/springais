@@ -1,0 +1,56 @@
+apiVersion: platform.capstone/v1
+# promotion.yaml — THE canonical single source of truth for the trigger→env→tag
+# mapping (architecture §4.1, D-011/ADR-008). This file lives in the app repo and
+# is read by BOTH consumers:
+#   - the local CI seam (.devops/ci/build-and-push.sh + bump-image.sh), and
+#   - the platform env ApplicationSet, via an ArgoCD git-files generator pointed
+#     at THIS PATH AT HEAD.
+#
+# ⚠ THE APPLICATIONSET READS THIS FILE AT HEAD ON `main`. Until this file existed on
+# main, the tenant's env ApplicationSet had nothing to render and the provisioned
+# tenant fence sat around nothing. It is the file that makes the tenant claim live.
+
+# Image registry — this team's OWN Harbor project on the Talos cluster.
+# Full ref = <registry>/<component.image>:<tag>, e.g.
+# harbor.capstone.uamishub.com/springais/springais-backend:v0.0.0-3-gabc1234
+registry: harbor.capstone.uamishub.com/springais
+app: springais
+environments:
+  dev:
+    trigger: "branch:main"
+    tagConvention: "git-describe"
+    overlay: ".devops/chart/overlays/dev"
+    gate: auto
+  staging:
+    trigger: "tag:v*"
+    tagConvention: "semver"
+    overlay: ".devops/chart/overlays/staging"
+    gate: auto
+  prod:
+    # NOT tag:v*. No git event auto-promotes prod — the ONLY writer of this overlay is
+    # a human running .github/workflows/promote-to-prod.yaml, which reads staging's LIVE
+    # tag and writes that same tag here. gate:auto because the human gate already
+    # happened at "click Run workflow".
+    #
+    # ⚠ EXCEPT ONCE, DELIBERATELY: .devops/ci/seed-initial-envs.sh seeds staging AND prod
+    # from the FIRST successful main build, but ONLY while the overlay still carries the
+    # v0.0.0 sentinel. That is a first-deploy INITIAL CONDITION, not auto-promotion —
+    # after it fires once, this overlay holds a real tag and only promote-to-prod moves it.
+    #
+    # ⚠ PROD IS THE DEMO HOST. The claim sets publicDevIngress:false, so dev and staging
+    # sit behind the platform SSO forwardAuth gate, which 302s to Dex BEFORE Traefik
+    # routes to the app — a signed-out visitor never reaches the app at all. prod is
+    # public unconditionally. The donor-facing URL is springais.capstone.uamishub.com.
+    trigger: "manual:promote-to-prod"
+    tagConvention: "semver"
+    overlay: ".devops/chart/overlays/prod"
+    gate: auto
+  preview:
+    # previewEnabled:false on the tenant claim, so the platform creates NO preview
+    # ApplicationSet and nothing renders overlays/preview. The entry is kept so a PR
+    # build still resolves an env + a pull-<sha> tag rather than failing the resolver,
+    # and so enabling previews later is a one-line claim change.
+    trigger: "pull_request"
+    tagConvention: "pull-<sha>"
+    overlay: ".devops/chart/overlays/preview"
+    gate: auto

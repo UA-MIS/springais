@@ -1,0 +1,23 @@
+# app-metadata.yaml — the ONLY file you declare values in (§1.2).
+#
+# These fields are the single declarative input to the whole .devops/ template:
+# the chart/ overlays derive workload names, the ingress host
+# (<app-name>.<platform-domain>; appName is globally unique so no team segment),
+# the namespace prefix (<team>-<env>), the cohort selector labels, and the
+# container port. The platform's tenant ApplicationSets read the same team +
+# semester values. Everything else in .devops/ is platform-managed.
+#
+# These MUST agree with tenants/_claims/springais-springais.yaml in platform-infra
+# (team / appName / semester / port / database). They were cross-checked against
+# that claim when this directory was written.
+team: springais
+semester: 2026-fall
+app-name: springais
+port: 8080
+# `postgres` = the platform auto-provisions a per-(team,env) PG17 database + login
+# role on capstone-tenant-pg and pushes the credential PARTS to Vault at
+# tenants/springais/<env>/database; chart/overlays/*/database.externalsecret.yaml
+# assembles them into DATABASE_URL. The claim additionally sets
+# `dbExtensions: [vector]` so pgvector — which is trusted=f and therefore
+# superuser-only — is installed per env BEFORE this app's migrations run.
+database: postgres

@@ -18,7 +18,7 @@ def test_register_and_login_flow():
         "password": "SecurePass123",
         "name": "Auth Tester",
     }
-    register_response = client.post("/auth/register", json=register_payload)
+    register_response = client.post("/api/auth/register", json=register_payload)
     assert register_response.status_code == 200
     register_data = register_response.json()
     assert "token" in register_data
@@ -28,7 +28,7 @@ def test_register_and_login_flow():
         "email": register_payload["email"],
         "password": register_payload["password"],
     }
-    login_response = client.post("/auth/login", json=login_payload)
+    login_response = client.post("/api/auth/login", json=login_payload)
     assert login_response.status_code == 200
     login_data = login_response.json()
     assert "token" in login_data
@@ -45,7 +45,7 @@ def test_protected_route_with_token():
         "password": "SecurePass123",
         "name": "Token Tester",
     }
-    register_response = client.post("/auth/register", json=register_payload)
+    register_response = client.post("/api/auth/register", json=register_payload)
     token = register_response.json()["token"]
 
     response = client.get("/api/skills/stats", headers={"Authorization": f"Bearer {token}"})

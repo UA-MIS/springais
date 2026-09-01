@@ -1,0 +1,778 @@
+# ============================================================================
+# build-and-push.yaml — MULTI-COMPONENT platform CI build+push workflow (P2.3, D-032).
+#
+# PLATFORM-MANAGED (.devops golden path). This is the multi-component variant of the
+# single-component workflow: it builds + pushes ONE image PER COMPONENT declared in
+# .devops/components.yaml, via a build MATRIX. Students do NOT edit it. The ONLY
+# per-team/per-component values come from .devops/promotion.yaml (registry/app) +
+# .devops/components.yaml (the components) + the git event.
+#
+# HOW IT WORKS (five jobs):
+#   1. resolve     — run ONCE. resolve-image.sh maps the git event -> env + the ONE tag
+#                    all components share (D-030); resolve-components.sh reads
+#                    components.yaml and emits the per-component build MATRIX (one image
+#                    each, full ref = <registry>/<component.image>:<tag>).
+#   2. checks      — a MATRIX over the SAME components. Each leg auto-detects the
+#                    component's language (from its build-context manifest/lockfile) and
+#                    runs that language's LINT + UNIT TESTS in the right toolchain image
+#                    (a `uses: docker://` step, like the Kaniko build). This GATES the
+#                    build: build-and-push `needs: [resolve, checks]`, so a failing test
+#                    or lint (or a compile/typecheck error) NEVER reaches the registry —
+#                    and bump-dev, gated behind the build, never deploys it. ABSENCE of
+#                    tests is a notice (not a block); a real FAILURE blocks.
+#   3. build-and-push — a MATRIX over the components. Each leg Kaniko-builds its
+#                    component (rootless, no docker daemon) from that component's
+#                    `context`/`dockerfile` and pushes to the team's OWN Harbor project
+#                    using the least-privilege PUSH robot (`harbor-push`, project-scoped
+#                    so it covers every component repo — no per-component robot).
+#   4. bump-dev    — run ONCE after all matrix legs. On push-to-main, rewrite the dev
+#                    overlay so EVERY component's images[].newTag = the built tag, commit,
+#                    push -> ArgoCD syncs all components into <team>-dev. (FIX-18/D-030:
+#                    loop prevention is the `resolve` job's `if:` guard below, not a
+#                    `[skip ci]` commit marker.)
+#   5. bump-staging — run ONCE after all matrix legs, on a `vX.Y.Z` TAG push only. Same
+#                    write path as bump-dev, aimed at the STAGING overlay, using the SAME
+#                    immutable `:X.Y.Z` tag the build just pushed. This is the middle rung
+#                    of the promotion ladder (promotion.yaml: staging.trigger = tag:v*,
+#                    gate: auto). It NEVER writes prod — prod stays behind the human gate
+#                    in promote-to-prod.yaml. (Board #210: this job did not exist, so a
+#                    student's `git tag v1.0.0` built an image nothing ever deployed and
+#                    staging stayed frozen on the first-deploy seed, silently, forever.)
+#
+# THE TAG IS THE PROMOTION MECHANISM (D-030 prod-gate), SAME as single-component:
+#   - push to main      -> :<git-describe>  (mutable; dev auto-syncs)        PUSH
+#   - push tag vX.Y.Z   -> :X.Y.Z           (IMMUTABLE; prod image, gated)   PUSH
+#   - pull_request      -> :pull-<head-sha> (preview, UNTRUSTED PR code)     PUSH*
+# * preview pushes UNTRUSTED PR code, bounded to the team's own Harbor project + the
+#   disjoint pull-<sha> tag + the fenced <team>-pr-<n> preview ns (see the build step).
+#
+# CONTAINER-MODE SHAPE: the ARC runners are containerMode:kubernetes, so EVERY job
+# declares a `container:` (node image for the Actions runner internals + actions/checkout)
+# and the Kaniko build runs as a `uses: docker://` CONTAINER-ACTION STEP in its own
+# job-step pod (shared _work volume = the checked-out repo is Kaniko's context; the
+# platform runner's container-hook injects harbor-push into that pod). Making Kaniko the
+# job container would break the runner (its minimal image has no node/bash). (PR #60.)
+# ============================================================================
+name: build-and-push
+
+on:
+  push:
+    branches: [main]          # -> dev images (mutable git-describe tag), pushed
+    tags: ["v*"]                  # -> prod/staging images (immutable semver), pushed
+  pull_request:               # -> preview images (pull-<head-sha>, pushed). UNTRUSTED
+                              #    PR code, bounded to the team's own Harbor project +
+                              #    the disjoint pull-<sha> tag + the fenced <team>-pr-<n> ns.
+
+# Least privilege: contents:read is all actions/checkout needs. Registry push is
+# authenticated by the Harbor harbor-push robot, NOT GITHUB_TOKEN.
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # PER-TEAM RUNNER (finish-eso A2 — per-team scale set + harbor-push robot, PR #128):
+  # the repo Actions variable RUNNER_SCALE_SET picks THIS team's scale set on every
+  # job below; unset -> the shared ua-mis-kaniko (A1). Parity with the thin-caller
+  # skeleton's `runner:` input (see the single-component build-and-push.yaml).
+  # ---- 1) resolve: ONE tag + the per-component build matrix --------------------
+  resolve:
+    # FIX-18/D-030: loop-prevention guard, NOT `[skip ci]` in the commit message (see
+    # bump-image.sh's header comment for the full story). Skips the entire run — and by
+    # `needs:` cascade, every downstream job — ONLY for a branch push whose head commit
+    # was authored by this platform's own bump/promote identity (ci@capstone.uamishub.com,
+    # the same GIT_AUTHOR_EMAIL bump-dev/promote-to-prod set). A TAG push is NEVER
+    # skipped here, even one that happens to point at a bump/promote commit -- that is
+    # exactly the case `[skip ci]` broke (GitHub's native skip-ci detection is COMMIT-
+    # level, not ref-level: it suppresses EVERY future push event -- branch OR tag -- that
+    # references a commit whose message contains the marker, permanently, for the life of
+    # that commit). Since a student's natural release flow is `git pull && git tag vX.Y.Z`
+    # right after their own push triggers a build (main's tip at that moment IS the
+    # bump-dev auto-commit), `[skip ci]` silently and permanently blackholed every such
+    # tag. This guard achieves the SAME loop-prevention goal (a bump/promote commit's own
+    # push-to-main must not re-trigger a full rebuild) without poisoning the commit for
+    # any later ref event.
+    if: >-
+      !(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/') &&
+        github.event.head_commit.author.email == 'ci@capstone.uamishub.com')
+    runs-on: ${{ vars.RUNNER_SCALE_SET || 'ua-mis-kaniko' }}
+    container:
+      image: harbor.capstone.uamishub.com/dockerhub-proxy/library/node:24-trixie-slim
+    # actions:read + pull-requests:write are for the BEST-EFFORT queue-status step below
+    # (read this run's queue timing; post the sticky "you were in a queue" PR comment). It
+    # fails open, so if these aren't granted it just degrades to a generic note.
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    outputs:
+      ENV: ${{ steps.img.outputs.ENV }}
+      REGISTRY: ${{ steps.img.outputs.REGISTRY }}
+      TAG: ${{ steps.img.outputs.TAG }}
+      PUSH: ${{ steps.img.outputs.PUSH }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout (.devops contract + resolver scripts)
+        # Digest-pinned (SEC, D-030): immutable SHA. sha = actions/checkout v4.3.1.
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          # fetch-depth: 0 = full history + ALL TAGS — REQUIRED for resolve-image.sh's
+          # `git describe --tags` (Deploy Model A readable dev tag).
+          fetch-depth: 0
+      - name: Queue status — report how long you waited + your position
+        # OPERATOR UX. A QUEUED Actions job runs NO code until a runner picks it up
+        # (builds run 2-at-a-time — maxRunners:2 on the Kaniko scale set — so overflow
+        # WAITS in GitHub Actions), so this can't announce position WHILE waiting; the
+        # instant a runner starts this FIRST job it reports (to the run Summary + a sticky
+        # PR comment) how long the build queued and how many of THIS repo's builds were
+        # ahead of it. BEST-EFFORT + fail-open — never fails the build; degrades to a
+        # generic note without actions:read / pull-requests:write.
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .devops/ci/queue-status.mjs
+      - name: Resolve image identity (env + tag + push) from promotion.yaml
+        id: img
+        env:
+          # For a pull_request, feed the PR HEAD sha (the preview ApplicationSet keys the
+          # image override on pull-{{.head_short_sha_7}}); empty for push/tag builds.
+          SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          # `set -o pipefail` IS LOAD-BEARING, DO NOT DROP IT. A bare `run:` block is
+          # executed by the runner as `bash --noprofile --norc -e {0}` — errexit but
+          # NOT pipefail — so in `resolve-image.sh | tee`, only tee's exit status
+          # reaches the runner and tee always succeeds. resolve-image.sh has EIGHT
+          # distinct failure exits (missing promotion.yaml, unmapped ref, unsupported
+          # event, missing env key, non-semver tag, ...); before this line every one of
+          # them produced a GREEN step with empty outputs, and the build then proceeded
+          # with an empty ENV/TAG/REGISTRY. This step decides which environment is being
+          # built and what tag the image gets — it must be able to fail. (#189)
+          #
+          # `shell: bash` above is the other half and is NOT redundant. Left to itself the
+          # runner picks `sh -e {0}` for a container job (observed in run 33027282352), and
+          # `set -o pipefail` then works only because Debian trixie's dash happens to
+          # implement it — the SAME "works by accident of one base image's shell" trap this
+          # change exists to remove. `shell: bash` pins the interpreter to
+          # `bash --noprofile --norc -eo pipefail {0}` whatever /bin/sh turns out to be.
+          set -euo pipefail
+          sh .devops/ci/resolve-image.sh | tee -a "$GITHUB_OUTPUT"
+      - name: Resolve the per-component build matrix from components.yaml
+        id: matrix
+        shell: bash
+        run: |
+          # Compact JSON array of {name,context,dockerfile,image(LEAF, e.g. <app>-frontend)}.
+          # The build job composes the full ref <registry>/<image>:<tag> below.
+          # Single-component repos (no components.yaml) get a one-element matrix.
+          #
+          # The substitution is ASSIGNED FIRST, not interpolated straight into `echo`.
+          # `echo "matrix=$(resolve-components.sh)"` returns echo's status (always 0),
+          # so all three of that script's failure exits — no components.yaml AND no
+          # promotion.yaml, no components.yaml AND promotion.yaml missing `app`, and a
+          # components.yaml with an empty components[] — used to emit a bare `matrix=`
+          # and pass. In an assignment, errexit sees the command substitution's own
+          # status and the step fails. (#189)
+          set -euo pipefail
+          MATRIX="$(sh .devops/ci/resolve-components.sh)"
+          echo "matrix=${MATRIX}" | tee -a "$GITHUB_OUTPUT"
+
+  # ---- 2) checks: per-component language-aware lint + test (GATES the build) ----
+  # "Everything we ship runs its language's tests + lint before it can deploy." A MATRIX
+  # over the SAME components the build uses (resolve.outputs.matrix), so each component is
+  # checked in its OWN language toolchain. The language is auto-detected from the
+  # component's build CONTEXT (manifest/lockfile) and the toolchain runs as a
+  # `uses: docker://` CONTAINER-ACTION STEP in its own pod (shared _work volume) — the
+  # SAME container-hook shape as the Kaniko build, so the small node job-container only
+  # runs the Actions internals + checkout. build-and-push `needs: [resolve, checks]`, so a
+  # FAILING test/lint (or a compile/typecheck error) never reaches the registry.
+  #
+  # RESILIENCE CONTRACT: the ABSENCE of tests/lint is a NOTICE, not a failure (a component
+  # with no test script is not blocked); a real test/lint FAILURE (or a compile/typecheck
+  # error) DOES block. Unknown / not-yet-supported languages SKIP cleanly. Toolchain images
+  # are digest-pinned (SEC) and every dependency install is over HTTPS (:443), matching the
+  # runner egress netpol (external :443 only). Inside every docker:// step we use
+  # $GITHUB_WORKSPACE (the STEP-POD mount /__w/<repo>) — NOT ${{ github.workspace }} (the
+  # JOB-container path), which does not exist in the separate step pod (same reason the
+  # Kaniko build uses $GITHUB_WORKSPACE).
+  #
+  # LANGUAGE COVERAGE (v1): go, node/typescript, python, java(Maven), .NET, rust are STRICT
+  # (a failure blocks). ruby(Rails) + php(Laravel) are BEST-EFFORT: a dependency-install
+  # failure in the stock toolchain image (native-ext build deps / PHP extensions that the
+  # runtime Dockerfile provides but a stock image does not) degrades to a warning-skip,
+  # while a real test failure still blocks — harden those toolchain images to make them
+  # strict. Gradle/Android, Swift, Flutter, and static/mobile artifacts are DEFERRED (they
+  # fall through to the 'none' skip).
+  checks:
+    needs: resolve
+    runs-on: ${{ vars.RUNNER_SCALE_SET || 'ua-mis-kaniko' }}
+    timeout-minutes: 25
+    strategy:
+      # Surface every component's result — don't cancel siblings when one fails.
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.resolve.outputs.matrix) }}
+    container:
+      image: harbor.capstone.uamishub.com/dockerhub-proxy/library/node:24-trixie-slim
+    steps:
+      - name: Checkout (source to check for ${{ matrix.name }})
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 1
+      - name: Detect language for component '${{ matrix.name }}'
+        id: detect
+        env:
+          CONTEXT: ${{ matrix.context }}
+        run: |
+          set -eu
+          # First match wins. Compiled / manifest-specific languages are tested BEFORE
+          # node/python so a secondary package.json (a Rails importmap, a Laravel Vite
+          # bundle) never hijacks detection. Mobile toolchains (Gradle-Android / Swift /
+          # Flutter) are intentionally NOT matched (deferred) — they fall through to 'none'
+          # and skip; react-native is TS/node and is handled by the node path.
+          lang=none
+          if   [ -f "${CONTEXT}/go.mod" ]; then lang=go
+          elif [ -f "${CONTEXT}/pom.xml" ]; then lang=java
+          elif ls "${CONTEXT}"/*.csproj >/dev/null 2>&1 || ls "${CONTEXT}"/*.sln >/dev/null 2>&1; then lang=dotnet
+          elif [ -f "${CONTEXT}/Cargo.toml" ]; then lang=rust
+          elif [ -f "${CONTEXT}/composer.json" ]; then lang=php
+          elif [ -f "${CONTEXT}/Gemfile" ]; then lang=ruby
+          elif [ -f "${CONTEXT}/package.json" ]; then lang=node
+          elif [ -f "${CONTEXT}/pyproject.toml" ] || [ -f "${CONTEXT}/requirements.txt" ]; then lang=python
+          fi
+          echo "component '${{ matrix.name }}' (context '${CONTEXT}') -> lang=${lang}"
+          echo "lang=${lang}" >> "$GITHUB_OUTPUT"
+
+      - name: Go — vet + test
+        if: ${{ steps.detect.outputs.lang == 'go' }}
+        # Digest-pinned (SEC). golang:1.26-alpine. go vet = lint, go test = unit tests
+        # (both compile the package, so a build error is caught too). Both BLOCKING.
+        uses: docker://golang@sha256:3ad57304ad93bbec8548a0437ad9e06a455660655d9af011d58b993f6f615648 # 1.26-alpine
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -c 'set -eu;
+            cd "$GITHUB_WORKSPACE/${{ matrix.context }}";
+            echo "==> go vet (lint)"; go vet ./...;
+            echo "==> go test"; go test ./...'
+
+      - name: Node/TypeScript — install + lint + typecheck + test
+        if: ${{ steps.detect.outputs.lang == 'node' }}
+        # Digest-pinned (SEC). node:24-trixie-slim. Install uses `npm ci` only when a lockfile
+        # (package-lock.json / npm-shrinkwrap.json) is committed — otherwise `npm install`, so a
+        # lockfile-less starter installs cleanly with no `npm ci` EUSAGE error wall. lint +
+        # typecheck run only --if-present (a bare starter without them is not blocked); `npm test`
+        # runs only when a test script exists (npm test hard-errors on a missing script otherwise).
+        # A real lint / tsc / test failure BLOCKS.
+        #
+        # NOT `npm ci || npm install` (drift; the platform copy in .github/workflows/
+        # tenant-build.yaml has always had the if/else and this tenant-facing copy did not).
+        # That fallback swallows the exact failure `npm ci` EXISTS to produce: a lockfile
+        # desynced from package.json makes `npm ci` fail by design, `|| npm install` then
+        # silently REWRITES the lockfile and the gate goes green. The condition being tested
+        # is "is a lockfile committed", which is a file test — so test the file, and let a
+        # genuine `npm ci` failure fail.
+        uses: docker://node@sha256:366fdef91728b1b7fa18c84fba63b6e79ed77b7e10cc206878e9705da4d7b169 # 24-trixie-slim
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -c 'set -eu;
+            cd "$GITHUB_WORKSPACE/${{ matrix.context }}";
+            if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then echo "==> npm ci (lockfile present)";
+            npm ci || { echo "::error::package-lock.json is OUT OF SYNC with package.json, so npm ci stopped. That is what npm ci is for, and CI will not rewrite your lockfile for you. TO FIX — both steps, and the second is the one people miss: (1) run  npm install  locally, which updates package-lock.json; (2) COMMIT it —  git add package-lock.json && git commit -m \"sync lockfile\" && git push. If you run npm install but do not commit the lockfile, the next build fails with this same message."; exit 1; };
+            else echo "==> npm install (no lockfile — commit one to switch to fast reproducible npm ci)"; npm install; fi;
+            echo "==> lint (if present)"; npm run lint --if-present;
+            echo "==> typecheck (if present)"; npm run typecheck --if-present;
+            if npm run | grep -qE "^[[:space:]]+test"; then echo "==> npm test"; npm test;
+            else echo "::notice::no npm test script — test run skipped"; fi'
+
+      - name: Python — install (BLOCKING) + ruff (advisory) + pytest (BLOCKING)
+        if: ${{ steps.detect.outputs.lang == 'python' }}
+        # Digest-pinned (SEC). python:3-slim. Installs requirements(.txt|-dev.txt) + the app
+        # (if pyproject) + pytest/ruff over :443. ruff is advisory; pytest is BLOCKING. A
+        # pytest exit 5 (no tests collected) degrades to a notice, not a failure.
+        #
+        # `set -eu`, NOT `set -u` (#189). Without errexit a failing `pip install -r
+        # requirements.txt` did not stop the script: pytest then collected nothing, exited
+        # 5, and the `rc=0` rewrite below turned that into a PASS. A repo with an
+        # unresolvable dependency and a repo with genuinely no tests were the same green
+        # tick. With errexit the install failure stops here, so reaching the exit-5 branch
+        # now PROVES every install above succeeded — which is what makes the surviving
+        # no-tests-is-fine allowance honest rather than a blanket amnesty.
+        #
+        # The `[ -f x ] && cmd;` idiom CANNOT survive errexit — a missing file makes the
+        # whole && list return 1 and kills the script — which is exactly why the original
+        # could only use `set -u`. Each one is therefore rewritten as a real `if` block.
+        # Do not fold them back into && lists.
+        #
+        # pip runs WITHOUT --quiet into a log that is printed ONLY when that pip call
+        # FAILS. --quiet holds pip to WARNING level, but pip emits the "The conflict is
+        # caused by:" block — the only part that NAMES the two colliding packages — at
+        # INFO. So a ResolutionImpossible printed its headline and swallowed its own
+        # diagnosis: a real tenant break (UA-MIS/curb-web, run 33464463439) cost an hour
+        # and a hand-built reproduction to identify from `ERROR: ResolutionImpossible`
+        # alone. Capturing rather than silencing keeps a PASSING log exactly as short as
+        # --quiet did, while making a failing one self-describing.
+        #
+        # This is a CAPTURE, not a retry: nothing is installed twice, so it costs no
+        # extra minutes even on a five-minute install. `pip_install` returns pip's REAL
+        # exit code, so errexit still kills the step on a blocking install failure —
+        # never wrap the bare `pip_install` calls in `|| true`, and never let the
+        # non-blocking `if pip_install advisory .` form spread to the other calls.
+        # Warnings from a SUCCESSFUL install are still surfaced (the grep), so this loses
+        # no signal that --quiet was showing before; it only loses the pip-upgrade notice.
+        #
+        # The FIRST argument is `blocking` or `advisory` and is not decoration: it decides
+        # whether a failure also emits a `::error::` annotation. Only the pyproject install
+        # is advisory. Getting that backwards paints a red error annotation onto a check
+        # that then passes, which is how people learn to ignore annotations.
+        uses: docker://python@sha256:63a4c7f612a00f92042cbdcc7cdc6a306f38485af0a200b9c89de7d9b1607d15 # 3-slim
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -c 'set -eu;
+            cd "$GITHUB_WORKSPACE/${{ matrix.context }}" || exit 1;
+            PIPLOG=/tmp/pip-install.log;
+            pip_install() { pmode="$1"; shift;
+            python -m pip install --root-user-action=ignore "$@" >"$PIPLOG" 2>&1
+            || { prc=$?; echo "--- pip output (shown because this install FAILED; hidden on success) ---";
+            cat "$PIPLOG"; echo "--- end pip output ---";
+            if [ "$pmode" = blocking ]; then
+            echo "::error::A BLOCKING pip install failed above, so this check is red. When pip reports ResolutionImpossible, the block headed -The conflict is caused by- is the part that names the two packages that collide. Note that any dependency you did not pin is re-resolved against live PyPI on every run, so this can start failing when nothing in your repo changed.";
+            fi;
+            return $prc; };
+            grep -E "^(WARNING|ERROR)" "$PIPLOG" || :;
+            return 0; };
+            if [ -f requirements.txt ]; then echo "==> pip install -r requirements.txt"; pip_install blocking -r requirements.txt; fi;
+            if [ -f requirements-dev.txt ]; then echo "==> pip install -r requirements-dev.txt"; pip_install blocking -r requirements-dev.txt; fi;
+            proj_install=skipped;
+            if [ -f pyproject.toml ]; then echo "==> pip install .";
+            if pip_install advisory .; then proj_install=ok; else proj_install=FAILED;
+            echo "::warning::pip install . failed — a pyproject.toml that only carries tool config (no [build-system]) is not installable, so this stays non-blocking; a real packaging error will surface at image build"; fi; fi;
+            echo "==> pip install pytest ruff"; pip_install blocking pytest ruff;
+            echo "==> ruff (advisory)";
+            ruff check . || echo "::warning::ruff reported findings — ADVISORY ONLY, this does not fail the build and is not test coverage";
+            echo "==> pytest"; set +e; pytest -q; rc=$?; set -e;
+            if [ "$rc" = "5" ]; then
+            if [ "$proj_install" = "FAILED" ]; then
+            echo "::warning::pytest collected no tests AND pip install . failed above. Those two together mean nothing here was verified: there is no test result, and the package did not install. Not failing the gate (a tool-config-only pyproject is legitimately not installable) — but do NOT read this green tick as a working environment.";
+            else
+            echo "::notice::pytest collected no tests — nothing to run. Every BLOCKING dependency install above succeeded (errexit would have stopped this step otherwise), so this is a repo with no tests, not a broken environment.";
+            fi; rc=0; fi;
+            exit $rc'
+
+      - name: Java (Maven) — compile + test
+        if: ${{ steps.detect.outputs.lang == 'java' }}
+        # Digest-pinned (SEC). maven:3.9-eclipse-temurin-21. `mvn test` compiles main + test
+        # sources (a compile error blocks) and runs the JUnit/spring-boot-starter-test suite.
+        uses: docker://maven@sha256:2b4496088e7b80ae10a8c9f74e574ea21380325a006ec684532ad6bad5bc7273 # 3.9-eclipse-temurin-21
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -c 'set -eu;
+            cd "$GITHUB_WORKSPACE/${{ matrix.context }}";
+            echo "==> mvn test (compile + unit tests)";
+            mvn -B -ntp test'
+
+      - name: .NET — build + test
+        if: ${{ steps.detect.outputs.lang == 'dotnet' }}
+        # Digest-pinned (SEC). dotnet/sdk:8.0. Runs the *.Tests.csproj if present (which
+        # restores+builds+tests, catching compile errors); otherwise a plain `dotnet build`
+        # is the compile check.
+        uses: docker://mcr.microsoft.com/dotnet/sdk@sha256:63ebabdcde24cc8134304a6f50719cf1e22bb4e9f7148ac4ef967c7680187356 # 8.0
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -c 'set -eu;
+            cd "$GITHUB_WORKSPACE/${{ matrix.context }}";
+            TP="$(find . -name "*.Tests.csproj" -o -name "*.Test.csproj" | head -n1)";
+            if [ -n "$TP" ]; then echo "==> dotnet test $TP"; dotnet test "$TP" --nologo;
+            else echo "==> no test project — dotnet build (compile check)"; dotnet build --nologo; fi'
+
+      - name: Rust — fmt (advisory) + cargo test
+        if: ${{ steps.detect.outputs.lang == 'rust' }}
+        # Digest-pinned (SEC). rust:1-slim-trixie. `cargo test` compiles the crate (a
+        # compile error blocks) and runs any #[test]s; fmt is advisory. Uses --locked only
+        # when a Cargo.lock is committed.
+        uses: docker://rust@sha256:14c4fe50ea427dc42381a1a09a9a839c1d2346a2e508cd491bf02c659dbc0ed7 # 1-slim-trixie
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -c 'set -eu;
+            cd "$GITHUB_WORKSPACE/${{ matrix.context }}";
+            echo "==> cargo fmt --check (advisory)";
+            cargo fmt --check || echo "::warning::cargo fmt --check reported findings — ADVISORY ONLY, this does not fail the build and is not test coverage";
+            echo "==> cargo test (compile + tests)";
+            if [ -f Cargo.lock ]; then cargo test --locked; else cargo test; fi'
+
+      - name: Ruby — bundle + test (best-effort install)
+        if: ${{ steps.detect.outputs.lang == 'ruby' }}
+        # Digest-pinned (SEC). ruby:3.3. BEST-EFFORT: a bundle install failure (native-ext
+        # build deps / DB client headers the stock image lacks, e.g. mysql2) degrades to a
+        # warning-skip; a real test failure still BLOCKS. Harden the image to make strict.
+        #
+        # #189: this install could not fail, so a TRANSIENT blip on the runner's :443-only
+        # egress permanently skipped a student's entire suite and reported success. Two
+        # changes, neither of which breaks a legitimately-unbuildable Gemfile:
+        #   1. RETRY 3x with backoff. That is the whole fix for the transient case — the
+        #      failure mode actually named in the finding. A network wobble no longer
+        #      silently deletes the test gate.
+        #   2. `vars.CI_STRICT_TOOLCHAIN == '1'` promotes a PERSISTENT install failure from
+        #      warning-skip to a hard failure, per-repo, opt-in.
+        # The default stays permissive DELIBERATELY: mysql2/pg/nokogiri need build deps the
+        # stock ruby image does not ship, and hard-failing would break every Rails tenant
+        # for a toolchain-image gap that is not the student's bug. The real fix is a
+        # hardened toolchain image; until then this is a KNOWN, LOUD hole, not a silent one.
+        uses: docker://ruby@sha256:8d62d05359e370f55c2710645c976d7f04c9f5811378c7acc340ff416986da1e # 3.3
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -c 'set -eu;
+            cd "$GITHUB_WORKSPACE/${{ matrix.context }}";
+            echo "==> bundle install (up to 3 attempts)";
+            ok=0; n=1;
+            while [ "$n" -le 3 ]; do
+            if bundle install --quiet; then ok=1; break; fi;
+            echo "::warning::bundle install attempt $n of 3 failed"; n=$((n+1)); sleep $((n*5)); done;
+            if [ "$ok" != "1" ]; then
+            strict_raw="${{ vars.CI_STRICT_TOOLCHAIN }}";
+            strict=0;
+            case "$(printf %s "$strict_raw" | tr "[:upper:]" "[:lower:]")" in
+            1|true|yes|on) strict=1 ;;
+            ""|0|false|no|off) strict=0 ;;
+            *) echo "::warning::CI_STRICT_TOOLCHAIN is set to \"$strict_raw\", which is not a recognised boolean (1/true/yes/on or 0/false/no/off) — treating it as OFF. If you meant to enforce, use 1." ;;
+            esac;
+            if [ "$strict" = "1" ]; then
+            echo "::error::bundle install failed 3 times and CI_STRICT_TOOLCHAIN is enabled — failing the checks gate"; exit 1; fi;
+            echo "::warning::bundle install failed 3 times (native-ext toolchain / DB headers not in the stock ruby image) — RUBY TESTS DID NOT RUN for this component. This step is reporting success WITHOUT having tested anything. Harden the toolchain image, or set repository variable CI_STRICT_TOOLCHAIN=1 to make this a hard failure."; exit 0; fi;
+            if [ -f bin/rails ]; then echo "==> bin/rails test"; bin/rails test;
+            elif bundle exec rake -T 2>/dev/null | grep -q "rake test"; then echo "==> rake test"; bundle exec rake test;
+            elif [ -d spec ]; then echo "==> rspec"; bundle exec rspec;
+            else echo "::notice::no rails/rake/rspec tests — skipped"; fi'
+
+      - name: PHP (Composer) — install + test (best-effort install)
+        if: ${{ steps.detect.outputs.lang == 'php' }}
+        # Digest-pinned (SEC). composer:2. BEST-EFFORT: a composer install failure (PHP
+        # extensions the runtime Dockerfile provides but a stock image lacks) degrades to a
+        # warning-skip; a real test failure still BLOCKS. Harden the image to make strict.
+        #
+        # #189: same defect and same fix as the Ruby step above — retry 3x so a transient
+        # :443 egress blip stops silently deleting the test gate, and honour the opt-in
+        # `vars.CI_STRICT_TOOLCHAIN == '1'` to turn a persistent failure hard. Default
+        # stays permissive for the same reason (missing PHP extensions are a toolchain-image
+        # gap, not the student's bug) and the skip message now says outright that nothing
+        # was tested.
+        uses: docker://composer@sha256:5946476338742b200bb9ff88f8be56275ddae4b3949c72305cb0dbf10cfcb760 # 2
+        with:
+          entrypoint: /bin/sh
+          args: >-
+            -c 'set -eu;
+            cd "$GITHUB_WORKSPACE/${{ matrix.context }}";
+            echo "==> composer install (up to 3 attempts)";
+            ok=0; n=1;
+            while [ "$n" -le 3 ]; do
+            if composer install --no-interaction --no-progress --prefer-dist --ignore-platform-reqs; then ok=1; break; fi;
+            echo "::warning::composer install attempt $n of 3 failed"; n=$((n+1)); sleep $((n*5)); done;
+            if [ "$ok" != "1" ]; then
+            strict_raw="${{ vars.CI_STRICT_TOOLCHAIN }}";
+            strict=0;
+            case "$(printf %s "$strict_raw" | tr "[:upper:]" "[:lower:]")" in
+            1|true|yes|on) strict=1 ;;
+            ""|0|false|no|off) strict=0 ;;
+            *) echo "::warning::CI_STRICT_TOOLCHAIN is set to \"$strict_raw\", which is not a recognised boolean (1/true/yes/on or 0/false/no/off) — treating it as OFF. If you meant to enforce, use 1." ;;
+            esac;
+            if [ "$strict" = "1" ]; then
+            echo "::error::composer install failed 3 times and CI_STRICT_TOOLCHAIN is enabled — failing the checks gate"; exit 1; fi;
+            echo "::warning::composer install failed 3 times (PHP extensions not in the stock composer image) — PHP TESTS DID NOT RUN for this component. This step is reporting success WITHOUT having tested anything. Harden the toolchain image, or set repository variable CI_STRICT_TOOLCHAIN=1 to make this a hard failure."; exit 0; fi;
+            if composer run-script --list 2>/dev/null | grep -qE "^[[:space:]]+test"; then echo "==> composer test"; composer test;
+            elif [ -x vendor/bin/phpunit ]; then echo "==> phpunit"; vendor/bin/phpunit;
+            else echo "::notice::no composer test script / phpunit — skipped"; fi'
+
+      - name: No recognized language — checks skipped
+        if: ${{ steps.detect.outputs.lang == 'none' }}
+        run: |
+          echo "::notice::component '${{ matrix.name }}' (context '${{ matrix.context }}'):" \
+               "no recognized manifest (go.mod / pom.xml / *.csproj / Cargo.toml /" \
+               "composer.json / Gemfile / package.json / pyproject|requirements) —" \
+               "language lint+test auto-checks skipped (static sites, mobile artifacts," \
+               "and bring-your-own land here). Add a recognized manifest to enable them."
+
+  # ---- 3) build-and-push: one Kaniko build per component (matrix) --------------
+  build-and-push:
+    needs: [resolve, checks]
+    runs-on: ${{ vars.RUNNER_SCALE_SET || 'ua-mis-kaniko' }}
+    strategy:
+      # Don't cancel sibling components if one fails — surface every component's result.
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.resolve.outputs.matrix) }}
+    container:
+      image: harbor.capstone.uamishub.com/dockerhub-proxy/library/node:24-trixie-slim
+    env:
+      # Where the Harbor push cred lands inside the Kaniko step pod (Kaniko's default
+      # DOCKER_CONFIG dir). The platform runner's container-hook injects secret
+      # harbor-push (dockerconfigjson) -> config.json here.
+      DOCKER_CONFIG_DIR: /kaniko/.docker
+    steps:
+      - name: Checkout (build context for ${{ matrix.name }})
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Guard — push builds must have the Harbor cred mounted
+        if: ${{ needs.resolve.outputs.PUSH == 'true' }}
+        run: |
+          # The cred lives in the Kaniko STEP pod (not this runner pod); the real check
+          # runs inside the Kaniko step (entrypoint wrapper) and fails closed.
+          echo "push build for ${{ needs.resolve.outputs.REGISTRY }}/${{ matrix.image }}:${{ needs.resolve.outputs.TAG }}" \
+               "— Harbor cred expected at ${DOCKER_CONFIG_DIR}/config.json in the Kaniko step pod"
+      # --- Kaniko build as a container-action STEP (its own pod; shared _work) ---
+      # SECURITY — preview (pull_request) PUSHES untrusted PR code. Authenticated by the
+      # SAME least-privilege harbor-push robot (pull+push on THIS team's OWN project only).
+      # The tag is pull-<head-sha>, DISJOINT from dev's git-describe + prod's semver, so a
+      # PR can never overwrite the dev/staging/prod image; it only deploys into the
+      # ephemeral, fully-fenced <team>-pr-<n> preview namespace.
+      - name: Build (and push) ${{ matrix.name }} with Kaniko
+        # Digest-pinned (SEC, D-030). digest = gcr.io/kaniko-project/executor:v1.23.2-debug.
+        uses: docker://gcr.io/kaniko-project/executor@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e # v1.23.2-debug
+        with:
+          entrypoint: /busybox/sh
+          args: >-
+            -c '
+            set -eu;
+            CFG="${DOCKER_CONFIG_DIR}/config.json";
+            if [ "${PUSH}" = "true" ]; then
+              i=0;
+              while [ ! -s "$CFG" ]; do
+                i=$((i+1));
+                if [ "$i" -gt 30 ]; then
+                  echo "ERROR: Harbor push credential still not injected at $CFG" \
+                       "after ~5min — the platform provisions harbor-push-<team>" \
+                       "asynchronously (CapstoneTenant -> robot -> PushSecret ->" \
+                       "Vault -> ESO sync); fresh-tenant provisioning may have failed." \
+                       "Refusing an unauthenticated push." >&2;
+                  exit 1;
+                fi;
+                echo "harbor-push cred not injected yet at $CFG; waiting for the" \
+                     "platform to provision it (attempt $i/30, sleeping 10s)..." >&2;
+                sleep 10;
+              done;
+              echo "harbor-push cred present at $CFG — proceeding with authenticated push.";
+            fi;
+            COMMON="--context=dir://${GITHUB_WORKSPACE}/${CONTEXT}
+                    --dockerfile=${DOCKERFILE}
+                    --destination=${IMAGE}
+                    --reproducible
+                    --verbosity=info";
+            if [ "${PUSH}" = "true" ]; then
+              echo "==> building + pushing ${IMAGE}";
+              /kaniko/executor $COMMON;
+            else
+              echo "==> PR build-only validation for ${IMAGE} (no push)";
+              /kaniko/executor $COMMON --no-push --tar-path=/tmp/image.tar;
+            fi
+            '
+        env:
+          # Full ref composed here: <registry>/<leaf image>:<tag>. resolve-components.sh
+          # emits the LEAF (matrix.image); registry + the one per-commit tag + push come
+          # from the resolve job (resolve-image.sh). One tag for every component.
+          IMAGE: ${{ needs.resolve.outputs.REGISTRY }}/${{ matrix.image }}:${{ needs.resolve.outputs.TAG }}
+          CONTEXT: ${{ matrix.context }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
+          PUSH: ${{ needs.resolve.outputs.PUSH }}
+          DOCKER_CONFIG_DIR: ${{ env.DOCKER_CONFIG_DIR }}
+
+  # ---- 4) bump-dev: bump dev every push + FIRST-DEPLOY seed staging/prod -------
+  # GitOps image-bump (D-030): after all component images are pushed, rewrite the dev
+  # overlay so EVERY component's images[].newTag = the built tag, commit, push. ArgoCD
+  # syncs all components into <team>-dev. Runs ONCE (not per matrix leg).
+  #
+  # FIRST-DEPLOY GREEN-EVERYWHERE (Deploy Model A initial condition): staging + prod ship a
+  # v0.0.0 PLACEHOLDER sentinel that no build has produced (an unbuilt 0.1.0 was the old
+  # ImagePullBackOff bug). After bumping dev, this job runs seed-initial-envs.sh, which
+  # points staging + prod at THIS SAME just-built image — but ONLY while they still carry
+  # the sentinel (never bumped/promoted). So the FIRST build brings all three envs up green;
+  # every SUBSEQUENT push is a no-op there and bumps ONLY dev. staging/prod then advance
+  # solely via the promote-to-prod gate. This is NOT auto-prod-on-every-push.
+  #
+  # SECURITY (least privilege — SEPARATE job): `if:` restricts to a real push to main
+  # (never pull_request, so untrusted PR code can't reach the write token); job-scoped
+  # contents:write applies ONLY here. Branch-protection Option A (D-030): main allowlists
+  # github-actions[bot] in its PR-bypass so this GITHUB_TOKEN push lands on protected main.
+  # If the bypass isn't configured the push fails LOUD.
+  #
+  # LOOP PREVENTION (FIX-18/D-030): this job's own push-to-main does NOT carry
+  # `[skip ci]` — that used to be the mechanism, but GitHub's skip-ci detection is
+  # COMMIT-level, not ref-level, so it permanently suppressed any LATER tag push
+  # referencing this same commit too (exactly what broke vX.Y.Z re-promotion; see
+  # bump-image.sh's header comment for the full story). Instead, the `resolve` job
+  # above carries an `if:` guard that skips the ENTIRE run (and everything `needs:` it,
+  # by cascade) for a branch push whose head commit was authored by this exact identity
+  # (GIT_AUTHOR_EMAIL below) — narrower and non-permanent: only THIS job's own commits
+  # are skipped, and only for a branch push, never a tag.
+  bump-dev:
+    needs: [resolve, build-and-push]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.resolve.outputs.PUSH == 'true' }}
+    runs-on: ${{ vars.RUNNER_SCALE_SET || 'ua-mis-kaniko' }}
+    # FULL node image (NOT -slim): bump-image.sh git-commits the overlay and this
+    # job `git push`es it to main — -slim ships no git (git: not found, exit 127).
+    # Parity with tenant-build.yaml's bump-dev job, which uses the same full image
+    # for the same reason.
+    container:
+      image: harbor.capstone.uamishub.com/dockerhub-proxy/library/node:24-trixie
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main (writable; full history for a clean commit base)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Bump dev (always) + seed staging/prod on first deploy -> commit + push
+        env:
+          TAG: ${{ needs.resolve.outputs.TAG }}
+          GIT_AUTHOR_NAME: ua-mis-ci
+          GIT_AUTHOR_EMAIL: ci@capstone.uamishub.com
+          GIT_COMMITTER_NAME: ua-mis-ci
+          GIT_COMMITTER_EMAIL: ci@capstone.uamishub.com
+        run: |
+          set -eu
+          # CONSUME the resolve job's TAG (no recompute). bump-image.sh (COMMIT=1) sets
+          # newTag on EVERY component's images[] entry + commits (no `[skip ci]` — see the
+          # LOOP PREVENTION note above, FIX-18/D-030).
+          # 1) dev — continuous: every push to main points dev at the just-built image.
+          COMMIT=1 bash .devops/ci/bump-image.sh dev "${TAG}"
+          # 2) FIRST DEPLOY ONLY — seed staging + prod at the SAME image so a brand-new
+          #    tenant is green in all three envs out of the box. seed-initial-envs.sh is a
+          #    no-op once they hold a real tag (past the v0.0.0 sentinel), so later pushes
+          #    bump ONLY dev and staging/prod stay promotion-gated (promote-to-prod). It
+          #    reuses bump-image.sh (COMMIT=1 -> a commit per seeded env, same as dev's).
+          COMMIT=1 sh .devops/ci/seed-initial-envs.sh "${TAG}"
+          # 3) ONE push for whatever the two steps committed. This push is authored by
+          #    GIT_AUTHOR_EMAIL above, which the `resolve` job's `if:` guard recognizes
+          #    and skips on its OWN triggered run — no bump loop, and unlike `[skip ci]`,
+          #    a later `git tag vX.Y.Z` on this exact commit still triggers normally.
+          git push origin HEAD:main
+
+  # ---- 5) bump-staging: the TAG rung of the promotion ladder -------------------
+  # THE MIDDLE RUNG (promotion.yaml: environments.staging.trigger = "tag:v*", gate: auto).
+  # Mirrors bump-dev exactly — same write path, same identity, same loop guard — but fires
+  # on a pushed `vX.Y.Z` tag instead of a push to main, and writes the STAGING overlay.
+  #
+  # WHY IT EXISTS (board #210 — LAUNCH BLOCKER, the ladder never worked on a wizard tenant):
+  # `on.push.tags: ["v*"]` above already builds + pushes the immutable `:X.Y.Z` image on a
+  # tag, and resolve-image.sh already computes that tag — but until this job, NOTHING wrote
+  # it into an overlay. bump-dev is gated to `refs/heads/main`, so a tag push matched no
+  # bump job at all. The result was silent: the student saw a green build, and staging kept
+  # serving whatever seed-initial-envs.sh wrote on the very first deploy — for the whole
+  # semester. Every teaching artifact promised otherwise. The gap was predicted verbatim in
+  # artifacts/design/promotion-model.md §6 ("a `bump-staging` job mirroring `bump-dev`,
+  # gated on `refs/tags/v*`") and never shipped. This is that fast-follow.
+  #
+  # THE TAG SOURCE IS THE RESOLVE JOB, NOT `github.ref_name` (#210 "what could go wrong"):
+  # we CONSUME needs.resolve.outputs.TAG — the exact string the build-and-push matrix used
+  # as the image tag. resolve-image.sh STRIPS the leading `v` (refs/tags/v1.2.3 -> TAG=1.2.3,
+  # see its `SEMVER="${REF#refs/tags/v}"`), so the Harbor artifact is `…:1.2.3`. Re-deriving
+  # the overlay value from `github.ref_name` would write `v1.2.3`, an image that does not
+  # exist in Harbor, and staging would ImagePullBackOff — a CI bug wearing a registry bug's
+  # clothes. One resolver, one tag, consumed everywhere.
+  #
+  # SCOPE — STAGING ONLY. This job does NOT touch prod, and must not be widened to. Prod's
+  # only writer is the human gate (promote-to-prod.yaml, workflow_dispatch); promotion.yaml
+  # records that as `prod.trigger: "manual:promote-to-prod"`. It also does NOT call
+  # seed-initial-envs.sh (bump-dev owns the one-time first-deploy seed) — calling it here
+  # would let a tag push write prod on a fresh tenant, removing the human step entirely.
+  #
+  # SECURITY (least privilege — SEPARATE job, same shape as bump-dev):
+  #   - The `if:` requires a real `push` event AND a ref under `refs/tags/v`. Deliberately
+  #     NOT a loose `github.ref != 'refs/heads/main'`: a guard that broad would advance
+  #     staging on any non-main push and destroy the "staging is frozen and safe to demo
+  #     from" property that is the entire reason staging exists. `pull_request` can never
+  #     match (its event name is not `push`), so untrusted PR code never reaches this
+  #     job's write token.
+  #   - Job-scoped `permissions: contents: write` — resolve/checks/build keep contents:read.
+  #   - Branch-protection Option A (D-030): main allowlists github-actions[bot] in its
+  #     PR-bypass so this GITHUB_TOKEN push lands on protected main. If the bypass is not
+  #     configured the push fails LOUD (set -e) — never a silent no-deploy.
+  #
+  # LOOP PREVENTION (FIX-18/D-030): identical to bump-dev. The overlay commit does NOT carry
+  # `[skip ci]` (commit-level, permanent, and the very thing that used to blackhole tag
+  # pushes); instead this commit is authored by ci@capstone.uamishub.com, which the `resolve`
+  # job's `if:` guard skips — but ONLY for a BRANCH push. That is exactly right here: this
+  # job's own push-to-main must not trigger a rebuild, while a later tag on the same commit
+  # still must.
+  bump-staging:
+    needs: [resolve, build-and-push]
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.resolve.outputs.PUSH == 'true' }}
+    runs-on: ${{ vars.RUNNER_SCALE_SET || 'ua-mis-kaniko' }}
+    # FULL node image (NOT -slim), same reason as bump-dev: bump-image.sh git-commits the
+    # overlay and this job `git push`es it — -slim ships no git (git: not found, exit 127).
+    container:
+      image: harbor.capstone.uamishub.com/dockerhub-proxy/library/node:24-trixie
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main (writable; full history for a clean commit base)
+        # main, NOT the tagged ref. A tag can point at any commit, but the GitOps desired
+        # state lives on main — the staging overlay bump is a commit to main, exactly like
+        # bump-dev's. (Checking out the tag would produce a detached-HEAD commit that no
+        # branch references and ArgoCD would never see.)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Bump staging overlay -> the built semver -> commit + push
+        env:
+          TAG: ${{ needs.resolve.outputs.TAG }}
+          GIT_AUTHOR_NAME: ua-mis-ci
+          GIT_AUTHOR_EMAIL: ci@capstone.uamishub.com
+          GIT_COMMITTER_NAME: ua-mis-ci
+          GIT_COMMITTER_EMAIL: ci@capstone.uamishub.com
+        run: |
+          set -eu
+          # CONSUME the resolve job's TAG (no recompute — see the header note above).
+          # bump-image.sh (COMMIT=1) sets newTag on EVERY component's images[] entry and
+          # commits. Same script, same invariant, as dev's bump and prod's promote.
+          COMMIT=1 bash .devops/ci/bump-image.sh staging "${TAG}"
+
+          # PUSH WITH A BOUNDED REBASE-RETRY. bump-dev pushes to main too, and the tag build
+          # and the main build run in DIFFERENT concurrency groups (the group is keyed on
+          # github.ref, and a tag ref is not main's ref), so they can be in flight at once —
+          # the documented student flow (`git push` then
+          # `git pull && git tag vX.Y.Z`) makes that overlap the NORMAL case, not a rare one.
+          # A lost race here would reject this push non-fast-forward and re-freeze staging,
+          # which is the exact failure this job exists to remove. Rebase and retry a bounded
+          # number of times; if it still cannot land, fail LOUD rather than exit green.
+          # (UA-MIS/ida-llm's hand-built bump-staging — the production reference for this
+          # job — carries the same retry for the same reason. Kept deliberately in sync.)
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo "staging overlay bumped to ${TAG} and pushed (attempt ${attempt})."
+              exit 0
+            fi
+            echo "::notice::push rejected (main moved — likely a concurrent bump-dev);" \
+                 "rebasing and retrying (attempt ${attempt}/5)"
+            sleep 5
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo "::error::could not push the staging overlay bump to main after 5 attempts." \
+               "staging is STILL at its previous tag — it was NOT advanced to ${TAG}." \
+               "Re-run this workflow, or bump by hand: COMMIT=1 bash .devops/ci/bump-image.sh staging ${TAG}" >&2
+          exit 1
+      - name: Summary
+        run: |
+          {
+            echo "### Staging advanced to \`${{ needs.resolve.outputs.TAG }}\`"
+            echo ""
+            echo "Tag \`${{ github.ref_name }}\` built image"
+            echo "\`${{ needs.resolve.outputs.REGISTRY }}/…:${{ needs.resolve.outputs.TAG }}\`"
+            echo "and pinned it in the **staging** overlay. ArgoCD reconciles staging on its"
+            echo "next sync."
+            echo ""
+            echo "Prod is unchanged — it moves only when a human runs **promote-to-prod**."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -17,7 +17,7 @@ def _register_user(email: str):
         "password": "SecurePass123",
         "name": "Rec User",
     }
-    response = client.post("/auth/register", json=payload)
+    response = client.post("/api/auth/register", json=payload)
     return response.json()["token"]
 
 

@@ -1,0 +1,370 @@
+# Workloads — ONE per component in .devops/components.yaml. Redis is a separate
+# workload in redis.yaml (a deployable, but not a build — see components.yaml).
+#
+# Image: each container's `image:` is the GitOps image-tag SEAM (§4.1). The base pins a
+# per-component placeholder `<appName>-<component>:latest`; each overlay sets the
+# registry/tag via a kustomize `images:` override driven by promotion.yaml + the CI bump
+# (dev=git-describe, staging/prod=semver, preview=pull-<sha>).
+#
+# Progressive delivery: this is a MULTI-COMPONENT project, so every env — prod included —
+# runs plain Deployments. The Basic Canary approximates weight via ONE Service's
+# stable/canary ReplicaSet ratio, which is a single-component pattern.
+#
+# ⚠ REPLICAS ARE 1 IN EVERY ENVIRONMENT, INCLUDING PROD, AND THAT IS NOT AN OVERSIGHT.
+# backend/app/database.py builds its engine with pool_size=20 + max_overflow=30 — up to
+# FIFTY PostgreSQL connections per backend replica. The tenant database lives on the
+# SHARED capstone-tenant-pg tier (max_connections=100, roughly 35 already in use by other
+# tenants). One replica can consume 50 and still fit. Two could exhaust the server and
+# take curb, ida-llm, mychef and nextup down with it — a tenant-isolation failure caused
+# by a number in a YAML file. If this app ever genuinely needs a second replica, make the
+# pool size configurable FIRST and size it so replicas x pool stays under the tier's
+# headroom. Do not simply raise the count.
+#
+# ⚠ NO PodDisruptionBudget in staging/prod, deliberately. The template ships one, but a
+# PDB with minAvailable:1 over a 1-replica Deployment makes the pod undrainable and wedges
+# node maintenance — it converts "brief restart during a drain" into "drain hangs forever".
+# With replicas pinned at 1 for the connection-pool reason above, no PDB is the correct
+# shape. Re-add it together with, and only with, a replica-count increase.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springais-frontend
+  labels:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: springais
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: springais
+        app.kubernetes.io/component: frontend
+    spec:
+      serviceAccountName: springais
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: springais-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          # NO env here on purpose. This component is a STATIC BUNDLE: VITE_API_URL is a
+          # Vite compile-time substitution, baked by the frontend Dockerfile's build ARG.
+          # Setting it as a container env would do exactly nothing while looking like it
+          # configured something — see frontend/Dockerfile for the value and why it is `/`.
+          #
+          # ⚠ PROBES POINT AT A FILE THAT CAN ACTUALLY BE ABSENT.
+          # The old nginx config had ONE location block, `try_files $uri $uri/ /index.html`,
+          # so EVERY unmatched path returned index.html with a 200 — including /healthz.
+          # A probe there could not fail: nginx would report Ready while serving a broken
+          # or empty bundle, which is worse than no probe at all because it looks like
+          # evidence. The image now writes a real `/usr/share/nginx/html/healthz` in the
+          # BUILD stage, after `npm run build`, and serves it from an EXACT-match location
+          # (`location = /healthz`) with `try_files $uri =404` — outside the SPA fallback.
+          # So: no build output, or an nginx that cannot read its root, returns 404 and the
+          # pod is correctly held out of the Service. See frontend/Dockerfile + nginx.conf.
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            # nginxinc/nginx-unprivileged keeps its pid file and every temp path under
+            # /tmp (that is the whole point of that image), so this one emptyDir is all a
+            # read-only root filesystem needs. The stock `nginx:alpine` image could NOT
+            # run this way: it writes /run/nginx.pid and needs a root-owned
+            # /var/cache/nginx, which is why the base image was changed rather than
+            # papered over with a pile of emptyDirs.
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springais-backend
+  labels:
+    app.kubernetes.io/name: springais
+    app.kubernetes.io/component: backend
+  annotations:
+    # Reloader: a rolling restart on secret CHANGE. Container env is resolved at
+    # container START ONLY — the kubelet never re-resolves a running container's env — so
+    # without this a pod that started before ESO materialized its Secret would run
+    # permanently without it. Named-secret form scopes the restart to exactly the two
+    # Secrets this component reads.
+    secret.reloader.stakater.com/reload: "springais-secret,springais-db"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: springais
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: springais
+        app.kubernetes.io/component: backend
+    spec:
+      serviceAccountName: springais
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      # ---- DEPLOY-TIME SCHEMA MIGRATION ------------------------------------------------
+      # components.yaml declares `migrate: "alembic upgrade head"` for this component.
+      # ⚠ This chart is STATIC rendered YAML — nothing re-reads components.yaml at deploy
+      # time. The command that actually runs is the one below. Change both or they drift.
+      #
+      # WHY AN initContainer AND NOT THE APP PROCESS: init ordering gives exactly one
+      # guarantee we cannot get any other way — the app container does not start until
+      # migrations exited 0.
+      #
+      # ⚠ THE COMMAND IS BARE. The image CMD used to be
+      #     alembic upgrade head 2>&1 || echo 'Migration skipped (tables may already exist)'
+      # which swallowed the exit code, so a failed migration produced a Ready pod serving
+      # a half-built schema. That `|| echo` is gone from the Dockerfile and is not
+      # reintroduced here. A migration that genuinely fails leaves this pod in Init and it
+      # NEVER becomes Ready: on a rolling update the previous ReplicaSet keeps serving and
+      # the bad revision takes no traffic; on a new env it is a loud, obvious stop.
+      #
+      # ⚠ THERE IS NO "DATABASE_URL UNSET -> SKIP" GUARD, unlike the platform template.
+      # The template's guard exists to keep a freshly-scaffolded zero-config repo booting.
+      # This app is not zero-config: with no database it has no job to do, and a backend
+      # that starts anyway would answer /health with 200 while every data route failed.
+      # DATABASE_URL is a REQUIRED secretKeyRef below, so before the Secret exists the pod
+      # sits in CreateContainerConfigError — visibly waiting, self-healing the moment ESO
+      # syncs it — rather than starting up broken.
+      initContainers:
+        - name: migrate
+          # SAME image as the app container by design: the overlay's kustomize `images:`
+          # override rewrites initContainers[] as well as containers[], so the migration
+          # always runs the EXACT build being deployed.
+          image: springais-backend:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              # BOUNDED RETRY (3 x 5s) — this is NOT error-swallowing. It absorbs two
+              # transient causes that must not wedge a deploy: the database briefly
+              # unreachable while the tier settles, and (on a brand-new env) the
+              # platform's pgvector Extension managed-resource racing the Database it
+              # installs into. A migration that is genuinely broken still fails all three
+              # attempts and exits 1, and the pod stays in Init — which is the point.
+              attempt=1
+              until [ "$attempt" -gt 3 ]; do
+                echo "[migrate] attempt $attempt/3: alembic upgrade head"
+                if alembic upgrade head; then
+                  echo "[migrate] done. current revision:"
+                  alembic current
+                  exit 0
+                fi
+                echo "[migrate] attempt $attempt failed."
+                attempt=$((attempt + 1))
+                [ "$attempt" -gt 3 ] || sleep 5
+              done
+              echo "[migrate] FAILED after 3 attempts - the app container will NOT start."
+              exit 1
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: springais-db
+                  key: DATABASE_URL
+            # Alembic imports app.database, which imports the app package. Nothing in the
+            # migration path reads these, but keeping the migrator's env a superset of the
+            # app's avoids a surprise if a future migration does.
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          resources:
+            # An initContainer does not add to the pod's steady-state requests (the
+            # scheduler charges max(largest init, sum(containers))), so these are free.
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          # Surface the migration's own output in `kubectl describe pod` when it fails,
+          # instead of only in the logs of a container that is already gone.
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: backend
+          image: springais-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            # ⚠ DATABASE_URL, JWT_SECRET_KEY and OPENAI_API_KEY are REQUIRED refs — no
+            # `optional: true`. That is a deliberate departure from the platform template's
+            # zero-config default, and the reason is specific to this app:
+            #
+            #   JWT_SECRET_KEY — backend/app/utils/security.py:15 reads it with a default
+            #   of "" and only checks it inside _require_secret(), i.e. at REQUEST time.
+            #   Optional would mean a pod that passes every probe, reports healthy, and
+            #   then 500s on every single login. This platform additionally has a known
+            #   env-injection race where an optional:true ref resolves at container start
+            #   and a pod that beat ESO runs permanently secret-less. Required converts
+            #   both into a visible CreateContainerConfigError that self-heals the instant
+            #   the Secret lands.
+            #
+            #   OPENAI_API_KEY — with no key, embedding generation fails at query time and
+            #   the app's entire purpose (vector similarity matching) silently returns
+            #   nothing. Same argument: fail at start, visibly, not at the demo.
+            #
+            #   DATABASE_URL — see the initContainer note above.
+            #
+            # The cost is understood and accepted: before the Vault values exist the pod
+            # does not start. That is the intended behaviour, not a regression.
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: springais-db          # assembled DSN, from database.externalsecret.yaml
+                  key: DATABASE_URL
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: springais-secret
+                  key: JWT_SECRET_KEY
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: springais-secret
+                  key: OPENAI_API_KEY
+            # In-namespace cache. Plain env, not a secret — no credentials, and the
+            # NetworkPolicy already confines in-namespace traffic to this namespace.
+            - name: REDIS_URL
+              value: "redis://springais-redis:6379/0"
+            # Defaults in app/utils/security.py, pinned explicitly so a change to the
+            # code default cannot silently change token lifetime in a deployed env.
+            - name: JWT_ALGORITHM
+              value: "HS256"
+            - name: ACCESS_TOKEN_EXPIRE_DAYS
+              value: "7"
+            # ⚠ PIN THE PCA MODEL DIRECTORY EXPLICITLY.
+            # app/utils/pca_loader.py::_default_pca_dir() probes two candidate layouts and
+            # falls back silently. The 37MB model ships INSIDE the image at
+            # /app/backend/models/pca/pca_model_v1.pkl (no PVC, no download). Naming the
+            # directory removes the guesswork: if the path is ever wrong the loader fails
+            # loudly at startup instead of quietly selecting the fallback. Getting this
+            # wrong is not cosmetic — without the PCA model the service emits raw 3072-dim
+            # vectors that then fail to insert into the vector(1536) columns.
+            - name: PCA_MODEL_DIR
+              value: "/app/backend/models/pca"
+            # tiktoken caches its BPE files on first use. The read-only root filesystem
+            # makes a cache MISS a download over HTTPS at request time (and then a failed
+            # write). The image pre-warms cl100k_base — the encoding
+            # app/utils/text_cleaner.py resolves for gpt-4 — into this baked, read-only
+            # directory at build time, so the runtime path is a local read with no network.
+            - name: TIKTOKEN_CACHE_DIR
+              value: "/app/.tiktoken"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          # ⚠ PROBES POINT AT /health, NOT /healthz.
+          # This app serves /health (backend/app/main.py) and 404s /healthz. The platform
+          # template's convention is /healthz; matching the convention instead of the
+          # application would have produced a permanently-failing probe. Probes hit the pod
+          # DIRECTLY, not through the Ingress, so the /api ingress prefix does not apply
+          # here — the path is the container-root path.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          # startupProbe GATES liveness until the app has actually come up. This backend's
+          # startup is genuinely slow: it imports sklearn/numpy, unpickles the 37MB PCA
+          # model, and seeds four catalog tables. failureThreshold 60 x period 2s allows up
+          # to 120s before the pod is declared failed, so a cold start cannot eat a
+          # liveness SIGTERM restart loop.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 10
+          resources:
+            # Sized from the live compose stack, not guessed: the running backend sits at
+            # ~338MiB RSS with the PCA model loaded. The 1Gi limit is the tenant
+            # LimitRange's per-container maximum and leaves real headroom for embedding
+            # batches; requests are what the scheduler reserves.
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            # Writable /tmp under the read-only root fs. Required: tiktoken, matplotlib-
+            # style temp writes and Python's own tempfile all land here. Verified — the
+            # migration was proven to run to completion under exactly this shape.
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -105,11 +105,19 @@ describe('AvatarCompanion - Store Preview (Story 7.1)', () => {
     expect(screen.queryByTestId('cedric-companion')).toBeNull();
   });
 
-  it('renders avatar at 128px on non-store pages', () => {
+  it('renders avatar at 192px on non-store pages', () => {
+    // 128 -> 192. The COMPONENT changed on purpose and this assertion lagged:
+    // AvatarCompanion.tsx renders `size={192}` and its own comment at line 90 refers to
+    // "the 192px preview avatar". The component moved in a later commit (9a75f80f /
+    // d0e3639b) than this test file, which was last touched in ca65f0ed.
+    //
+    // Still an EXACT assertion on both dimensions, deliberately: loosening this to
+    // "renders at some size" would produce a test that can no longer fail, which is a
+    // worse outcome than the red X it replaces.
     renderWithRouter('/matches');
     const sprite = screen.getByTestId('avatar-sprite');
-    expect(sprite.style.width).toBe('128px');
-    expect(sprite.style.height).toBe('128px');
+    expect(sprite.style.width).toBe('192px');
+    expect(sprite.style.height).toBe('192px');
   });
 
   it('returns to normal fixed position when navigating away from /store', () => {

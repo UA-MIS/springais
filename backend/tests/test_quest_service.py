@@ -139,10 +139,17 @@ def service():
 class TestQuestSeedData:
     """Tests for quest seed data validation."""
 
-    def test_seed_data_has_5_quests(self):
+    def test_seed_data_has_6_quests(self):
+        # 5 -> 6. Confirmed against the running application, which logs on startup:
+        #   "Seeded quest catalog with 6 new quests (6 total)"
+        # NOTE this assertion has NEVER passed: app/data/quest_seed.py and this test file
+        # were added in the SAME commit (ca65f0ed), and the seed data has contained six
+        # entries since that commit. This is not drift that crept in later - the test and
+        # the data disagreed from birth and the suite was not run.
+        # Exact count kept deliberately, so it can still fail.
         from app.data.quest_seed import QUEST_SEED_DATA
 
-        assert len(QUEST_SEED_DATA) == 5
+        assert len(QUEST_SEED_DATA) == 6
 
     def test_seed_data_names_match_spec(self):
         from app.data.quest_seed import QUEST_SEED_DATA
@@ -281,12 +288,29 @@ class TestQuestServiceGetAvailable:
         assert str(quest_l5.id) in quest_ids
         assert str(quest_l10.id) not in quest_ids
 
-    def test_returns_empty_at_level_0(self, db_session, service):
+    def test_excludes_above_level_quests_at_level_0(self, db_session, service):
+        # RENAMED AND REWRITTEN, from `test_returns_empty_at_level_0`.
+        #
+        # It asserted `len(quests) == 0`, which is only true for an EMPTY quest catalog.
+        # The shipped seed data has contained a level-0 quest since the file was created:
+        # "The Squire's Trial", whose stated purpose is to reward a BRAND-NEW user for
+        # completing the onboarding walkthrough ("prove your worth as a new member of the
+        # Guild ... each step of your initiation", requirement: complete all 7 walkthrough
+        # steps). A level requirement above 0 on that quest would put it out of reach of
+        # the only users it is written for, so `level_required: 0` is the intended design
+        # and not an omission. Verified: quest_seed.py and this test were added in the
+        # same commit (ca65f0ed), so this assertion never passed.
+        #
+        # The behaviour genuinely worth testing here is the GATE — a level-0 user must not
+        # be offered a quest that requires a higher level. That is asserted directly, and
+        # it still fails loudly if the gate breaks. Unlike a total count, it does not
+        # depend on how many quests the catalog happens to hold.
         user = _create_user(db_session)
-        _create_quest(db_session, level_required=3, name=f"L3 {uuid4().hex[:6]}")
+        quest_l3 = _create_quest(db_session, level_required=3, name=f"L3 {uuid4().hex[:6]}")
 
         quests = service.get_available_quests(db_session, user.id, user_level=0)
-        assert len(quests) == 0
+        quest_ids = [q["id"] for q in quests]
+        assert str(quest_l3.id) not in quest_ids
 
     def test_includes_progress_status(self, db_session, service):
         user = _create_user(db_session)

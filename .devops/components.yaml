@@ -1,0 +1,45 @@
+# components.yaml — declares the deployable components in THIS app repo (the
+# multi-component contract, platform.capstone/v1).
+#
+# SINGLE source of truth for two consumers:
+#   - the CI build matrix — .devops/ci/resolve-components.sh reads this and emits one
+#     build per component (one image each), consumed by .github/workflows/build-and-push.yaml;
+#   - the kustomize chart — chart/base/{deployments,services,ingress}.yaml render ONE
+#     Deployment + ONE Service per component + ONE Ingress routing each `path`.
+#
+# ⚠ The chart is STATIC rendered YAML — nothing re-reads this file at deploy time.
+# `migrate:` here is DECLARATIVE ONLY; the command that actually runs is the one baked
+# into chart/base/deployments.yaml's migrate initContainer. Change BOTH or they drift.
+#
+# NOT LISTED HERE, DELIBERATELY: redis. It is a workload (chart/base/redis.yaml) but not
+# a BUILD — it runs the upstream redis image unmodified, so it has no context/Dockerfile
+# and must not appear in the CI build matrix. See redis.yaml for why it needs no volume.
+apiVersion: platform.capstone/v1
+components:
+  # ---- frontend: Vite/React SPA served by nginx -------------------------------------
+  - name: frontend              # DNS-1123 label: selector (app.kubernetes.io/component) + workload-name suffix
+    kind: frontend              # frontend | backend (descriptive; ingress routing is `path`)
+    context: frontend           # build-context dir (repo-relative)
+    dockerfile: Dockerfile      # Dockerfile path, relative to `context`
+    image: springais-frontend   # image REPO in the team Harbor project; full ref = <registry>/<image>:<tag>
+    port: 8080                  # container port (Service targetPort + Ingress backend port)
+    path: /                     # Ingress path routed to this component (longest-prefix wins)
+    needsDb: false
+    # No deploy-time migration: this component is static assets behind nginx.
+    migrate: ""
+    buildType: container
+  # ---- backend: FastAPI + SQLAlchemy + Alembic + pgvector ---------------------------
+  - name: backend
+    kind: backend
+    context: backend
+    dockerfile: Dockerfile
+    image: springais-backend
+    port: 8080
+    path: /api                  # every FastAPI router is mounted under /api (app/main.py)
+    needsDb: true
+    # Alembic owns this schema (backend/alembic/versions/, 33 revisions, head = 033).
+    # A BARE `alembic upgrade head` — no `|| echo`, no `|| true`. The image CMD used to
+    # swallow migration failure with `|| echo 'Migration skipped'`, which is how a broken
+    # schema reached a Ready pod. See chart/base/deployments.yaml for the real command.
+    migrate: "alembic upgrade head"
+    buildType: container

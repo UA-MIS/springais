@@ -202,10 +202,16 @@ class TestAchievementCatalogModel:
         assert loaded.name == "Test Achievement"
         assert loaded.trigger_config["event_type"] == "module_completed"
 
-    def test_seed_data_has_24_achievements(self, db_session):
+    def test_seed_data_has_25_achievements(self, db_session):
+        # 24 -> 25. The catalog grew; this assertion did not. Confirmed against the
+        # running application, which logs on startup:
+        #   "Seeded achievement catalog with 25 new achievements (25 total)"
+        # Kept as an EXACT count on purpose: loosening it to `>= 1` would make it a test
+        # that can no longer fail, which is worse than the red X it replaces. If the
+        # catalog changes again this should fail again, and be updated again.
         from app.data.achievement_seed import ACHIEVEMENT_SEED_DATA
 
-        assert len(ACHIEVEMENT_SEED_DATA) == 24
+        assert len(ACHIEVEMENT_SEED_DATA) == 25
 
     def test_seed_data_categories_correct(self, db_session):
         from app.data.achievement_seed import ACHIEVEMENT_SEED_DATA

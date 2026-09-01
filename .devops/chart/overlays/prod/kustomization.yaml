@@ -1,0 +1,64 @@
+# prod overlay — THE PUBLIC, DONOR-FACING ENVIRONMENT.
+#
+# The host here carries NO env prefix (springais.capstone.uamishub.com) and prod is
+# the ONLY environment the platform leaves un-gated: the env ApplicationSet's
+# templatePatch adds the Dex forwardAuth middleware for every env except prod, and
+# that gate 302s before Traefik ever routes to the app. So this is the URL to open.
+#
+# The image tag below is written by ONE of two things and nothing else:
+#   1. .devops/ci/seed-initial-envs.sh, ONCE, on the first successful main build,
+#      and only while the tag is still the v0.0.0 sentinel; or
+#   2. a human running .github/workflows/promote-to-prod.yaml, which copies
+#      staging's live tag here.
+# No git push moves prod on its own.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: springais-prod
+resources:
+  - ../../base
+  # Per-tenant ESO store + SA (vault-tenant / eso-tenant), scoped to this team's Vault
+  # subtree only. The platform's onboarding creates the matching Vault role.
+  - secretstore.yaml
+  # springais-secret: JWT_SECRET_KEY + OPENAI_API_KEY, from tenants/springais/prod/app.
+  - app-secret.externalsecret.yaml
+  # springais-db: DATABASE_URL, assembled from the four Crossplane-provisioned parts at
+  # tenants/springais/prod/database.
+  - database.externalsecret.yaml
+# The harbor-pull image-pull cred is NOT shipped here. It is owned solely by the
+# platform side; a second owner of the same Secret triggers ArgoCD's
+# SharedResourceWarning and blocks sync. The base ServiceAccount still references it.
+
+# env-specific selector labels.
+labels:
+  - pairs:
+      platform.capstone/env: prod
+      platform.capstone/semester: 2026-fall
+    includeSelectors: false
+
+# Image-tag SEAM: ONE images[] entry PER BUILD COMPONENT. Both components share the one
+# tag (one repo, one git event); .devops/ci/bump-image.sh rewrites every entry.
+# redis is deliberately absent — it is not a build component, so its image ref in
+# base/redis.yaml is the one that deploys.
+images:
+  - name: springais-frontend
+    newName: harbor.capstone.uamishub.com/springais/springais-frontend
+    newTag: "v0.0.0"
+  - name: springais-backend
+    newName: harbor.capstone.uamishub.com/springais/springais-backend
+    newTag: "v0.0.0"
+
+# Replica counts are NOT patched per env — the base pins 1 and every environment keeps 1.
+# See the connection-pool note at the top of base/deployments.yaml: pool_size 20 +
+# max_overflow 30 means 50 connections per backend replica against a SHARED 100-connection
+# tier. This is the one overlay knob that must not be turned up casually.
+patches:
+  - target:
+      kind: Ingress
+      name: springais
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: springais.capstone.uamishub.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: springais.capstone.uamishub.com
