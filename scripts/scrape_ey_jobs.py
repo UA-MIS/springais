@@ -295,6 +295,22 @@ def extract_tags(*, title: str, job_url: str) -> list[str]:
 
 
 def derive_service_line(tags: list[str]) -> str:
+    """
+    Classify EY service line from title/URL-derived tags only.
+
+    IMPORTANT: do NOT classify from the job description. Descriptions carry the
+    firm-boilerplate sentence "...services in assurance, consulting, tax,
+    strategy and transactions", so description-based classification
+    over-assigns Tax to almost everything.
+
+    (This warning is inherited from extract_service_line, a second, unused
+    classifier that was removed in the same change that fixed the boilerplate
+    bug. It read the same title/URL signals but padded every needle with a
+    leading space, so a signal at the START of a title never matched: it scored
+    14/16 on the demo corpus against 16/16 for this function, missing
+    "Assurance - Technology Risk" and "FAAS-Global Treasury Services". The
+    docstring insight was worth keeping; the implementation was not.)
+    """
     tagset = set(tags)
     if any(t in tagset for t in ["tax", "itts", "gcr"]):
         return "Tax"
@@ -303,12 +319,73 @@ def derive_service_line(tags: list[str]) -> str:
     return "Consulting"
 
 
+# ---------------------------------------------------------------------------
+# EY posting boilerplate
+# ---------------------------------------------------------------------------
+# Every EY posting ends with a fixed marketing/legal footer: the "EY | Building
+# a better working world" blurb, the compensation-and-benefits block, and the
+# EEO statement. That footer contains the sentence
+#
+#     "EY teams work across a full spectrum of services in assurance,
+#      consulting, tax, strategy and transactions."
+#
+# which is a *legal description of the firm*, not a job requirement. Feeding it
+# to the taxonomy matcher tagged all 16 postings in the demo corpus with the
+# skill "Tax" - including Data Engineer, Cyber WAF Operations and Corporate &
+# Growth Strategy roles - giving every candidate a spurious Tax affinity.
+#
+# We strip the footer before extraction rather than blacklisting the word
+# "tax": a blacklist would also break genuine Tax postings, which is a worse
+# bug than the one it fixes.
+#
+# We cut at the EARLIEST anchor that matches.
+BOILERPLATE_ANCHORS = [
+    "what we offer you",
+    "we offer a comprehensive compensation",
+    "ey | building a better working world",
+    "ey exists to build a better working world",
+    "ey accepts applications for this position on an on-going basis",
+    "ey provides equal employment opportunities",
+]
+
+# Never cut away more than this much of the posting. If an anchor matches very
+# early the page is probably malformed (or the footer moved), and truncating
+# would destroy real requirements text. In that case keep the description whole
+# and accept the noise - failing open is safer than silently emptying every
+# posting.
+_MIN_KEEP_RATIO = 0.25
+
+
+def strip_boilerplate(text: str) -> str:
+    """
+    Remove EY's trailing marketing/legal footer from a posting description.
+
+    Returns the text unchanged when no anchor is found, or when the earliest
+    anchor sits so early that cutting would remove real content.
+    """
+    if not text:
+        return text
+
+    lower = text.lower()
+    positions = [i for i in (lower.find(a) for a in BOILERPLATE_ANCHORS) if i != -1]
+    if not positions:
+        return text
+
+    cut = min(positions)
+    if cut < len(text) * _MIN_KEEP_RATIO:
+        return text
+    return text[:cut].strip()
+
+
 def split_sections(description: str) -> tuple[str | None, str | None, str | None]:
     """
     Best-effort section splitter for EY job descriptions.
     Returns (responsibilities, requirements, preferred).
+
+    The marketing/legal footer is stripped first so that the trailing section
+    (usually "preferred") does not swallow it.
     """
-    d = normalize_text(description)
+    d = normalize_text(strip_boilerplate(description))
     if not d:
         return None, None, None
 
@@ -426,123 +503,6 @@ def extract_job_links(listing_html: str, *, base_url: str) -> list[ListingJobLin
     for link in links:
         deduped.setdefault(link.external_id, link)
     return list(deduped.values())
-
-
-def extract_service_line(*, title: str, job_url: str, tokens: dict[str, str] | None = None) -> str:
-    """
-    Classify EY service line from *structured signals* only.
-
-    IMPORTANT:
-    - Do NOT use the job description for service line classification.
-      The description frequently contains the word "tax" (payroll/tax forms/compliance boilerplate),
-      which massively over-classifies to Tax.
-    """
-    tokens = tokens or {}
-
-    haystack = " ".join(
-        [
-            title or "",
-            job_url or "",
-            tokens.get("category", ""),
-            tokens.get("service", ""),
-            tokens.get("department", ""),
-            tokens.get("job field", ""),
-        ]
-    ).lower()
-
-    # Normalize separators seen in titles (e.g. "Associate - TAX - National - TAX - ...")
-    normalized = re.sub(r"[\|\u2013\u2014/]+", " ", haystack)
-    normalized = re.sub(r"\s+", " ", normalized).strip()
-
-    def has_any(substrings: list[str]) -> bool:
-        return any(s in normalized for s in substrings)
-
-    # Strong Assurance signals (title/URL/tokens)
-    # Includes common sub-brands that sit under Assurance on EY careers.
-    if has_any(
-        [
-            " assurance ",
-            " audit",
-            " auditing",
-            " assurance -",
-            " - assurance",
-            " audit services",
-            " faas",  # Financial Accounting Advisory Services
-            " ccass",  # Climate Change and Sustainability Services
-            " forensic",
-            " integrity services",
-            " internal audit",
-            " sox",
-            " process and controls",
-            " p and c ",
-        ]
-    ):
-        return "Assurance"
-
-    # Tax signals (title/URL/tokens)
-    # NOTE: We intentionally ignore description text, but "tax" can still appear in titles for HR/payroll roles.
-    # Since you want "Other" near 0, we prefer assigning *some* service line rather than leaving it unclassified.
-    tax_signals = [
-        " tax ",
-        "-tax-",
-        " itts ",
-        " gcr ",
-        " gds tax",
-        " tax technology",
-        " tax advisory",
-        " international tax",
-        " transaction tax",
-        " global mobility tax",
-        " payroll tax",
-        " tax compliance",
-        " taxation",
-    ]
-    if has_any(tax_signals) or re.search(r"\bTAX\b", title or "", flags=re.IGNORECASE):
-        return "Tax"
-
-    # Consulting signals (very broad; most non-tax/non-assurance jobs on this board fall here)
-    consulting_signals = [
-        " consulting",
-        " consultant",
-        " advisory",
-        " parthenon",
-        " strategy",
-        " deals",
-        " transaction",
-        " tech consulting",
-        " technology consulting",
-        " business consulting",
-        " business transformation",
-        " cyber",
-        " cybersecurity",
-        " appsec",
-        " grc",
-        " egrc",
-        " risk management",
-        " compliance",
-        " independence",
-        " rms ",
-        " gds ",  # Global Delivery Services (often tagged by function/line in title)
-        " techops",
-        " sap",
-        " oracle",
-        " zscaler",
-        " cloud",
-        " data ",
-        " ai ",
-        " ml ",
-        " analytics",
-        " architecture",
-        " engineering",
-        " devops",
-        " security",
-    ]
-    if has_any(consulting_signals):
-        return "Consulting"
-
-    # Final fallback: assign *something* to avoid "Other" (per your requirement).
-    # If it wasn't Tax or Assurance, defaulting to Consulting is the least-wrong bucket for most remaining roles.
-    return "Consulting"
 
 
 _MONTHS = {
@@ -678,12 +638,65 @@ def parse_job_page(
     )
 
 
+# Characters that join a short token into a compound word. A single letter
+# flanked by one of these is part of something else ("C-Corps", "R&D") and is
+# not a skill mention.
+#
+# Deliberately EXCLUDES "/" -- a slash is a list separator, not a compound
+# joiner. "AI/ML" and "Python/R" are genuine skill mentions, and treating "/"
+# as a joiner silently dropped Machine Learning from the AI Developer posting.
+_COMPOUND_CHARS = r"\-&"
+
+# Academic credentials that collide with technical acronyms in the taxonomy.
+# The clearest case: "Masters degree in Law (LLM)" on a Tax Accountant posting
+# matched the "LLM" alias of the "LLM Development" skill, so a tax lawyer's
+# degree registered as large-language-model engineering experience.
+#
+# We reject a match when credential language appears just before it. Postings
+# that genuinely do LLM work mention it many times in technical context, so
+# suppressing the degree occurrence removes the false positive without
+# touching the real skill.
+_CREDENTIAL_CONTEXT = re.compile(
+    r"(?:degree|masters|master's|bachelor|bachelor's|doctorate|juris|"
+    r"post-?graduate|diploma|licen[cs]e|bar membership|certification)\b[^.]{0,60}$",
+    re.IGNORECASE,
+)
+
+# Aliases that are only ambiguous because they double as credentials.
+_CREDENTIAL_AMBIGUOUS = {"llm", "jd", "ms", "ba", "bs", "mba"}
+
+# How much text before a match to inspect for credential language.
+_CREDENTIAL_LOOKBACK = 80
+
+
+def _is_credential_mention(text: str, match: re.Match[str]) -> bool:
+    """True when this match is an academic credential, not a skill mention."""
+    if match.group(0).strip().lower() not in _CREDENTIAL_AMBIGUOUS:
+        return False
+    start = max(0, match.start() - _CREDENTIAL_LOOKBACK)
+    return bool(_CREDENTIAL_CONTEXT.search(text[start:match.start()]))
+
+
 def _compile_taxonomy_patterns() -> list[tuple[str, re.Pattern[str]]]:
     patterns: list[tuple[str, re.Pattern[str]]] = []
 
     def token_pat(token: str) -> str:
         tok = re.escape(token)
-        # Handle short/edge tokens better (C#, C++, R, etc.)
+        # Very short alphabetic tokens ("C", "R", "Go") are the dangerous ones:
+        # a bare \b boundary makes them match inside hyphenated / ampersanded
+        # compounds, which is where the false positives came from --
+        #   "C-Corps"          -> C   (a tax entity type, not the C language)
+        #   "R&D-focused role" -> R   (not the R language)
+        # while the SAME tokens are genuine skills in a list:
+        #   "using Python, R, and SQL" -> R is real and must be kept.
+        #
+        # So for <=2-char alphabetic tokens we additionally refuse a match when
+        # the neighbouring character is a compound joiner, and we match
+        # case-sensitively via a scoped (?-i:...) group so that prose "c" or a
+        # sentence-initial "R" cannot fire.
+        if len(token) <= 2 and token.isalpha():
+            return rf"(?<![A-Za-z0-9{_COMPOUND_CHARS}])(?-i:{tok})(?![A-Za-z0-9{_COMPOUND_CHARS}])"
+        # Handle short/edge tokens better (C#, C++, etc.)
         if re.fullmatch(r"[A-Za-z0-9]+", token):
             return rf"\b{tok}\b"
         return rf"(?<![A-Za-z0-9]){tok}(?![A-Za-z0-9])"
@@ -712,7 +725,9 @@ def extract_skills(text: str) -> list[str]:
 
     found: list[str] = []
     for canonical, pat in _TAXONOMY_PATTERNS:
-        if pat.search(t):
+        # A skill counts only if at least one occurrence survives the
+        # credential guard - "(LLM)" after "Masters degree in Law" does not.
+        if any(not _is_credential_mention(t, m) for m in pat.finditer(t)):
             found.append(canonical)
     return found
 
@@ -720,8 +735,13 @@ def extract_skills(text: str) -> list[str]:
 def extract_skills_from_description(description: str) -> tuple[list[str], list[str]]:
     """
     Best-effort split of skills into required vs preferred using common section markers.
+
+    The marketing/legal footer is stripped first - see strip_boilerplate. Without
+    it the firm-description sentence ("...services in assurance, consulting, tax,
+    strategy and transactions") lands in whichever section runs to the end of the
+    text, which tagged every posting in the corpus with "Tax".
     """
-    d = normalize_text(description)
+    d = normalize_text(strip_boilerplate(description))
     if not d:
         return [], []
 

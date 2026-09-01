@@ -1,0 +1,40 @@
+# Docker build context exclusions for the frontend image.
+# Build context is ./frontend (see docker-compose.yml).
+
+# Dependencies are installed inside the image; never copy the host's tree.
+node_modules/
+
+# Build output -- regenerated during the image build.
+dist/
+build/
+
+# Test and QA artefacts
+tests/
+qa-output/
+test-results/
+playwright-report/
+playwright/.cache/
+coverage/
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+*credential*
+*credentials*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor / OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# VCS
+.git/
+.gitignore

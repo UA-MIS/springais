@@ -2,6 +2,16 @@
 .env
 .env.local
 
+# Credential dumps. digitalocean-credentials.txt sat at the repo root and was
+# committed; this stops the next one. NOTE: removing that file does not purge
+# it from git history - that is a separate, deliberate decision.
+*credential*
+*credentials*
+
+# Runtime logs (both repo-root logs/ and backend/logs/)
+logs/
+*.log
+
 # Python
 __pycache__/
 *.py[cod]
