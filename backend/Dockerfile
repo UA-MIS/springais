@@ -5,7 +5,31 @@ WORKDIR /app
 # Install system dependencies
 # Note: Using --fix-missing to handle transient mirror issues
 # gcc removed - psycopg2-binary doesn't need compilation
-RUN apt-get clean && \
+#
+# ⚠ APT MUST GO OVER HTTPS. DO NOT REVERT THIS TO PLAIN http://.
+# The platform's CI runners (ARC, namespace arc-runners) have a NetworkPolicy that permits
+# external egress on TCP/443 and NOTHING ELSE -- deliberately, it is the tenant egress
+# fence. The stock Debian sources point at http://deb.debian.org on port 80, so
+# `apt-get update` inside a Kaniko build does not get refused, it gets a
+# NETWORK UNREACHABLE and then apt exits 100:
+#
+#   W: Failed to fetch http://deb.debian.org/debian/dists/trixie/InRelease
+#      Cannot initiate the connection to deb.debian.org:80 ... (101: Network is unreachable)
+#   error building image: error building stage: failed to execute command:
+#      waiting for process to exit: exit status 100
+#
+# It builds fine on a laptop and fails only in CI, which is the worst shape of failure to
+# debug from the error text alone. Rewriting the sources to https:// fixes it: apt has
+# spoken HTTPS natively since 1.5 (no apt-transport-https package needed) and
+# python:3.11-slim already ships ca-certificates, since pip needs them.
+#
+# Both source formats are handled: trixie uses the deb822 .sources file, older releases
+# use the flat sources.list. The `|| true` covers whichever of the two is absent.
+RUN sed -i -e 's|http://deb.debian.org|https://deb.debian.org|g' \
+           -e 's|http://security.debian.org|https://security.debian.org|g' \
+           /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true; \
+    grep -rhoE 'https?://(deb|security)\.debian\.org' /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null | sort -u; \
+    apt-get clean && \
     apt-get update && \
     apt-get install -y --fix-missing \
     postgresql-client \
