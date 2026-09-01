@@ -42,10 +42,10 @@ labels:
 images:
   - name: springais-frontend
     newName: harbor.capstone.uamishub.com/springais/springais-frontend
-    newTag: "v0.0.0"
+    newTag: "4f3c978"
   - name: springais-backend
     newName: harbor.capstone.uamishub.com/springais/springais-backend
-    newTag: "v0.0.0"
+    newTag: "4f3c978"
 
 # Replica counts are NOT patched per env — the base pins 1 and every environment keeps 1.
 # See the connection-pool note at the top of base/deployments.yaml: pool_size 20 +
