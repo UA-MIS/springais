@@ -18,6 +18,18 @@ load_dotenv()
 
 # OpenAI configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Chat model used for resume/job skill extraction, roadmaps and learning content.
+#
+# Env-configurable on purpose. This model id used to be hardcoded as
+# "gpt-5.2-chat-latest" in eight places; OpenAI has since deprecated that id, so
+# every LLM-backed feature failed with a 404 "model has been deprecated" that
+# only surfaced when a user actually uploaded a resume. Overriding
+# OPENAI_CHAT_MODEL in .env now recovers from a future deprecation with no code
+# change. Note a retired model can still appear in models.list(), so presence in
+# that listing is not a validity check - you have to call it.
+OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-5.4")
+
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 

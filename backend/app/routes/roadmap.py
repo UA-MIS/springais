@@ -32,6 +32,7 @@ from ..utils.security import get_current_user_from_token
 from ..database import get_db
 from ..models.user_profile import UserProfile
 from ..models.roadmap import SavedRoadmap
+from ..config import OPENAI_CHAT_MODEL
 
 # OpenAI client for chat
 _openai_client = None
@@ -382,13 +383,13 @@ async def roadmap_chat(
 ):
     """
     Chat with AI about a specific roadmap.
-    Uses GPT-5.2-chat-latest for quick, contextual responses.
+    Uses the configured chat model (OPENAI_CHAT_MODEL) for quick, contextual responses.
     """
     try:
         client = get_openai_client()
 
         response = client.chat.completions.create(
-            model="gpt-5.2-chat-latest",
+            model=OPENAI_CHAT_MODEL,
             messages=[
                 {"role": "system", "content": ROADMAP_CHAT_SYSTEM_PROMPT},
                 {"role": "user", "content": f"My roadmap context:\n{request.context}\n\nMy question: {request.message}"}
@@ -1128,8 +1129,8 @@ Extra Achievements: {json.dumps(progress['extras'])}
     try:
         client = get_openai_client()
 
-        # Use gpt-5.2-chat-latest for fast responses
-        model = "gpt-5.2-chat-latest"
+        # Use the configured chat model (OPENAI_CHAT_MODEL) for fast responses
+        model = OPENAI_CHAT_MODEL
 
         system_content = ENHANCED_CHAT_SYSTEM_PROMPT + f"\n\n{context}"
 

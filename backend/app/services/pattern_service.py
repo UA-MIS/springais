@@ -795,7 +795,7 @@ class SuccessPatternService:
         try:
             # Try to get from database
             query = text("""
-                SELECT id, current_role, role_level, service_line, 
+                SELECT id, "current_role", role_level, service_line, 
                        years_experience, skills, career_history
                 FROM employees
                 WHERE career_history IS NOT NULL
@@ -803,7 +803,7 @@ class SuccessPatternService:
             
             if service_line:
                 query = text("""
-                    SELECT id, current_role, role_level, service_line,
+                    SELECT id, "current_role", role_level, service_line,
                            years_experience, skills, career_history
                     FROM employees
                     WHERE career_history IS NOT NULL AND service_line = :svc
@@ -852,7 +852,7 @@ class SuccessPatternService:
         
         try:
             query = text("""
-                SELECT id, current_role, role_level, service_line,
+                SELECT id, "current_role", role_level, service_line,
                        years_experience, skills, career_history
                 FROM employees
                 WHERE id = :emp_id
@@ -1140,7 +1140,7 @@ class SuccessPatternService:
             # Get ALL employees (not just those with career_history)
             if service_line:
                 query = text("""
-                    SELECT id, current_role, role_level, service_line,
+                    SELECT id, "current_role", role_level, service_line,
                            years_experience, skills, performance_metrics
                     FROM employees
                     WHERE service_line ILIKE :svc
@@ -1148,7 +1148,7 @@ class SuccessPatternService:
                 result = self.db.execute(query, {"svc": f"%{service_line}%"})
             else:
                 query = text("""
-                    SELECT id, current_role, role_level, service_line,
+                    SELECT id, "current_role", role_level, service_line,
                            years_experience, skills, performance_metrics
                     FROM employees
                 """)

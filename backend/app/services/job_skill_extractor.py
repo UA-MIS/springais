@@ -18,7 +18,7 @@ from typing import List, Dict, Optional, Tuple, TypedDict
 from openai import AsyncOpenAI, APIError, RateLimitError, APITimeoutError
 import redis.asyncio as redis
 
-from app.config import get_openai_client, get_redis_client
+from app.config import get_openai_client, get_redis_client, OPENAI_CHAT_MODEL
 from app.schemas.skill import ExtractedSkill, JobSkillExtraction
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ============================================
 
 # Model configuration - GPT-5.2 chat for quality extraction
-OPENAI_MODEL = "gpt-5.2-chat-latest"
+OPENAI_MODEL = OPENAI_CHAT_MODEL
 
 # Map LLM-returned categories to valid SkillCategory values
 CATEGORY_MAPPING = {
@@ -175,7 +175,7 @@ class JobSkillExtractorService:
         Initialize job skill extractor.
 
         Args:
-            model: OpenAI model to use (default: gpt-5.2-chat-latest)
+            model: OpenAI model to use (default: config.OPENAI_CHAT_MODEL)
             temperature: Sampling temperature (default: 0.3)
             max_tokens: Maximum tokens in response (default: 4000)
         """
