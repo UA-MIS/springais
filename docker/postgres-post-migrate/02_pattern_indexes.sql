@@ -1,19 +1,28 @@
+-- NOTE: This file is deliberately NOT in docker/postgres-init/.
+-- Scripts in docker-entrypoint-initdb.d run once, on a fresh volume, BEFORE
+-- Alembic has created any tables. Running this there aborted Postgres startup
+-- with: ERROR: relation "employees" does not exist.
+--
+-- Run it AFTER `alembic upgrade head`:
+--   docker exec -i springais-postgres psql -U postgres -d springais \
+--     < docker/postgres-post-migrate/02_pattern_indexes.sql
+
 -- ============================================
 -- Block F: Success Pattern Analysis Indexes
 -- Task 3.2: Optimize transition query performance
 -- ============================================
 
--- Index on current_role for transition queries
+-- Index on "current_role" for transition queries
 CREATE INDEX IF NOT EXISTS idx_employees_current_role 
-ON employees(current_role);
+ON employees("current_role");
 
 -- Index on service_line for filtering
 CREATE INDEX IF NOT EXISTS idx_employees_service_line 
 ON employees(service_line);
 
--- Compound index for common query pattern (service_line + current_role)
+-- Compound index for common query pattern (service_line + "current_role")
 CREATE INDEX IF NOT EXISTS idx_employees_service_role 
-ON employees(service_line, current_role);
+ON employees(service_line, "current_role");
 
 -- GIN index on career_history JSONB for fast JSON queries
 -- This enables efficient queries like: career_history @> '[{"role": "Analyst"}]'
@@ -26,7 +35,7 @@ ON employees USING GIN(skills);
 
 -- Partial index for employees with career history (most pattern queries)
 CREATE INDEX IF NOT EXISTS idx_employees_with_history 
-ON employees(current_role, service_line) 
+ON employees("current_role", service_line) 
 WHERE career_history IS NOT NULL;
 
 -- ============================================

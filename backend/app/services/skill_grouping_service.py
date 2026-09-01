@@ -13,7 +13,7 @@ import json
 import logging
 from typing import List, Dict, Any, Optional
 
-from app.config import get_openai_client
+from app.config import get_openai_client, OPENAI_CHAT_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ Return the JSON grouping."""
         # Use singleton async client (reuses connections)
         client = get_openai_client()
         response = await client.chat.completions.create(
-            model="gpt-5.2-chat-latest",
+            model=OPENAI_CHAT_MODEL,
             messages=[
                 {"role": "system", "content": GROUPING_SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt}
@@ -142,7 +142,7 @@ Merge the new skills into the existing structure. Return the complete updated JS
         # Use singleton async client (reuses connections)
         client = get_openai_client()
         response = await client.chat.completions.create(
-            model="gpt-5.2-chat-latest",
+            model=OPENAI_CHAT_MODEL,
             messages=[
                 {"role": "system", "content": ENHANCE_SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt}

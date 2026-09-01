@@ -1016,7 +1016,7 @@ class MatchingService:
 
         return [self._to_job_posting_data(job) for job in jobs]
 
-    def _get_employee_profile(self, employee_id: int) -> Optional["EmployeeProfile"]:
+    def _get_employee_profile(self, employee_id: str) -> Optional["EmployeeProfile"]:
         if self.user_profile:
             mapped_employee = self._resolve_employee_from_user()
             if mapped_employee:
@@ -1046,6 +1046,25 @@ class MatchingService:
                 skills=self.user_profile.skills or [],
                 skill_embeddings=self._build_skill_embeddings(self.user_profile.skills or []),
             )
+
+        # Fall back to the employee named in the path. Previously employee_id was
+        # accepted by the route but never read here, so any caller without a
+        # user_profile got None. The route also declared it as `int` while
+        # employees.id is a VARCHAR ("EMP-ASR-0001"), so real ids 422'd before
+        # reaching this method.
+        if self.db and employee_id:
+            employee = self.db.query(Employee).filter(Employee.id == str(employee_id)).first()
+            if employee:
+                return EmployeeProfile(
+                    id=str(employee.id),
+                    name=str(employee.id),
+                    current_role=employee.current_role,
+                    role_level=employee.role_level,
+                    experience_years=float(employee.years_experience),
+                    service_line=employee.service_line,
+                    skills=employee.skills or [],
+                    skill_embeddings=self._build_skill_embeddings(employee.skills or []),
+                )
 
         # No mock data fallback - require database or user profile
         return None

@@ -20,7 +20,7 @@ from typing import List, Optional, Tuple
 from openai import AsyncOpenAI, APIError, RateLimitError, APITimeoutError
 from pydantic import BaseModel
 
-from app.config import get_openai_client
+from app.config import get_openai_client, OPENAI_CHAT_MODEL
 from app.schemas.skill import Skill, SkillList
 from app.utils.text_cleaner import clean_resume_text, chunk_text, count_tokens, strip_pii
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # ============================================
 
 # Model configuration - GPT-5.2 chat for quality extraction
-OPENAI_MODEL = "gpt-5.2-chat-latest"
+OPENAI_MODEL = OPENAI_CHAT_MODEL
 MAX_TOKENS = 4000  # Increased to handle 40+ skills
 TEMPERATURE = 0.3  # Low temperature for consistent extractions
 
@@ -143,7 +143,7 @@ class SkillExtractor:
         Initialize skill extractor.
 
         Args:
-            model: OpenAI model to use (default: gpt-5.2-chat-latest)
+            model: OpenAI model to use (default: config.OPENAI_CHAT_MODEL)
             temperature: Sampling temperature (default: 0.3)
             max_tokens: Maximum tokens in response (default: 4000)
         """

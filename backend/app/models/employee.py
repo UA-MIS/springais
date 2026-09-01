@@ -40,6 +40,9 @@ class Employee(Base, TimestampMixin):
         nullable=False,
     )
     notable_achievement: Mapped[str | None] = mapped_column(Text)
+    # Prior roles, e.g. [{"role": "Analyst", "years": 2, "service_line": "Advisory"}].
+    # Read by app/services/pattern_service.py; added in migration 033.
+    career_history: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
 
     matches: Mapped[list["Match"]] = relationship(
         "Match",

@@ -10,7 +10,7 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 
-from app.config import get_openai_client
+from app.config import get_openai_client, OPENAI_CHAT_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ async def generate_module_learning_content(
     try:
         client = get_openai_client()
         response = await client.chat.completions.create(
-            model="gpt-5.2-chat-latest",
+            model=OPENAI_CHAT_MODEL,
             messages=[
                 {"role": "system", "content": "You are an expert learning content creator. Always return valid JSON."},
                 {"role": "user", "content": prompt}
@@ -277,7 +277,7 @@ Keep response under 150 words."""
     try:
         client = get_openai_client()
         response = await client.chat.completions.create(
-            model="gpt-5.2-chat-latest",
+            model=OPENAI_CHAT_MODEL,
             messages=[
                 {"role": "system", "content": "You are a supportive EY career coach providing feedback on skill development."},
                 {"role": "user", "content": prompt}
@@ -333,7 +333,7 @@ RULES:
     try:
         client = get_openai_client()
         response = await client.chat.completions.create(
-            model="gpt-5.2-chat-latest",
+            model=OPENAI_CHAT_MODEL,
             messages=[
                 {"role": "system", "content": "You are a curriculum designer. Return only valid JSON."},
                 {"role": "user", "content": prompt}

@@ -46,6 +46,7 @@ Thumbs.db
 *.sql
 !docker/postgres-init/*.sql
 !scripts/init_database.sql
+!docker/postgres-post-migrate/*.sql
 backup_extract/
 springais_backup*
 local_backup*

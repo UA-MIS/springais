@@ -71,7 +71,7 @@ router = APIRouter(
     """,
 )
 async def get_employee_matches(
-    employee_id: int,
+    employee_id: str,
     mode: MatchModeEnum = Query(
         default=MatchModeEnum.BEST_FIT,
         description="Matching mode determines score weights and thresholds"
@@ -116,7 +116,15 @@ async def get_employee_matches(
 
     # Check cache first using the improved match_cache_service
     cache_service = get_match_cache()
-    filters = {"department": department, "location": location, "min_score": min_score}
+    # employee_id MUST be part of the cache key. The key is otherwise scoped only
+    # to the logged-in user, so requesting matches for a second employee returned
+    # the first employee's cached results.
+    filters = {
+        "employee_id": str(employee_id),
+        "department": department,
+        "location": location,
+        "min_score": min_score,
+    }
 
     try:
         cached_data = await cache_service.get_cached_matches(
@@ -230,7 +238,7 @@ async def get_employee_matches(
     """,
 )
 async def get_detailed_match(
-    employee_id: int,
+    employee_id: str,
     job_id: str,
     mode: MatchModeEnum = Query(
         default=MatchModeEnum.BEST_FIT,
@@ -278,7 +286,7 @@ async def get_detailed_match(
     description="Get detailed skill gap analysis between an employee and a job posting.",
 )
 async def analyze_skill_gaps(
-    employee_id: int,
+    employee_id: str,
     job_id: str,
     current_user: UserProfile = Depends(get_current_user_from_token),
     db: Session = Depends(get_db),

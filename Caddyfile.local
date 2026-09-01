@@ -1,0 +1,19 @@
+# Local / demo Caddyfile.
+#
+# The production ./Caddyfile is scoped to `myskillbridge.me`, which makes Caddy
+# attempt automatic HTTPS (ACME) for a domain this host does not control, and
+# makes requests to `localhost` miss the site block entirely.
+#
+# This file serves every hostname over plain HTTP on :80 inside the container,
+# which docker-compose.local.yml publishes on host port 8088.
+:80 {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy frontend:8080
+	}
+}

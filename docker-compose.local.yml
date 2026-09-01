@@ -1,0 +1,34 @@
+# Local / demo overlay. Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+#
+# Differences from the production compose file:
+#   * Caddy serves plain HTTP on host :8088 using Caddyfile.local, so it does
+#     not try to obtain a Let's Encrypt certificate for myskillbridge.me.
+#   * backend and postgres are published to the host for debugging and for
+#     running migrations / seed loads from outside the compose network.
+#   * The backend keeps the base file's --reload uvicorn command; migrations are
+#     run explicitly (see DEMO.md) rather than relying on the image CMD, which
+#     the base compose file overrides anyway.
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  backend:
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8088}
+    # No host port: Caddy on :8088 is the single entrypoint, matching the
+    # production topology where only Caddy is published.
+
+  caddy:
+    ports: !override
+      - "8088:80"
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
