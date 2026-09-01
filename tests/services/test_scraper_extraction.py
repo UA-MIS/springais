@@ -24,9 +24,17 @@ import sys
 import pytest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-for _p in (os.path.join(REPO_ROOT, "scripts"), os.path.join(REPO_ROOT, "backend")):
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+
+# Only scripts/ goes on the path, deliberately. scrape_ey_jobs.py puts
+# backend/ on sys.path itself (see its module header) before it imports
+# app.database, so adding backend/ here too is redundant -- and widening
+# sys.path with a second import root is what produces
+# "Table 'skill_taxonomy' is already defined for this MetaData instance"
+# when app.models.* and backend.app.models.* are both live in one process.
+# Keep this module's sys.path footprint to the single entry it actually needs.
+_SCRIPTS = os.path.join(REPO_ROOT, "scripts")
+if _SCRIPTS not in sys.path:
+    sys.path.insert(0, _SCRIPTS)
 
 scrape_ey_jobs = pytest.importorskip(
     "scrape_ey_jobs",
