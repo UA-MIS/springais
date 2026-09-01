@@ -34,10 +34,17 @@ async def redis_client():
     await client.close()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def mock_pca_model():
-    """Mock PCA model that reduces 3072 → 1536 dimensions."""
-    # Create a simple PCA model for testing
+    """
+    Mock PCA model that reduces 3072 -> 1536 dimensions.
+
+    Session-scoped because fitting a 1536-component PCA on a 2000x3072 matrix
+    costs 20-90 SECONDS, and this was previously refit for every test that
+    touched it - which is why the suite took over half an hour and why nobody
+    ran it. The model is only ever read (``transform``) by tests, never
+    mutated, so a single fit is safe to share.
+    """
     pca = PCA(n_components=1536, random_state=42)
 
     # Generate fake training data and fit
@@ -112,11 +119,11 @@ def mock_db_session():
 @pytest_asyncio.fixture
 async def embedding_service(mock_openai_client, redis_client, mock_db_session, mock_pca_model):
     """EmbeddingService instance with mocked dependencies."""
-    from backend.app.services.embedding_service import EmbeddingService
+    from app.services.embedding_service import EmbeddingService
 
     # Patch PCA loader to return mock PCA
-    with patch('backend.app.services.embedding_service.load_pca_model_safe') as mock_loader:
-        from backend.app.utils.pca_loader import PCAMetadata
+    with patch('app.services.embedding_service.load_pca_model_safe') as mock_loader:
+        from app.utils.pca_loader import PCAMetadata
 
         mock_metadata = PCAMetadata(
             version="v1",

@@ -6,7 +6,7 @@ Tests PCA model loading, transformation, and similarity preservation.
 
 import pytest
 import numpy as np
-from backend.app.utils.pca_loader import load_pca_model, PCAModelNotFoundError
+from app.utils.pca_loader import load_pca_model, PCAModelNotFoundError
 
 
 def test_pca_model_exists():
@@ -112,13 +112,27 @@ async def test_batch_embed_applies_pca(embedding_service):
         assert len(embedding) == 1536  # All PCA-reduced
 
 
-def test_pca_without_model_fallback(mock_openai_client, redis_client, mock_db_session):
-    """Test EmbeddingService works without PCA model (returns full 3072 dims)."""
-    from backend.app.services.embedding_service import EmbeddingService
+def test_pca_without_model_raises(mock_openai_client, redis_client, mock_db_session):
+    """
+    Without a PCA model, embedding must FAIL rather than return 3072 dims.
+
+    This test previously asserted the opposite - that `_apply_pca` returns the
+    raw 3072-dim vector unchanged - and so encoded the bug as the contract.
+    That passthrough was silent corruption: the skill_embeddings.embedding
+    column is Vector(1536), so a 3072-dim vector is in a different space from
+    every vector already indexed. Comparisons against it are meaningless, and
+    because matching_service swallowed the resulting error, they surfaced as
+    confident 0.0 similarities rather than as a failure.
+    """
+    from app.services.embedding_service import (
+        EmbeddingService,
+        PCAUnavailableError,
+    )
     from unittest.mock import patch
+    import pytest as _pytest
 
     # Patch PCA loader to return None (model not found)
-    with patch('backend.app.services.embedding_service.load_pca_model_safe', return_value=None):
+    with patch('app.services.embedding_service.load_pca_model_safe', return_value=None):
         service = EmbeddingService(
             openai_client=mock_openai_client,
             redis_client=redis_client,
@@ -128,12 +142,8 @@ def test_pca_without_model_fallback(mock_openai_client, redis_client, mock_db_se
         # PCA should not be loaded
         assert service.pca is None
 
-        # Applying PCA should return original embedding
-        full_embedding = [0.1] * 3072
-        result = service._apply_pca(full_embedding)
-
-        assert result == full_embedding  # No reduction
-        assert len(result) == 3072
+        with _pytest.raises(PCAUnavailableError):
+            service._apply_pca([0.1] * 3072)
 
 
 def test_pca_metadata_correct():

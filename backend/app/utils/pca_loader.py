@@ -5,11 +5,16 @@ Handles loading and saving PCA models with versioning and metadata.
 """
 
 import json
+import logging
 import os
+import warnings
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 import joblib
+import sklearn
 from sklearn.decomposition import PCA
+
+logger = logging.getLogger(__name__)
 
 
 class PCAModelNotFoundError(Exception):
@@ -148,8 +153,37 @@ def load_pca_model(version: str = "v1", base_dir: str | os.PathLike | None = Non
         )
 
     try:
-        # Load PCA model
-        pca_model = joblib.load(model_path)
+        # Load PCA model.
+        #
+        # sklearn signals a cross-version unpickle by emitting
+        # InconsistentVersionWarning ("might lead to breaking code or INVALID
+        # RESULTS") through the warnings module - which nothing in this app
+        # captures, so it lands nowhere. Note the writing version is NOT
+        # readable from the loaded object afterwards: BaseEstimator.__setstate__
+        # pops `_sklearn_version` off the state once it has checked it. So the
+        # only way to observe the skew is to catch the warning here, at load.
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            pca_model = joblib.load(model_path)
+
+        for w in caught:
+            if w.category.__name__ == "InconsistentVersionWarning":
+                logger.warning(
+                    "PCA model %s was pickled by scikit-learn %s but is being "
+                    "loaded by %s. sklearn does not guarantee numerical "
+                    "equivalence across versions; the vectors this model "
+                    "produces may differ from the ones already indexed. "
+                    "Re-fit with the running version to remove this risk.",
+                    model_path,
+                    getattr(w.message, "original_sklearn_version", "unknown"),
+                    sklearn.__version__,
+                )
+            else:
+                # Do not let any other load-time warning vanish either.
+                logger.warning(
+                    "Warning while loading PCA model %s: %s: %s",
+                    model_path, w.category.__name__, w.message,
+                )
 
         # Load metadata
         with open(metadata_path, 'r') as f:
@@ -165,6 +199,29 @@ def load_pca_model(version: str = "v1", base_dir: str | os.PathLike | None = Non
             raise ValueError(
                 f"Model components mismatch: "
                 f"model has {pca_model.n_components_}, metadata says {metadata.n_components}"
+            )
+
+        # --- functional check ----------------------------------------------
+        #
+        # Everything above trusts metadata and attributes. Actually run a
+        # transform: it is cheap, and it is the only check that proves the
+        # unpickled model still does the thing the rest of the system assumes.
+        try:
+            import numpy as _np
+
+            probe = _np.zeros((1, metadata.input_dimensions))
+            out_shape = pca_model.transform(probe).shape
+        except Exception as e:
+            raise ValueError(
+                f"PCA model {model_path} loaded but is not usable: transform() "
+                f"raised {e!r}. Refusing to return a model that cannot reduce."
+            )
+
+        if out_shape != (1, metadata.n_components):
+            raise ValueError(
+                f"PCA model {model_path} produced shape {out_shape}, expected "
+                f"(1, {metadata.n_components}). The stored model does not match "
+                f"its metadata."
             )
 
         return pca_model, metadata
@@ -253,5 +310,9 @@ def load_pca_model_safe(version: str = "v1", base_dir: str | os.PathLike | None 
     except PCAModelNotFoundError:
         return None
     except Exception as e:
-        print(f"Error loading PCA model: {e}")
+        logger.error(
+            "PCA model %s failed to load: %s. Embedding generation will refuse "
+            "to run rather than emit vectors in the wrong space.",
+            version, e, exc_info=True,
+        )
         return None

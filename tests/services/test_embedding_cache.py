@@ -54,10 +54,13 @@ async def test_cache_ttl_set(embedding_service, redis_client):
 
     await embedding_service._save_exact_match_cache(skill_text, embedding)
 
-    # Check TTL on Redis key
-    from backend.app.utils.text import normalize_skill_text
-    normalized = normalize_skill_text(skill_text)
-    cache_key = f"embedding:exact:{normalized}"
+    # Check TTL on Redis key.
+    # The key is built via the service rather than reconstructed by hand: it is
+    # now namespaced by embedding model + PCA version, and a test that hardcodes
+    # the old "embedding:exact:{text}" shape silently looks up a key that does
+    # not exist (redis TTL returns -2 for a missing key, which is not a TTL
+    # assertion failing - it is the test measuring nothing).
+    cache_key = embedding_service._exact_match_cache_key(skill_text)
 
     ttl = await redis_client.ttl(cache_key)
 
