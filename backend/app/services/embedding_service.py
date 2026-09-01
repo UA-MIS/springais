@@ -28,6 +28,31 @@ from ..models.user_profile import UserProfile
 
 logger = logging.getLogger(__name__)
 
+# The OpenAI embedding model this service is built around. Embeddings from a
+# different model are NOT comparable to these, so this string is part of the
+# cache key (see _cache_namespace).
+EMBEDDING_MODEL = "text-embedding-3-large"
+
+# Dimensions produced by EMBEDDING_MODEL, before PCA reduction.
+RAW_EMBEDDING_DIMENSIONS = 3072
+
+# Dimensions after PCA reduction. This MUST match the width of the
+# skill_embeddings.embedding column, which is Vector(1536).
+PCA_EMBEDDING_DIMENSIONS = 1536
+
+
+class PCAUnavailableError(RuntimeError):
+    """
+    Raised when an embedding is requested but the PCA model is not loaded.
+
+    This is deliberately fatal to the embedding operation rather than a
+    fallback. Without PCA, embeddings come out at 3072 dimensions while every
+    vector already indexed is 1536-dimensional, so the two live in different
+    spaces and any similarity computed between them is meaningless. Previously
+    this path silently returned the raw 3072-dim vector, which produced
+    confidently wrong match scores instead of an error.
+    """
+
 
 class SimilarSkill:
     """Result from similarity search"""
@@ -78,12 +103,38 @@ class EmbeddingService:
         result = load_pca_model_safe()
         if result:
             self.pca, self.pca_metadata = result
-            print(f"[OK] Loaded PCA model: {self.pca_metadata.version}")
-            print(f"     Components: {self.pca_metadata.n_components}")
-            print(f"     Variance: {self.pca_metadata.explained_variance_ratio:.2%}")
+            logger.info(
+                "Loaded PCA model version=%s components=%d variance=%.2f%%",
+                self.pca_metadata.version,
+                self.pca_metadata.n_components,
+                self.pca_metadata.explained_variance_ratio * 100,
+            )
         else:
-            print("[WARNING] PCA model not found - embeddings will use full 3072 dimensions")
-            print("          Run: python scripts/train_pca_model.py")
+            # Loud, and at a level that actually reaches production logs. This
+            # used to be a print() at WARNING wording only, which meant a
+            # missing PCA model was invisible in any real deployment while the
+            # service quietly emitted vectors in the wrong space.
+            logger.error(
+                "PCA model could not be loaded. Embedding generation is DISABLED: "
+                "every embed_skill/embed_skills_batch call will raise "
+                "PCAUnavailableError rather than return an incomparable "
+                "%d-dim vector for a Vector(%d) column. "
+                "Fix by training the model (python scripts/train_pca_model.py) "
+                "or pointing PCA_MODEL_DIR at an existing one.",
+                RAW_EMBEDDING_DIMENSIONS,
+                PCA_EMBEDDING_DIMENSIONS,
+            )
+
+        # Cache namespace discriminator.
+        #
+        # Cached vectors are only interchangeable with vectors produced by the
+        # SAME embedding model AND the same PCA fit. The key used to be just
+        # "embedding:exact:{text}" with a 30-day TTL, so changing the model or
+        # retraining PCA served vectors from an incompatible space for a month
+        # with no signal. Including both in the key makes such a change a clean
+        # cache miss instead of silent corruption.
+        pca_version = self.pca_metadata.version if self.pca_metadata else "none"
+        self._cache_namespace = f"{EMBEDDING_MODEL}:pca-{pca_version}"
 
     async def embed_skill(self, skill_text: str) -> List[float]:
         """
@@ -202,6 +253,19 @@ class EmbeddingService:
     # Private Helper Methods (Layer 1: Cache)
     # ============================================
 
+    def _exact_match_cache_key(self, skill_text: str) -> str:
+        """
+        Build the Layer 1 cache key for a skill.
+
+        The key is namespaced by embedding model and PCA version because a
+        cached vector is only reusable by the exact pipeline that produced it.
+        Without the discriminator, changing OPENAI embedding models or
+        retraining PCA left up to 30 days (the TTL) of vectors from a different
+        vector space being served as if they were current.
+        """
+        normalized = normalize_skill_text(skill_text)
+        return f"embedding:exact:{self._cache_namespace}:{normalized}"
+
     async def _get_exact_match_cache(self, skill_text: str) -> Optional[List[float]]:
         """
         Check Layer 1 cache (exact match) for cached embedding.
@@ -212,11 +276,7 @@ class EmbeddingService:
         Returns:
             Cached embedding if found, None otherwise
         """
-        # Normalize text for consistent lookup
-        normalized = normalize_skill_text(skill_text)
-
-        # Build cache key
-        cache_key = f"embedding:exact:{normalized}"
+        cache_key = self._exact_match_cache_key(skill_text)
 
         try:
             # Check Redis for cached embedding
@@ -228,13 +288,37 @@ class EmbeddingService:
                 embedding = cache_entry.get("embedding")
 
                 if embedding and isinstance(embedding, list):
+                    # Defence in depth: the namespace should already guarantee
+                    # this, but a wrong-width vector reaching the matcher is
+                    # exactly the silent corruption we are eliminating, so
+                    # verify rather than trust and treat a mismatch as a miss.
+                    if len(embedding) != PCA_EMBEDDING_DIMENSIONS:
+                        logger.error(
+                            "Discarding cached embedding for %r: %d dims, "
+                            "expected %d (key=%s). This should be unreachable "
+                            "now that the key is namespaced by model+PCA "
+                            "version - investigate.",
+                            skill_text,
+                            len(embedding),
+                            PCA_EMBEDDING_DIMENSIONS,
+                            cache_key,
+                        )
+                        return None
                     return embedding
 
             return None
 
         except (json.JSONDecodeError, redis.RedisError) as e:
-            # Log error but don't fail - just return None (cache miss)
-            print(f"Cache lookup error for '{skill_text}': {e}")
+            # A cache miss is a safe degradation (we re-embed), but it is not
+            # free and it is not normal - say so at a level that is visible.
+            logger.warning(
+                "Cache lookup failed for %r (key=%s); treating as a miss and "
+                "re-embedding: %s",
+                skill_text,
+                cache_key,
+                e,
+                exc_info=True,
+            )
             return None
 
     async def _save_exact_match_cache(
@@ -252,16 +336,27 @@ class EmbeddingService:
         # Normalize text for consistent storage
         normalized = normalize_skill_text(skill_text)
 
-        # Build cache key
-        cache_key = f"embedding:exact:{normalized}"
+        cache_key = self._exact_match_cache_key(skill_text)
+
+        # Refuse to cache a vector of the wrong width. A 30-day TTL turns one
+        # bad write into a month of bad reads.
+        if len(embedding) != PCA_EMBEDDING_DIMENSIONS:
+            logger.error(
+                "Refusing to cache %d-dim embedding for %r; expected %d dims.",
+                len(embedding),
+                skill_text,
+                PCA_EMBEDDING_DIMENSIONS,
+            )
+            return
 
         # Create cache entry with metadata
         cache_entry = {
             "embedding": embedding,
             "skill_text": skill_text,  # Store original text
             "normalized_text": normalized,
-            "embedding_model": "text-embedding-3-large-pca",
-            "dimensions": len(embedding)
+            "embedding_model": EMBEDDING_MODEL,
+            "pca_version": self.pca_metadata.version if self.pca_metadata else None,
+            "dimensions": len(embedding),
         }
 
         try:
@@ -271,9 +366,18 @@ class EmbeddingService:
             # Save to Redis with 30-day TTL (2592000 seconds)
             await self.redis.set(cache_key, cache_data, ex=2592000)
 
-        except (json.JSONEncodeError, redis.RedisError) as e:
-            # Log error but don't fail the embedding operation
-            print(f"Cache save error for '{skill_text}': {e}")
+        except (TypeError, ValueError, redis.RedisError) as e:
+            # Not fatal - the caller already has the embedding - but a cache
+            # that silently never writes looks identical to a cache that works
+            # and just misses a lot, so this must be visible.
+            logger.warning(
+                "Cache save failed for %r (key=%s); embedding returned but not "
+                "cached: %s",
+                skill_text,
+                cache_key,
+                e,
+                exc_info=True,
+            )
 
     # ============================================
     # Private Helper Methods (Layer 2: Semantic Cache)
@@ -377,7 +481,10 @@ class EmbeddingService:
                 # Rate limit hit - exponential backoff
                 if attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)
-                    print(f"Rate limit hit, retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                    logger.warning(
+                        "OpenAI rate limit on embed of %r; retrying in %ss (attempt %d/%d)",
+                        skill_text, delay, attempt + 1, max_retries,
+                    )
                     await asyncio.sleep(delay)
                 else:
                     raise Exception(f"Rate limit exceeded after {max_retries} attempts: {e}")
@@ -386,7 +493,10 @@ class EmbeddingService:
                 # API error - retry with backoff
                 if attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)
-                    print(f"API error, retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                    logger.warning(
+                        "OpenAI API error on embed of %r; retrying in %ss (attempt %d/%d): %s",
+                        skill_text, delay, attempt + 1, max_retries, e,
+                    )
                     await asyncio.sleep(delay)
                 else:
                     raise Exception(f"API error after {max_retries} attempts: {e}")
@@ -442,7 +552,10 @@ class EmbeddingService:
                 # Rate limit hit - exponential backoff
                 if attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)
-                    print(f"Rate limit hit (batch), retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                    logger.warning(
+                        "OpenAI rate limit on batch embed of %d skills; retrying in %ss (attempt %d/%d)",
+                        len(skills), delay, attempt + 1, max_retries,
+                    )
                     await asyncio.sleep(delay)
                 else:
                     raise Exception(f"Rate limit exceeded after {max_retries} attempts: {e}")
@@ -451,7 +564,10 @@ class EmbeddingService:
                 # API error - retry with backoff
                 if attempt < max_retries - 1:
                     delay = base_delay * (2 ** attempt)
-                    print(f"API error (batch), retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                    logger.warning(
+                        "OpenAI API error on batch embed of %d skills; retrying in %ss (attempt %d/%d): %s",
+                        len(skills), delay, attempt + 1, max_retries, e,
+                    )
                     await asyncio.sleep(delay)
                 else:
                     raise Exception(f"API error after {max_retries} attempts: {e}")
@@ -472,17 +588,41 @@ class EmbeddingService:
             embedding: 3072-dim embedding from OpenAI
 
         Returns:
-            1536-dim PCA-reduced embedding (or original if PCA not loaded)
+            1536-dim PCA-reduced embedding
+
+        Raises:
+            PCAUnavailableError: If the PCA model is not loaded. This is fatal
+                by design - see PCAUnavailableError for why returning the raw
+                vector instead is worse than failing.
         """
         if not self.pca:
-            # PCA model not loaded - return original embedding
-            # This allows the service to work without PCA (though not recommended)
-            return embedding
+            # Previously: `return embedding` - i.e. hand back a 3072-dim vector
+            # from a function whose contract is 1536 dims. Callers then wrote it
+            # to a Vector(1536) column or compared it against 1536-dim vectors,
+            # so the failure surfaced far from its cause (or, combined with the
+            # swallowed pgvector exception in matching_service, not at all: the
+            # dimension mismatch raised inside the SQL, got caught, and became a
+            # 0.0 similarity that looks exactly like an honest "no match").
+            logger.error(
+                "PCA model unavailable - refusing to emit a %d-dim embedding "
+                "where %d dims are required. Indexed vectors are %d-dim, so a "
+                "raw vector would be silently incomparable to all of them.",
+                RAW_EMBEDDING_DIMENSIONS,
+                PCA_EMBEDDING_DIMENSIONS,
+                PCA_EMBEDDING_DIMENSIONS,
+            )
+            raise PCAUnavailableError(
+                f"PCA model not loaded: cannot reduce "
+                f"{RAW_EMBEDDING_DIMENSIONS} -> {PCA_EMBEDDING_DIMENSIONS} dims. "
+                f"Train it with `python scripts/train_pca_model.py` or set "
+                f"PCA_MODEL_DIR to a directory containing pca_model_v1.pkl."
+            )
 
         # Validate input dimensions
-        if len(embedding) != 3072:
+        if len(embedding) != RAW_EMBEDDING_DIMENSIONS:
             raise ValueError(
-                f"Expected 3072-dim embedding for PCA reduction, got {len(embedding)}"
+                f"Expected {RAW_EMBEDDING_DIMENSIONS}-dim embedding for PCA "
+                f"reduction, got {len(embedding)}"
             )
 
         # Convert to NumPy array and reshape for sklearn
@@ -495,9 +635,10 @@ class EmbeddingService:
         reduced_embedding = reduced_array[0].tolist()  # Shape: (1536,)
 
         # Validate output dimensions
-        if len(reduced_embedding) != 1536:
+        if len(reduced_embedding) != PCA_EMBEDDING_DIMENSIONS:
             raise ValueError(
-                f"PCA reduction produced {len(reduced_embedding)} dims, expected 1536"
+                f"PCA reduction produced {len(reduced_embedding)} dims, "
+                f"expected {PCA_EMBEDDING_DIMENSIONS}"
             )
 
         return reduced_embedding

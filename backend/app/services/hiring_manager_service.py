@@ -40,6 +40,11 @@ logger = logging.getLogger(__name__)
 SKILL_MATCH_THRESHOLD = 0.65  # Semantic match - count as "matched"
 SKILL_TRANSFERABLE_THRESHOLD = 0.50  # Related skill - count as "transferable"
 
+# Kept in sync with matching_service.HNSW_EF_SEARCH - see the rationale there.
+# Both services query the same index; tuning one and not the other would give
+# the HM view different recall from the candidate view for identical data.
+HNSW_EF_SEARCH = 100
+
 
 class HiringManagerService:
     """Service for Hiring Manager operations."""
@@ -290,67 +295,110 @@ class HiringManagerService:
         if not skill_names:
             return {}
 
-        embeddings = {}
+        # One query for all skills instead of one per skill. This was an N+1:
+        # a job with 12 required skills issued 12 sequential SELECTs before any
+        # vector work even began.
+        normalized_to_original = {}
         for skill in skill_names:
-            normalized = normalize_skill_text(skill)
-            # Query for any embedding with this normalized text
-            result = (
-                self.db.query(SkillEmbedding)
-                .filter(SkillEmbedding.normalized_text == normalized)
-                .first()
-            )
-            if result and result.embedding is not None:
-                embeddings[skill] = result.embedding
+            # First writer wins, matching the previous per-skill .first()
+            # behaviour when two inputs normalise to the same text.
+            normalized_to_original.setdefault(normalize_skill_text(skill), skill)
+
+        rows = (
+            self.db.query(SkillEmbedding)
+            .filter(SkillEmbedding.normalized_text.in_(list(normalized_to_original)))
+            .all()
+        )
+
+        embeddings = {}
+        for row in rows:
+            original = normalized_to_original.get(row.normalized_text)
+            if original is None or row.embedding is None:
+                continue
+            # Preserve "first match wins" for duplicate normalized_text rows.
+            embeddings.setdefault(original, row.embedding)
 
         return embeddings
 
-    def _pgvector_best_match(
+    def _pgvector_batch_match(
         self,
-        job_skill_embedding: List[float],
+        job_skill_embeddings: dict,
         user_id: str,
-    ) -> Tuple[float, Optional[str]]:
+    ) -> Optional[dict]:
         """
-        Find best matching user skill using pgvector's HNSW index.
+        Find the best matching user skill for many job skills in ONE query.
 
-        Uses O(log N) similarity search with HNSW index.
-
-        Args:
-            job_skill_embedding: The job skill embedding to match against
-            user_id: The user's ID to search their skills
+        Uses a single LATERAL join rather than a query per skill.
 
         Returns:
-            Tuple of (similarity_score, matched_skill_text)
+            Dict of job_skill -> (similarity, matched_user_skill) with an entry
+            for every requested skill; (0.0, None) where nothing matched.
+
+            None if the query FAILED. Callers must distinguish this from an
+            all-zeros result: a failure previously returned 0.0, which the
+            caller read as "similarity below threshold" and recorded as a
+            genuine skill gap the candidate does not actually have.
         """
-        if not job_skill_embedding:
-            return 0.0, None
+        if not self.db or not job_skill_embeddings:
+            return {}
+
+        skills = list(job_skill_embeddings.keys())
+
+        rows = []
+        params = {"user_id": user_id}
+        for idx, skill in enumerate(skills):
+            params[f"k{idx}"] = skill
+            params[f"e{idx}"] = "[" + ",".join(
+                str(x) for x in job_skill_embeddings[skill]
+            ) + "]"
+            rows.append(f"(CAST(:k{idx} AS text), CAST(:e{idx} AS vector))")
+
+        sql = f"""
+            WITH q(skill_key, emb) AS (VALUES {", ".join(rows)})
+            SELECT
+                q.skill_key AS skill_key,
+                m.skill_text AS skill_text,
+                1 - (m.embedding <=> q.emb) AS similarity
+            FROM q
+            LEFT JOIN LATERAL (
+                SELECT se.skill_text, se.embedding
+                FROM skill_embeddings se
+                WHERE se.source_type = 'user' AND se.source_id = :user_id
+                ORDER BY se.embedding <=> q.emb
+                LIMIT 1
+            ) m ON TRUE
+        """
 
         try:
-            # Format embedding as pgvector-compatible string: '[0.1,0.2,...]'
-            embedding_str = '[' + ','.join(str(x) for x in job_skill_embedding) + ']'
+            try:
+                self.db.execute(
+                    text(f"SET LOCAL hnsw.ef_search = {int(HNSW_EF_SEARCH)}")
+                )
+            except Exception as e:
+                logger.warning(
+                    "Could not set hnsw.ef_search=%d; vector search will run at "
+                    "the server default: %s",
+                    HNSW_EF_SEARCH, e, exc_info=True,
+                )
 
-            result = self.db.execute(
-                text("""
-                    SELECT
-                        skill_text,
-                        1 - (embedding <=> CAST(:embedding AS vector)) as similarity
-                    FROM skill_embeddings
-                    WHERE source_type = 'user' AND source_id = :user_id
-                    ORDER BY embedding <=> CAST(:embedding AS vector)
-                    LIMIT 1
-                """),
-                {
-                    "embedding": embedding_str,
-                    "user_id": user_id
-                }
-            ).fetchone()
+            result_rows = self.db.execute(text(sql), params).fetchall()
 
-            if result:
-                return float(result.similarity), result.skill_text
-            return 0.0, None
+            results = {skill: (0.0, None) for skill in skills}
+            for row in result_rows:
+                if row.skill_text is None or row.similarity is None:
+                    continue
+                results[row.skill_key] = (float(row.similarity), row.skill_text)
+            return results
 
         except Exception as e:
-            logger.debug(f"pgvector query failed: {e}")
-            return 0.0, None
+            # LOUD. Was logger.debug + a 0.0 that read as a real similarity.
+            logger.error(
+                "pgvector batch match FAILED for user_id=%s over %d skill(s): "
+                "%s. Transferable-skill and skill-gap output for this candidate "
+                "is DEGRADED and may overstate gaps.",
+                user_id, len(skills), e, exc_info=True,
+            )
+            return None
 
     def _get_job_required_skills(self, job: JobPosting) -> List[str]:
         """
@@ -401,6 +449,8 @@ class HiringManagerService:
 
         matched_lower = {s.lower() for s in matched_skills}
 
+        # Pass 1: decide which skills actually need a vector lookup.
+        pending = {}
         for required_skill in required_skills:
             # Skip already matched skills
             if required_skill.lower() in matched_lower:
@@ -412,10 +462,27 @@ class HiringManagerService:
                 true_gaps.append(required_skill)
                 continue
 
-            # Use pgvector to find best matching user skill
-            similarity, user_skill = self._pgvector_best_match(
-                list(skill_embedding), user_id
+            pending[required_skill] = list(skill_embedding)
+
+        # One round trip for the whole job, not one per skill.
+        vector_results = self._pgvector_batch_match(pending, user_id) if pending else {}
+
+        if vector_results is None:
+            # The lookup failed. Reporting every skill as a "true gap" here
+            # would invent gaps out of a database error, which is exactly the
+            # silent-corruption pattern being removed - so report nothing rather
+            # than something false, and say so.
+            logger.error(
+                "Skipping transferable-skill analysis for user_id=%s: the vector "
+                "lookup failed, so neither transferable skills nor true gaps can "
+                "be determined. Returning empty rather than fabricating %d gaps.",
+                user_id, len(pending),
             )
+            return [], true_gaps
+
+        # Pass 2: categorise.
+        for required_skill in pending:
+            similarity, user_skill = vector_results.get(required_skill, (0.0, None))
 
             # Categorize based on similarity threshold
             if similarity >= SKILL_MATCH_THRESHOLD:

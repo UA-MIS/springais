@@ -55,7 +55,7 @@ async def test_cache_ttl_set(embedding_service, redis_client):
     await embedding_service._save_exact_match_cache(skill_text, embedding)
 
     # Check TTL on Redis key
-    from backend.app.utils.text import normalize_skill_text
+    from app.utils.text import normalize_skill_text
     normalized = normalize_skill_text(skill_text)
     cache_key = f"embedding:exact:{normalized}"
 

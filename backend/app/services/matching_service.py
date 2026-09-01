@@ -20,12 +20,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 
-from app.models.job_posting import JobPosting
-from app.models.employee import Employee
-from app.models.user_profile import UserProfile
-from app.models.skill_embedding import SkillEmbedding
-from app.utils.text import normalize_skill_text
-from app.services.skill_taxonomy import get_taxonomy_service
+from ..models.job_posting import JobPosting
+from ..models.employee import Employee
+from ..models.user_profile import UserProfile
+from ..models.skill_embedding import SkillEmbedding
+from ..utils.text import normalize_skill_text
+from .skill_taxonomy import get_taxonomy_service
 
 
 # ==============================================
@@ -37,6 +37,23 @@ _cache_lock = threading.Lock()
 _cache_loaded_at: Optional[float] = None
 _cache_version: Optional[str] = None
 CACHE_TTL_SECONDS = 3600  # 1 hour - longer TTL, rely on invalidation
+
+# HNSW search-time recall knob (pgvector).
+#
+# Was never set anywhere in the repo, so every vector query ran at pgvector's
+# default ef_search=40. That default is tuned for an UNFILTERED index scan; our
+# queries are filtered (source_type='user' AND source_id=:user_id), and the
+# HNSW index covers neither column. When Postgres does choose the index, it
+# walks the graph in embedding order and only then discards rows failing the
+# filter, so a user whose skills are sparse among the indexed vectors can have
+# their true nearest skill fall outside the 40-candidate pool and be reported
+# as "no match" - a silent recall failure, indistinguishable from an honest
+# zero.
+#
+# 100 buys a 2.5x candidate pool for a few hundred microseconds. It is not a
+# guarantee of exact recall (only a seq scan gives that), which is why
+# _pgvector_batch_match logs the plan choice at DEBUG rather than assuming.
+HNSW_EF_SEARCH = 100
 
 
 def get_cache_version(db: Session) -> str:
@@ -163,6 +180,11 @@ class MatchingService:
         )
         # Cache for skill embeddings to avoid repeated DB queries
         self._embedding_cache: Dict[str, List[float]] = {}
+
+        # Count of vector lookups that FAILED (as opposed to legitimately
+        # finding nothing) during this service's lifetime. A non-zero value
+        # means scores on this request were computed from degraded inputs.
+        self._vector_query_failures: int = 0
 
     # ============================================
     # Public API Methods
@@ -367,6 +389,13 @@ class MatchingService:
             if skill in employee.skill_embeddings
         ]
 
+        # Pass 1: resolve every skill we can WITHOUT touching the database, and
+        # collect the ones that need a vector lookup. Batching them into one
+        # query replaces one round trip per required skill (the N+1 that made
+        # matching feel slow) with a single LATERAL join.
+        pending_vector: Dict[str, List[float]] = {}
+        plan: List[Tuple[str, Optional[float], Optional[List[float]]]] = []
+
         for required_skill in required_skills:
             # 1. Check taxonomy-based coverage first (fast, accurate)
             # This handles aliases, parent/child relationships, and implied skills
@@ -374,12 +403,12 @@ class MatchingService:
                 employee.skills, required_skill
             )
             if taxonomy_score > 0:
-                matches.append(taxonomy_score)
+                plan.append((required_skill, taxonomy_score, None))
                 continue
 
             # 2. Check for exact string match (case-insensitive)
             if required_skill.lower() in employee_skills_lower:
-                matches.append(1.0)
+                plan.append((required_skill, 1.0, None))
                 continue
 
             # 3. Try embedding similarity using pgvector (O(log N) with HNSW)
@@ -387,14 +416,31 @@ class MatchingService:
             if job_embedding is None:
                 # No embedding available, try fuzzy matching
                 fuzzy_score = self._fuzzy_token_match_score(employee.skills, [required_skill])
-                matches.append(fuzzy_score)
+                plan.append((required_skill, fuzzy_score, None))
                 continue
 
-            # Use pgvector's HNSW index for O(log N) similarity search
+            plan.append((required_skill, None, job_embedding))
             if self.user_profile and self.db:
-                best_similarity, _ = self._pgvector_best_match(
-                    job_embedding, str(self.user_profile.id)
-                )
+                pending_vector[required_skill] = job_embedding
+
+        # One round trip for every skill that needs the vector index.
+        vector_results = None
+        if pending_vector:
+            vector_results = self._pgvector_batch_match(
+                pending_vector, str(self.user_profile.id)
+            )
+
+        # Pass 2: assemble scores in the original skill order.
+        for required_skill, resolved, job_embedding in plan:
+            if resolved is not None:
+                matches.append(resolved)
+                continue
+
+            # vector_results is None only when the query FAILED. In that case we
+            # deliberately fall through to the Python/fuzzy legs below rather
+            # than scoring 0.0, which would silently understate the candidate.
+            if vector_results is not None:
+                best_similarity, _ = vector_results.get(required_skill, (0.0, None))
                 if best_similarity > 0:
                     matches.append(best_similarity)
                     continue
@@ -536,7 +582,16 @@ class MatchingService:
             if job and job.description_embedding is not None:
                 return list(job.description_embedding)
         except Exception as e:
-            logger.debug(f"Error fetching job embedding: {e}")
+            # Same family as the pgvector swallow: this returns None, the
+            # caller falls back to a flat 0.5 role-fit score, and at debug
+            # level nothing records that the score was a default rather than a
+            # measurement.
+            logger.warning(
+                "Could not fetch description embedding for job %s; role-fit "
+                "will fall back to a neutral 0.5 default rather than a "
+                "computed value: %s",
+                job_id, e, exc_info=True,
+            )
         return None
 
     # ============================================
@@ -581,10 +636,16 @@ class MatchingService:
         missing = []
         transferable = []
 
+        # Pass 1: resolve what we can locally; collect vector lookups to batch.
+        # Same N+1 elimination as _calculate_skill_match_score.
+        employee_skills_lower = {s.lower() for s in employee_skills}
+        pending_vector: Dict[str, List[float]] = {}
+        gap_plan: List[Tuple[str, Optional[str], Optional[List[float]]]] = []
+
         for req_skill in required_skills:
             # 1. Check exact string match (case-insensitive)
-            if req_skill.lower() in {s.lower() for s in employee_skills}:
-                overlapping.append(req_skill)
+            if req_skill.lower() in employee_skills_lower:
+                gap_plan.append((req_skill, "overlapping", None))
                 continue
 
             # 2. Check taxonomy-based match (aliases, parent/child relationships)
@@ -592,43 +653,68 @@ class MatchingService:
                 list(employee_skills), req_skill
             )
             if taxonomy_score >= 0.70:
-                overlapping.append(req_skill)
+                gap_plan.append((req_skill, "overlapping", None))
                 continue
 
             # 3. Check embedding similarity using pgvector (O(log N) with HNSW)
             req_embedding = job.skill_embeddings.get(req_skill)
-            if req_embedding is not None:
-                best_similarity = 0.0
-                best_matching_skill = None
+            if req_embedding is None:
+                gap_plan.append((req_skill, "missing", None))
+                continue
 
-                # Use pgvector's HNSW index for O(log N) similarity search
-                if self.user_profile and self.db:
-                    best_similarity, best_matching_skill = self._pgvector_best_match(
-                        req_embedding, str(self.user_profile.id)
-                    )
-                else:
-                    # Fallback to Python-based matching if pgvector unavailable
-                    for emp_skill in employee_skills:
-                        emp_embedding = employee.skill_embeddings.get(emp_skill)
-                        if emp_embedding is not None:
-                            similarity = self._cosine_similarity(emp_embedding, req_embedding)
-                            if similarity > best_similarity:
-                                best_similarity = similarity
-                                best_matching_skill = emp_skill
+            gap_plan.append((req_skill, None, req_embedding))
+            if self.user_profile and self.db:
+                pending_vector[req_skill] = req_embedding
 
-                # Determine category based on similarity
-                if best_similarity >= self.SKILL_MATCH_THRESHOLD:
-                    # Strong semantic match - count as matched
-                    overlapping.append(req_skill)
-                    logger.debug(
-                        f"Semantic match: '{best_matching_skill}' -> '{req_skill}' "
-                        f"(similarity: {best_similarity:.3f})"
-                    )
-                    continue
-                elif best_similarity >= self.SKILL_TRANSFERABLE_THRESHOLD:
-                    # Partial match - count as transferable
-                    transferable.append(f"{req_skill} (via {best_matching_skill})")
-                    continue
+        vector_results = None
+        if pending_vector:
+            vector_results = self._pgvector_batch_match(
+                pending_vector, str(self.user_profile.id)
+            )
+
+        # Pass 2: categorise in the original skill order.
+        for req_skill, resolved, req_embedding in gap_plan:
+            if resolved == "overlapping":
+                overlapping.append(req_skill)
+                continue
+            if resolved == "missing":
+                missing.append(req_skill)
+                continue
+
+            best_similarity = 0.0
+            best_matching_skill = None
+
+            if vector_results is not None:
+                best_similarity, best_matching_skill = vector_results.get(
+                    req_skill, (0.0, None)
+                )
+            else:
+                # Either pgvector is unavailable (no user_profile/db) or the
+                # batch query FAILED. Both mean "we do not have a vector answer",
+                # so compute one in Python rather than defaulting to a gap - a
+                # failed lookup previously scored 0.0 and turned every skill into
+                # a fabricated "missing" entry in the gap analysis.
+                for emp_skill in employee_skills:
+                    emp_embedding = employee.skill_embeddings.get(emp_skill)
+                    if emp_embedding is not None:
+                        similarity = self._cosine_similarity(emp_embedding, req_embedding)
+                        if similarity > best_similarity:
+                            best_similarity = similarity
+                            best_matching_skill = emp_skill
+
+            # Determine category based on similarity
+            if best_similarity >= self.SKILL_MATCH_THRESHOLD:
+                # Strong semantic match - count as matched
+                overlapping.append(req_skill)
+                logger.debug(
+                    f"Semantic match: '{best_matching_skill}' -> '{req_skill}' "
+                    f"(similarity: {best_similarity:.3f})"
+                )
+                continue
+            elif best_similarity >= self.SKILL_TRANSFERABLE_THRESHOLD:
+                # Partial match - count as transferable
+                transferable.append(f"{req_skill} (via {best_matching_skill})")
+                continue
 
             # 4. No match - this is a genuine skill gap
             missing.append(req_skill)
@@ -714,94 +800,157 @@ class MatchingService:
 
         return similarities.tolist()
 
+    def _apply_vector_search_tuning(self) -> None:
+        """
+        Set HNSW search parameters for the current transaction.
+
+        SET LOCAL scopes this to the enclosing transaction, so it cannot leak
+        into other sessions on the same pooled connection. If it fails we still
+        run the query - default recall is worse than tuned recall, but it is not
+        wrong in a way that silently corrupts results - so this warns and
+        continues rather than aborting the match.
+        """
+        from sqlalchemy import text
+
+        try:
+            self.db.execute(text(f"SET LOCAL hnsw.ef_search = {int(HNSW_EF_SEARCH)}"))
+        except Exception as e:
+            logger.warning(
+                "Could not set hnsw.ef_search=%d; vector search will run at the "
+                "server default and may under-report matches: %s",
+                HNSW_EF_SEARCH,
+                e,
+                exc_info=True,
+            )
+
     def _pgvector_best_match(
         self,
         job_skill_embedding: List[float],
         user_id: str,
-    ) -> Tuple[float, Optional[str]]:
+    ) -> Optional[Tuple[float, Optional[str]]]:
         """
-        Find best matching user skill using pgvector's HNSW index.
+        Find the best matching user skill for a single job skill embedding.
 
-        This is O(log N) with HNSW index vs O(N) Python loop.
-
-        Args:
-            job_skill_embedding: The job skill embedding to match against
-            user_id: The user's ID to search their skills
+        Thin wrapper over _pgvector_batch_match so there is exactly ONE piece
+        of vector SQL in this service. (These two used to be separate
+        implementations, which is how _pgvector_batch_match came to claim a
+        LATERAL join in its docstring while actually looping.)
 
         Returns:
-            Tuple of (similarity_score, matched_skill_text)
+            (similarity, matched_skill_text) on success. Similarity is 0.0 with
+            a None skill when the user genuinely has no skills to match against.
+
+            None if the query FAILED. Callers must treat None as "unknown" and
+            fall back to another scoring leg - NOT as a zero score. Returning
+            0.0 for a failure is what made a hard database error look like a
+            confident "this candidate has none of these skills".
         """
-        if not self.db or not job_skill_embedding:
+        if not job_skill_embedding:
             return 0.0, None
 
-        try:
-            from sqlalchemy import text
-            import json
-
-            # Format embedding as pgvector-compatible string: '[0.1,0.2,...]'
-            embedding_str = '[' + ','.join(str(x) for x in job_skill_embedding) + ']'
-
-            result = self.db.execute(
-                text("""
-                    SELECT
-                        skill_text,
-                        1 - (embedding <=> CAST(:embedding AS vector)) as similarity
-                    FROM skill_embeddings
-                    WHERE source_type = 'user' AND source_id = :user_id
-                    ORDER BY embedding <=> CAST(:embedding AS vector)
-                    LIMIT 1
-                """),
-                {
-                    "embedding": embedding_str,
-                    "user_id": user_id
-                }
-            ).fetchone()
-
-            if result:
-                return float(result.similarity), result.skill_text
-            return 0.0, None
-
-        except Exception as e:
-            logger.debug(f"pgvector query failed: {e}")
-            return 0.0, None
+        batch = self._pgvector_batch_match({"__single__": job_skill_embedding}, user_id)
+        if batch is None:
+            return None
+        return batch.get("__single__", (0.0, None))
 
     def _pgvector_batch_match(
         self,
         job_skill_embeddings: Dict[str, List[float]],
         user_id: str,
-    ) -> Dict[str, Tuple[float, Optional[str]]]:
+    ) -> Optional[Dict[str, Tuple[float, Optional[str]]]]:
         """
         Batch find best matching user skills for multiple job skills.
 
-        Uses a single SQL query with LATERAL join for efficiency.
+        Uses a single SQL query with a LATERAL join: one round trip for the
+        whole batch, with the per-skill nearest-neighbour lookup evaluated
+        inside the database.
+
+        This docstring previously described a LATERAL join that the code did
+        not implement - the body was a Python loop issuing one query per skill.
+        With ~10 required skills per job across ~26 jobs, that was several
+        hundred sequential round trips per match request.
 
         Args:
             job_skill_embeddings: Dict of job_skill -> embedding
             user_id: The user's ID
 
         Returns:
-            Dict of job_skill -> (similarity, matched_user_skill)
+            Dict of job_skill -> (similarity, matched_user_skill), containing an
+            entry for EVERY requested skill. Skills with no counterpart get
+            (0.0, None).
+
+            None if the query failed - see _pgvector_best_match for why this is
+            distinct from an all-zeros result.
         """
         if not self.db or not job_skill_embeddings:
             return {}
 
+        from sqlalchemy import text
+
+        skills = list(job_skill_embeddings.keys())
+
+        # Build a VALUES list of (key, vector) pairs. Every column is cast
+        # explicitly: Postgres infers VALUES column types from the first row,
+        # and an unadorned parameter there would be inferred as text and then
+        # fail to compare against the vector column.
+        rows = []
+        params: Dict[str, object] = {"user_id": user_id}
+        for idx, skill in enumerate(skills):
+            embedding = job_skill_embeddings[skill]
+            params[f"k{idx}"] = skill
+            params[f"e{idx}"] = "[" + ",".join(str(x) for x in embedding) + "]"
+            rows.append(f"(CAST(:k{idx} AS text), CAST(:e{idx} AS vector))")
+
+        sql = f"""
+            WITH q(skill_key, emb) AS (VALUES {", ".join(rows)})
+            SELECT
+                q.skill_key AS skill_key,
+                m.skill_text AS skill_text,
+                1 - (m.embedding <=> q.emb) AS similarity
+            FROM q
+            LEFT JOIN LATERAL (
+                SELECT se.skill_text, se.embedding
+                FROM skill_embeddings se
+                WHERE se.source_type = 'user' AND se.source_id = :user_id
+                ORDER BY se.embedding <=> q.emb
+                LIMIT 1
+            ) m ON TRUE
+        """
+
         try:
-            from sqlalchemy import text
+            self._apply_vector_search_tuning()
+            result_rows = self.db.execute(text(sql), params).fetchall()
 
-            # Build batch query using LATERAL for each skill
-            results = {}
-
-            # For now, batch as individual queries (still faster than Python loops due to HNSW)
-            # Future optimization: use LATERAL join for true batching
-            for job_skill, embedding in job_skill_embeddings.items():
-                similarity, matched_skill = self._pgvector_best_match(embedding, user_id)
-                results[job_skill] = (similarity, matched_skill)
+            # Default every requested skill to "no match found", then fill in
+            # what the query returned. The LEFT JOIN LATERAL guarantees one row
+            # per input skill, but defaulting first means a short result set can
+            # never silently drop a skill from the caller's dict.
+            results: Dict[str, Tuple[float, Optional[str]]] = {
+                skill: (0.0, None) for skill in skills
+            }
+            for row in result_rows:
+                if row.skill_text is None or row.similarity is None:
+                    continue
+                results[row.skill_key] = (float(row.similarity), row.skill_text)
 
             return results
 
         except Exception as e:
-            logger.warning(f"pgvector batch query failed: {e}")
-            return {}
+            # LOUD. This used to be logger.debug (below any production log
+            # level) followed by a plausible-looking 0.0, so a hard database
+            # error produced zero log records and a score that read as an
+            # honest "no match".
+            self._vector_query_failures += 1
+            logger.error(
+                "pgvector batch match FAILED for user_id=%s over %d skill(s): "
+                "%s. Scores for these skills will fall back to non-vector "
+                "matching and are therefore DEGRADED, not authoritative.",
+                user_id,
+                len(skills),
+                e,
+                exc_info=True,
+            )
+            return None
 
     def _exact_skill_match_score(
         self,
