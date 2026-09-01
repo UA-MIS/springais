@@ -1,4 +1,79 @@
-# SpringAIS — local demo runbook
+# SpringAIS — demo runbooks
+
+There are now **two** ways to demo SpringAIS, and they are different environments with
+different data. Read the cluster section first if you are presenting; the original local
+compose runbook follows below, unchanged.
+
+---
+
+# 1. Cluster demo (the platform deployment)
+
+## The URL
+
+**`https://springais.capstone.uamishub.com`** — no `.dev`, no `.staging`.
+
+That is the **prod** environment and it is the only one a signed-out visitor can reach.
+The tenant is provisioned with `publicDevIngress: false`, so the platform puts a Dex
+single-sign-on gate in front of `springais.dev.…` and `springais.staging.…`. That gate
+returns a 302 to the identity provider **before** the request is routed to the app at all,
+so opening the dev host in front of an audience shows a login page for the *platform*, not
+SpringAIS. Use the prod host.
+
+## ⚠ Read before you present: 15 of the 16 postings are visible, not 16
+
+The curated corpus is 16 EY postings. **15 of them can be returned by a match query.** The
+one that cannot is the **Tampa "Service Delivery Center — AI Developer"** row.
+
+It is excluded by a bug, not by anything about the posting. `matching_service.py` contains
+**two** lists of US locations and they disagree: the Python constant `US_LOCATIONS`
+includes `tampa`, while the SQL filter inside `_get_filtered_jobs` — the one that actually
+runs — does not. Every other corpus city (New York, Chicago, Atlanta, Dallas, Seattle,
+San Francisco) appears in both.
+
+It was left unfixed on purpose: it is a one-line change, but it sits in the matching code
+path, and changing scoring-adjacent code to recover a single row out of sixteen was not a
+trade worth making the night before a presentation. It is filed for daylight.
+
+**What this means for you:** nothing in the demo narrative depends on the Tampa posting.
+The Data & AI story still has both of its rows — the New York "Data Engineer — Manager,
+Consulting" (the intended hero row) and the Atlanta "Advanced Forward Engineering — Data
+Engineer" one rung below it, which is the seniority-progression pair the corpus was built
+around. Just do not count sixteen out loud.
+
+## Demo path
+
+1. Open the prod URL and **register an account**. Use a normal-looking email domain — the
+   validator rejects reserved names like `.test` and `.local`.
+2. **My Profile** → upload a resume, or paste a block of experience text. This is the step
+   that calls OpenAI: it extracts your skills and, in the background, embeds them.
+3. **Match Results** → scored matches against the corpus, with per-role skill overlap,
+   gaps, and a generated explanation.
+
+## If something looks wrong
+
+- **A pod in `CreateContainerConfigError`** is the *intended* state when a secret has not
+  synced yet, not a crash — it clears by itself. The app deliberately refuses to start
+  without `DATABASE_URL`, `JWT_SECRET_KEY` or `OPENAI_API_KEY` rather than starting and
+  failing at request time, where it would look healthy and 500 on every login.
+- **A pod stuck in `Init`** means the migration initContainer failed, also deliberately: a
+  failed migration must never produce a Ready pod.
+  `kubectl logs -n springais-prod <pod> -c migrate` says why.
+- **`/health` returning 200 proves very little.** It does not touch the database and never
+  has. It is a liveness signal, not evidence that the app works.
+
+## What runs where
+
+| | |
+|---|---|
+| Environments | `springais-dev`, `springais-staging`, `springais-prod` |
+| Database | per-environment PostgreSQL 17 on the shared tenant tier, pgvector 0.8.2 |
+| Replicas | **1** per component in every environment, deliberately — the SQLAlchemy pool is 20+30 per replica against a shared 100-connection server. See `.devops/README.md`. |
+| Deploys | push to `main` → dev; `git tag vX.Y.Z` → staging; the *promote-to-prod* workflow → prod |
+
+---
+
+# 2. Local demo runbook (docker compose)
+
 
 Verified end to end on 2026-09-01 against a clean clone.
 For the production droplet deploy, see `DEPLOY.md`; this file is the local path.
