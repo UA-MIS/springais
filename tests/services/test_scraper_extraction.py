@@ -25,13 +25,18 @@ import pytest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-# Only scripts/ goes on the path, deliberately. scrape_ey_jobs.py puts
-# backend/ on sys.path itself (see its module header) before it imports
-# app.database, so adding backend/ here too is redundant -- and widening
-# sys.path with a second import root is what produces
-# "Table 'skill_taxonomy' is already defined for this MetaData instance"
-# when app.models.* and backend.app.models.* are both live in one process.
-# Keep this module's sys.path footprint to the single entry it actually needs.
+# Only scripts/ goes on the path, deliberately.
+#
+# tests/conftest.py owns the suite's single import root and sets it to app.*
+# (backend/ then the project root). This module conforms to that root rather
+# than competing with it: scrape_ey_jobs.py imports app.* and puts backend/ on
+# sys.path itself, so there is nothing for this file to add there. Re-adding
+# backend/ here would recreate the second-root collision that root conftest
+# exists to prevent.
+#
+# scripts/ is still needed and is not redundant: it has no __init__.py, so the
+# project root that conftest adds does not make `scrape_ey_jobs` importable as
+# a bare top-level module. This is the one entry this file genuinely requires.
 _SCRIPTS = os.path.join(REPO_ROOT, "scripts")
 if _SCRIPTS not in sys.path:
     sys.path.insert(0, _SCRIPTS)
