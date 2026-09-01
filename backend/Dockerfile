@@ -11,11 +11,17 @@ RUN apt-get clean && \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Copy dependency manifests.
+#   requirements.txt      - human-maintained INTENT (loose >= ranges)
+#   requirements.lock.txt - exact resolved pins, generated from requirements.txt
+COPY requirements.txt requirements.lock.txt ./
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install from the LOCK, not the range file, so the image is reproducible: a
+# rebuild months from now installs the same versions the demo was verified
+# against instead of silently picking up new majors. Regenerate the lock with:
+#   docker run --rm -v "$PWD/backend":/b python:3.11-slim sh -c \
+#     'pip install -q -r /b/requirements.txt && pip freeze' > backend/requirements.lock.txt
+RUN pip install --no-cache-dir -r requirements.lock.txt
 
 # Copy application code
 COPY . .

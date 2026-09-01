@@ -1,0 +1,62 @@
+# Docker build context exclusions for the backend image.
+#
+# The build context is ./backend (see docker-compose.yml). Before this file
+# existed, `COPY . .` shipped the whole 217MB directory into the image --
+# including a 177MB scraper cache, the log directory and the test suite, none
+# of which the running service reads.
+#
+# ---------------------------------------------------------------------------
+# DO NOT ADD `backend/` OR ANY GLOB THAT MATCHES backend/backend/
+# ---------------------------------------------------------------------------
+# The nested `backend/backend/` path looks like a mistake and is not. It holds
+# the ONLY copy of the live PCA model:
+#
+#     backend/backend/models/pca/pca_model_v1.pkl
+#     backend/backend/models/pca/pca_metadata_v1.json
+#
+# app/utils/pca_loader.py::_default_pca_dir() resolves <backend>/backend/models/pca
+# FIRST and only then falls back to <backend>/models/pca. Excluding it produces
+# an image with no PCA model, which degrades matching rather than failing
+# cleanly. It is deliberately NOT excluded here.
+# ---------------------------------------------------------------------------
+
+# Scraper cache -- 177MB of scraped postings. Tracked in git on purpose (it is
+# the only copy of that data), but the service never reads it at runtime, so it
+# has no business in the image.
+.cache/
+
+# Logs are runtime output, not build input.
+logs/
+*.log
+
+# Tests and test scaffolding are not run inside the shipped image.
+tests/
+pytest.ini
+.pytest_cache/
+
+# Python bytecode / packaging noise
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# Local env / secrets -- must never enter an image layer
+.env
+.env.*
+!.env.example
+*credential*
+*credentials*
+
+# Editor / OS noise
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# VCS
+.git/
+.gitignore

@@ -5,6 +5,12 @@ uvicorn[standard]>=0.27.0
 # Database
 sqlalchemy>=2.0.25
 psycopg[binary]>=3.1.0
+# psycopg2-binary: the APP runs on psycopg3 (DSN is postgresql+psycopg://, and
+# app/database.py normalises bare postgresql:// to it). This is kept only for
+# two standalone scripts that import psycopg2 directly:
+#   migrate_db.py:1              (one-off DigitalOcean data migration)
+#   scripts/validators.py:868    (validate_database(), guarded import)
+# Remove those two callers before removing this pin.
 psycopg2-binary>=2.9.9
 pgvector>=0.2.4
 alembic>=1.13.1
@@ -33,13 +39,20 @@ python-docx>=1.1.0
 openai>=1.10.0
 tiktoken>=0.5.2
 
-# AI/ML - LangChain
-langchain>=0.1.4
-langchain-openai>=0.0.2
+# NOTE: langchain / langchain-openai were removed here. Neither was imported by
+# any file in the repo -- the only occurrence of the string "langchain" in the
+# source tree is as an alias of the "LLM Development" skill in
+# backend/app/models/skill_taxonomy.py, which is data, not an import. Dropping
+# them removes langchain-core, langgraph*, langsmith and their transitive
+# dependencies from the image.
 
 # Web Scraping
 beautifulsoup4>=4.12.3
 requests>=2.31.0
+# lxml is REQUIRED even though no file says "import lxml": it is BeautifulSoup's
+# parser backend, selected by name in scripts/scrape_ey_jobs.py:398,608 via
+# BeautifulSoup(html, "lxml"). Removing it raises bs4 FeatureNotFound at scrape
+# time. A grep for the import statement will not find this usage.
 lxml>=5.1.0
 tqdm>=4.66.0
 
@@ -52,3 +65,7 @@ joblib>=1.3.2
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
 fakeredis>=2.21.0
+# httpx is imported directly by tests/services/test_skill_extraction.py:21. It
+# used to arrive transitively via langchain; now that langchain is gone it has
+# to be declared, or the test suite fails to collect.
+httpx>=0.27.0
