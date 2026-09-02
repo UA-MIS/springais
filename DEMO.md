@@ -40,6 +40,52 @@ Consulting" (the intended hero row) and the Atlanta "Advanced Forward Engineerin
 Engineer" one rung below it, which is the seniority-progression pair the corpus was built
 around. Just do not count sixteen out loud.
 
+## ⚠ Read this too: the default score threshold shows ONE result, not a list
+
+`GET /api/matches/employee/{id}` takes a `min_score` query parameter that **defaults to
+0.5**. With real job embeddings in place, the honest scores put exactly **one** posting
+above that line:
+
+```
+min_score=0.5 (the default)   ->  1 result
+min_score=0.0                 ->  15 results, correctly ranked
+```
+
+That is not a bug and it is not the embeddings failing — it is the scoring becoming
+truthful. Before the job descriptions were embedded, `role_fit` returned a hard-coded
+neutral `0.500` for every posting, which inflated every overall score and floated three
+rows above the threshold. Now `role_fit` is a real cosine similarity and varies per row
+(0.370, 0.382, 0.267, 0.245, 0.208 …), so most postings score where they honestly belong.
+
+The full ranked list is sensible — the top of it is the corpus's intended story:
+
+| rank | job | overall | skill | role_fit |
+|---|---|---|---|---|
+| 1 | Data Engineer — Manager, Consulting | 0.548 | 0.570 | 0.370 |
+| 2 | FAAS — Global Treasury Services | 0.495 | 0.500 | 0.250 |
+| 3 | International Tax & Transaction Services | 0.472 | 0.550 | 0.224 |
+| … | … | | | |
+| 15 | Cyber Managed Services — IAM | 0.021 | 0.000 | 0.208 |
+
+**Know which one you are showing.** If the UI calls the endpoint with the default, the
+screen shows a single, extremely well-matched role. That is a perfectly good story — "it
+found the one job that actually fits" — but it is not a leaderboard, so do not promise one.
+If you want the ranked list on screen, the endpoint has to be called with a lower
+`min_score`. Changing that default is a frontend decision that was deliberately not made
+here, hours before a presentation.
+
+A pure vector query against the same data ranks exactly as you would hope, which is the
+thing worth showing if anyone asks whether the similarity search is real:
+
+```
+title                                                  cosine_distance
+Advanced Forward Engineering - Data Engineer - Senior   0.6182
+Data Engineer - Manager - Consulting                    0.6299
+Service Delivery Center, AI Developer - Senior          0.7124
+Audit Advisor - Assurance                               0.7331
+SAP - Tech Arch - BASIS Manager                         0.7392
+```
+
 ## Demo path
 
 1. Open the prod URL and **register an account**. Use a normal-looking email domain — the
