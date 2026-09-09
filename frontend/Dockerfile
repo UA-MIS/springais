@@ -1,4 +1,10 @@
-FROM node:18-alpine AS build
+# Pulled through the platform's Harbor Docker Hub pull-through cache
+# (dockerhub-proxy), same as every other tenant's Dockerfile -- avoids Docker
+# Hub rate limits (`toomanyrequests`) across the whole CI cohort, and avoids
+# a slower/uncached direct pull inside Kaniko on the shared CI build pool.
+# Same image, same tag, different registry host -- purely a pull-path
+# change. Verified end-to-end through the proxy (see PR for the commands).
+FROM harbor.capstone.uamishub.com/dockerhub-proxy/library/node:18-alpine AS build
 
 WORKDIR /app
 
@@ -57,7 +63,21 @@ RUN test -f dist/index.html && echo "ok" > dist/healthz
 # The alternative (keeping stock nginx and mounting emptyDirs over /var/cache/nginx and
 # /run) works too, but it is more moving parts to get the same result and it leaves the
 # image root-by-default everywhere else it might run.
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+#
+# Pulled through dockerhub-proxy, same as the build stage above.
+# nginxinc/nginx-unprivileged is NOT a Docker Official ("library/") image --
+# its Docker Hub repo is under the "nginxinc" namespace, so the proxy path
+# keeps that namespace segment (dockerhub-proxy/nginxinc/..., not
+# dockerhub-proxy/library/nginxinc/...). This is NOT the same path shape as
+# every other tenant Dockerfile's `library/...` images, so it was verified
+# by execution before committing, not assumed: GET'ing the manifest through
+# Harbor's registry API returned docker-content-digest
+# sha256:65e3e85dbaed8ba248841d9d58a899b6197106c23cb0ff1a132b7bfe0547e4c0,
+# identical to the digest Docker Hub returns directly for this tag, and a
+# live pod pulled harbor.../dockerhub-proxy/nginxinc/nginx-unprivileged:1.27-alpine
+# and ran `nginx -v` successfully (imageID matched the same digest). See PR
+# for the exact commands.
+FROM harbor.capstone.uamishub.com/dockerhub-proxy/nginxinc/nginx-unprivileged:1.27-alpine
 
 # The base image's default site would otherwise shadow ours.
 COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/default.conf
