@@ -1,4 +1,11 @@
-FROM python:3.11-slim
+# Pulled through the platform's Harbor Docker Hub pull-through cache
+# (dockerhub-proxy), same as every other tenant's Dockerfile -- avoids Docker
+# Hub rate limits (`toomanyrequests`) across the whole CI cohort, and avoids
+# a slower/uncached direct pull inside Kaniko on the shared CI build pool.
+# Same image, same tag, different registry host -- purely a pull-path
+# change. Verified end-to-end: this exact digest is servable through the
+# proxy (see PR for the verification commands).
+FROM harbor.capstone.uamishub.com/dockerhub-proxy/library/python:3.11-slim
 
 WORKDIR /app
 
