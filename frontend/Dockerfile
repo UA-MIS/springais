@@ -4,7 +4,7 @@
 # a slower/uncached direct pull inside Kaniko on the shared CI build pool.
 # Same image, same tag, different registry host -- purely a pull-path
 # change. Verified end-to-end through the proxy (see PR for the commands).
-FROM harbor.capstone.uamishub.com/dockerhub-proxy/library/node:18-alpine AS build
+FROM harbor.capstone.uamishub.com/base-images/library/node:18-alpine AS build
 
 WORKDIR /app
 
@@ -90,7 +90,7 @@ RUN test -f dist/index.html && echo "ok" > dist/healthz
 # live pod pulled harbor.../dockerhub-proxy/nginxinc/nginx-unprivileged:1.27-alpine
 # and ran `nginx -v` successfully (imageID matched the same digest). See PR
 # for the exact commands.
-FROM harbor.capstone.uamishub.com/dockerhub-proxy/nginxinc/nginx-unprivileged:1.27-alpine
+FROM harbor.capstone.uamishub.com/base-images/nginxinc/nginx-unprivileged:1.27-alpine
 
 # The base image's default site would otherwise shadow ours.
 COPY --chown=nginx:nginx nginx.conf /etc/nginx/conf.d/default.conf

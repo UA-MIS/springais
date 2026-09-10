@@ -5,7 +5,7 @@
 # Same image, same tag, different registry host -- purely a pull-path
 # change. Verified end-to-end: this exact digest is servable through the
 # proxy (see PR for the verification commands).
-FROM harbor.capstone.uamishub.com/dockerhub-proxy/library/python:3.11-slim
+FROM harbor.capstone.uamishub.com/base-images/library/python:3.11-slim
 
 WORKDIR /app
 
